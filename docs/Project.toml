@@ -5,4 +5,4 @@ version = "0.1.0"
 
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-Zettel = "b7441593-b7d9-4494-b464-23ab138d18d6"
+Zettel = "2ca6f6d1-94fa-4d7c-a447-9ff9492802f1"

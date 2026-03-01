@@ -1,7 +1,7 @@
 name = "Zettel"
 uuid = "2ca6f6d1-94fa-4d7c-a447-9ff9492802f1"
 authors = ["rafaelab"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
