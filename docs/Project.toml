@@ -1,8 +1,10 @@
 name = "ZettelDocs"
 uuid = "5b10a26a-def8-4aae-8a98-8a87f5a44e9f"
 authors = ["rafaelab"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Zettel = "2ca6f6d1-94fa-4d7c-a447-9ff9492802f1"
+
+
