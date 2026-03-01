@@ -3,8 +3,10 @@ Manifest.toml
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-/docs/build/
-/docs/site/
+docs/build/
+docs/site/
+docs/_build*
+
 
 # CondaPkg managed environment (auto-generated)
 .CondaPkg/
