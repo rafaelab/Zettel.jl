@@ -1,6 +1,5 @@
 using Documenter
 using Zettel
-using Pybtex
 
 makedocs(
 	sitename = "Zettel.jl",
