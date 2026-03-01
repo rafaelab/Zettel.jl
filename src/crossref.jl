@@ -2,8 +2,11 @@
 #
 const CROSSREF_API = "https://api.crossref.org/works/"
 
-# Map CrossRef `type` values to BibTeX entry types
-const _crossrefTypeMap = Dict{String, String}(
+
+# ----------------------------------------------------------------------------------------------- #
+#
+# map CrossRef `type` values to BibTeX entry types
+const crossrefTypeMap = Dict{String, String}(
 	"journal-article"          => "article",
 	"book"                     => "book",
 	"book-chapter"             => "inbook",
@@ -19,21 +22,18 @@ const _crossrefTypeMap = Dict{String, String}(
 	"other"                    => "misc",
 )
 
-
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_crossrefAuthors(authorList)
+	crossrefAuthors(authorList)
 
-Convert the CrossRef author array (each element has `"family"` and optionally `"given"`
-sub-fields) into a BibTeX-style author string
-`"Last1, First1 and Last2, First2 and ..."`.
+Convert the CrossRef author array (each element has `"family"` and optionally `"given"` sub-fields) into a BibTeX-style author string `"Last1, First1 and Last2, First2 and ..."`.
 """
-function _crossrefAuthors(authorList)
+function crossrefAuthors(authorList)
 	parts = String[]
-	for a in authorList
-		family = get(a, "family", "")
-		given  = get(a, "given", "")
+	for author ∈ authorList
+		family = get(author, "family", "")
+		given  = get(author, "given", "")
 		if isempty(given)
 			push!(parts, family)
 		else
@@ -47,16 +47,16 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_crossrefYear(msg)
+	crossrefYear(msg)
 
 Extract the publication year from a CrossRef work message.  Returns an empty string when
 no date information is available.
 """
-function _crossrefYear(msg)
-	for key in ("published", "published-print", "published-online", "issued")
+function crossrefYear(msg)
+	for key ∈ ("published", "published-print", "published-online", "issued")
 		if haskey(msg, key)
 			dateParts = get(msg[key], "date-parts", nothing)
-			if dateParts !== nothing && length(dateParts) > 0
+			if ! isnothing(dateParts) && length(dateParts) > 0
 				parts = dateParts[1]
 				if length(parts) > 0
 					return string(parts[1])
@@ -64,6 +64,7 @@ function _crossrefYear(msg)
 			end
 		end
 	end
+
 	return ""
 end
 
@@ -75,7 +76,6 @@ end
 
 Fetch bibliographic metadata from the CrossRef REST API for the given `doi` and return a
 [`ZettelEntry`](@ref).
-
 `userAgent` can be set to a custom string (recommended by CrossRef polite-pool guidelines).
 
 # Example
@@ -87,99 +87,93 @@ function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zet
 	url = CROSSREF_API * HTTP.escapeuri(doi)
 	response = HTTP.get(url; headers = ["User-Agent" => userAgent])
 
-	if response.status != 200
+	if response.status ≠ 200
 		error("CrossRef request failed with status $(response.status) for DOI: $doi")
 	end
 
 	body = JSON3.read(String(response.body))
 	msg = body["message"]
 
-	# Determine BibTeX type
+	# determine BibTeX type
 	crType = String(get(msg, "type", "other"))
-	bibType = get(_crossrefTypeMap, crType, "misc")
+	bibType = get(crossrefTypeMap, crType, "misc")
 
-	# Build citation key: LastnameYear
+	# build citation key: LastnameYear
 	authorList = get(msg, "author", [])
 	firstFamily = length(authorList) > 0 ? get(authorList[1], "family", "Unknown") : "Unknown"
-	year = _crossrefYear(msg)
+	year = crossrefYear(msg)
 	key = replace(firstFamily, " " => "") * (isempty(year) ? "" : year)
 
-	# Populate fields preserving BibTeX conventions
+	# populate fields preserving BibTeX conventions
 	fields = OrderedDict{String, String}()
 
-	# Authors
+	# authors
 	if length(authorList) > 0
-		fields["author"] = _crossrefAuthors(authorList)
+		fields["author"] = crossrefAuthors(authorList)
 	end
 
-	# Title
+	# title
 	titles = get(msg, "title", [])
 	if length(titles) > 0
 		fields["title"] = String(titles[1])
 	end
 
-	# Journal / container
+	# journal / container
 	containerTitles = get(msg, "container-title", [])
 	if length(containerTitles) > 0
 		ct = String(containerTitles[1])
 		if bibType == "article"
 			fields["journal"] = ct
-		elseif bibType in ("inproceedings", "proceedings")
+		elseif bibType ∈ ("inproceedings", "proceedings")
 			fields["booktitle"] = ct
 		else
 			fields["journal"] = ct
 		end
 	end
 
-	# Year
-	if !isempty(year)
+	# year
+	if ! isempty(year)
 		fields["year"] = year
 	end
 
-	# Volume / issue / pages
+	# volume / issue / pages
 	vol = get(msg, "volume", nothing)
-	if vol !== nothing
+	if ! isnothing(vol)
 		fields["volume"] = String(vol)
 	end
 
 	issue = get(msg, "issue", nothing)
-	if issue !== nothing
+	if ! isnothing(issue)
 		fields["number"] = String(issue)
 	end
 
 	pageStr = get(msg, "page", nothing)
-	if pageStr !== nothing
+	if ! isnothing(pageStr)
 		fields["pages"] = String(pageStr)
 	end
 
 	# DOI
 	doiVal = get(msg, "DOI", nothing)
-	if doiVal !== nothing
+	if ! isnothing(doiVal)
 		fields["doi"] = String(doiVal)
 	end
 
-	# URL
+	# url
 	urlVal = get(msg, "URL", nothing)
-	if urlVal !== nothing
+	if ! isnothing(urlVal)
 		fields["url"] = String(urlVal)
 	end
 
-	# Publisher
+	# publisher
 	pub = get(msg, "publisher", nothing)
-	if pub !== nothing
+	if ! isnothing(pub)
 		fields["publisher"] = String(pub)
 	end
 
-	# ISBN
+	# isbn
 	isbns = get(msg, "ISBN", [])
 	if length(isbns) > 0
 		fields["isbn"] = String(isbns[1])
-	end
-
-	# Abstract
-	abstract_ = get(msg, "abstract", nothing)
-	if abstract_ !== nothing
-		fields["abstract"] = String(abstract_)
 	end
 
 	return ZettelEntry(key, bibType, fields)

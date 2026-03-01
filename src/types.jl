@@ -39,22 +39,13 @@ struct ZettelLibrary
 	entries::OrderedDict{String, ZettelEntry}
 end
 
-@doc """
-	ZettelLibrary()
 
-Construct an empty `ZettelLibrary`.
-"""
 ZettelLibrary() = ZettelLibrary(OrderedDict{String, ZettelEntry}())
 
-@doc """
-	ZettelLibrary(entries)
-
-Construct a `ZettelLibrary` from a vector of [`ZettelEntry`](@ref) objects.
-"""
-function ZettelLibrary(entries::Vector{ZettelEntry})
+ZettelLibrary(entries::Vector{ZettelEntry}) = begin
 	d = OrderedDict{String, ZettelEntry}()
-	for e in entries
-		d[e.key] = e
+	for entry ∈ entries
+		d[entry.key] = entry
 	end
 	return ZettelLibrary(d)
 end
@@ -120,12 +111,10 @@ Base.pop!(lib::ZettelLibrary, key::AbstractString) = pop!(lib.entries, key)
 
 Iterate over the entries in a `ZettelLibrary`.
 """
-function Base.iterate(lib::ZettelLibrary, state = 1)
-	ks = collect(keys(lib.entries))
-	if state > length(ks)
-		return nothing
-	end
-	return (lib.entries[ks[state]], state + 1)
+function Base.iterate(lib::ZettelLibrary, state = iterate(values(lib.entries)))
+    state === nothing && return nothing
+    entry, inner_state = state
+    return (entry, iterate(values(lib.entries), inner_state))
 end
 
 
@@ -176,30 +165,6 @@ getKey(entry::ZettelEntry) = entry.key
 Return the BibTeX entry type string (e.g. `"article"`) of a [`ZettelEntry`](@ref).
 """
 getType(entry::ZettelEntry) = entry.entryType
-
-@doc """
-	hasField(entry, field)
-
-Return `true` if `field` (case-insensitive) is present in the entry's fields.
-"""
-hasField(entry::ZettelEntry, field::AbstractString) = haskey(entry.fields, lowercase(field))
-
-@doc """
-	getAllFields(entry)
-
-Return the collection of field names present in the entry.
-"""
-getAllFields(entry::ZettelEntry) = keys(entry.fields)
-
-@doc """
-	getField(entry, field)
-
-Return the value of `field` in the entry, or `""` if the field is absent.
-"""
-function getField(entry::ZettelEntry, field::AbstractString)
-	k = lowercase(field)
-	return get(entry.fields, k, "")
-end
 
 @doc """
 	getTitle(entry)
@@ -284,6 +249,33 @@ getPublisher(entry::ZettelEntry) = getField(entry, "publisher")
 Return the ISBN of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getISBN(entry::ZettelEntry) = getField(entry, "isbn")
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	hasField(entry, field)
+
+Return `true` if `field` (case-insensitive) is present in the entry's fields.
+"""
+hasField(entry::ZettelEntry, field::AbstractString) = haskey(entry.fields, lowercase(field))
+
+@doc """
+	getAllFields(entry)
+
+Return the collection of field names present in the entry.
+"""
+getAllFields(entry::ZettelEntry) = keys(entry.fields)
+
+@doc """
+	getField(entry, field)
+
+Return the value of `field` in the entry, or `""` if the field is absent.
+"""
+function getField(entry::ZettelEntry, field::AbstractString)
+	k = lowercase(field)
+	return get(entry.fields, k, "")
+end
 
 
 # ----------------------------------------------------------------------------------------------- #

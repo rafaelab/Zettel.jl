@@ -8,7 +8,7 @@ string `"Last1, First1 and Last2, First2 and ..."`.
 """
 function _pybtexPersonsToString(personsIterable)
 	parts = String[]
-	for p in personsIterable
+	for p ∈ personsIterable
 		name = Pybtex.pybtexToPersonName(p)
 		last = name.lastName
 		first = name.firstName
@@ -36,36 +36,36 @@ collapsed into the standard `"Last, First and ..."` notation.
 """
 function fromBibTeX(bibLib::Pybtex.BibLibrary)
 	entries = ZettelEntry[]
-	for key in Pybtex.keys(bibLib)
+	for key ∈ Pybtex.keys(bibLib)
 		pyEntry = Pybtex.getEntry(bibLib, key)
 		entryType = Pybtex.getType(pyEntry)
 
 		fields = OrderedDict{String, String}()
 
-		# Authors
+		# authors
 		try
 			authors = pyEntry.info.persons["author"]
-			if !isempty(authors)
+			if ! isempty(authors)
 				fields["author"] = _pybtexPersonsToString(authors)
 			end
 		catch
 		end
 
-		# Editors
+		# editors
 		try
 			editors = pyEntry.info.persons["editor"]
-			if !isempty(editors)
+			if ! isempty(editors)
 				fields["editor"] = _pybtexPersonsToString(editors)
 			end
 		catch
 		end
 
-		# All other fields
+		# all other fields
 		allFields = Pybtex.getAllFields(pyEntry)
-		for f in allFields
-			val = _pybtexFieldValue(pyEntry, f)
-			if !isempty(val)
-				fields[f] = val
+		for field ∈ allFields
+			val = _pybtexFieldValue(pyEntry, field)
+			if ! isempty(val)
+				fields[field] = val
 			end
 		end
 
@@ -83,7 +83,7 @@ end
 Extract the string value of `field` from a Pybtex `BibEntry`.
 """
 function _pybtexFieldValue(entry::Pybtex.BibEntry, field::AbstractString)
-	if !Pybtex.hasField(entry, field)
+	if ! Pybtex.hasField(entry, field)
 		return ""
 	end
 	raw = entry.info.fields[field]
@@ -108,21 +108,22 @@ file with [`writeBibTeX`](@ref).
 function toBibTeX(lib::ZettelLibrary)
 	pydb = pyimport("pybtex.database")
 	bibData = pydb.BibliographyData()
-	for entry in values(lib)
+	for entry ∈ values(lib)
 		pyFields = pydict(Dict{String, Any}(entry.fields))
-		# Remove author/editor from fields dict – pybtex stores them separately
+
+		# remove author/editor from fields dict; pybtex stores them separately
 		pyFields.pop("author", nothing)
 		pyFields.pop("editor", nothing)
 
 		pyPersons = pydict(Dict{String, Any}())
 
 		authorStr = get(entry.fields, "author", "")
-		if !isempty(authorStr)
+		if ! isempty(authorStr)
 			pyPersons["author"] = pylist(_authorStringToPersonList(authorStr))
 		end
 
 		editorStr = get(entry.fields, "editor", "")
-		if !isempty(editorStr)
+		if ! isempty(editorStr)
 			pyPersons["editor"] = pylist(_authorStringToPersonList(editorStr))
 		end
 
@@ -144,7 +145,7 @@ Pybtex `Person` objects.
 function _authorStringToPersonList(authorStr::AbstractString)
 	pyPerson = pyimport("pybtex.database").Person
 	persons = []
-	for part in split(authorStr, " and ")
+	for part ∈ split(authorStr, " and ")
 		part = strip(part)
 		push!(persons, pyPerson(part))
 	end

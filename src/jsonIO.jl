@@ -10,12 +10,12 @@ JSON3 always emits spaces, so this function converts the indentation to tabs aft
 fact.  String contents that happen to start with spaces are not affected because the
 replacement only targets leading whitespace.
 """
-function _indentJson(json::AbstractString, indent::AbstractString = "\t")
+function _indentJson(json::AbstractString; indent::AbstractString = "\t")
 	lines = split(json, '\n')
 	result = String[]
-	for line in lines
+	for line ∈ lines
 		m = match(r"^( +)", line)
-		if m === nothing
+		if isnothing(m)
 			push!(result, line)
 		else
 			nSpaces = length(m.captures[1])
@@ -62,9 +62,11 @@ function _entryFromDict(d)
 	key = String(d["key"])
 	entryType = String(d["type"])
 	fields = OrderedDict{String, String}()
-	for (k, v) in d["fields"]
+	
+	for (k, v) ∈ d["fields"]
 		fields[String(k)] = String(v)
 	end
+
 	return ZettelEntry(key, entryType, fields)
 end
 
@@ -81,7 +83,7 @@ stored as an object with `"key"`, `"type"`, and `"fields"` properties that mirro
 corresponding BibTeX fields.
 """
 function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
-	records = [_entryToOrderedDict(e) for e in values(lib)]
+	records = [_entryToOrderedDict(e) for e ∈ values(lib)]
 	buf = IOBuffer()
 	JSON3.pretty(buf, records, JSON3.AlignmentContext(indent = 4))
 	jsonStr = _indentJson(String(take!(buf)))
@@ -100,7 +102,7 @@ Read a JSON file previously written by [`writeJsonLibrary`](@ref) and return a
 """
 function readJsonLibrary(filename::AbstractString)
 	data = JSON3.read(read(filename, String))
-	entries = ZettelEntry[_entryFromDict(d) for d in data]
+	entries = ZettelEntry[_entryFromDict(d) for d ∈ data]
 	return ZettelLibrary(entries)
 end
 
