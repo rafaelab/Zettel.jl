@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, copilot/**]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-julia-artifacts-${{ hashFiles('**/Project.toml') }}
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --user pybtex
+          julia --project=. -e 'using Pkg; Pkg.instantiate()'
+      - name: Run tests
+        run: JULIA_PYTHONCALL_EXE=python3 julia --project=. -e 'using Pkg; Pkg.test()'
