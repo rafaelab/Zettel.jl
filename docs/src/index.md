@@ -16,7 +16,7 @@ data as JSON while maintaining full BibTeX compatibility.
 ```julia
 using Zettel, OrderedCollections
 
-# Create an entry
+# Cceate an entry
 entry = ZettelEntry(
     "Einstein1905",
     "article",
@@ -31,12 +31,12 @@ entry = ZettelEntry(
 
 lib = ZettelLibrary([entry])
 
-# Save to JSON
+# save to JSON
 writeJsonLibrary(lib, "library.json")
 
-# Save to BibTeX
+# save to BibTeX
 writeBibTeX(lib, "library.bib")
 
-# Fetch from CrossRef
+# fetch from CrossRef
 entry2 = fetchFromCrossref("10.1002/andp.19053221004")
 ```
