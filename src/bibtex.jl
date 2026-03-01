@@ -29,7 +29,7 @@ end
 @doc """
 	fromBibTeX(bibLib)
 
-Convert a [`Pybtex.BibLibrary`](@ref) to a [`ZettelLibrary`](@ref).
+Convert a `Pybtex.BibLibrary` to a [`ZettelLibrary`](@ref).
 
 All BibTeX fields are preserved as string values; author and editor person lists are
 collapsed into the standard `"Last, First and ..."` notation.
@@ -100,7 +100,7 @@ end
 @doc """
 	toBibTeX(lib)
 
-Convert a [`ZettelLibrary`](@ref) to a [`Pybtex.BibLibrary`](@ref).
+Convert a [`ZettelLibrary`](@ref) to a `Pybtex.BibLibrary`.
 
 This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib`
 file with [`writeBibTeX`](@ref).

@@ -6,6 +6,7 @@ makedocs(
 	sitename = "Zettel.jl",
 	authors  = "Rafael Alves Batista (@rafaelab)",
 	modules  = [Zettel],
+	checkdocs = :exports,
 	format   = Documenter.HTML(
 		prettyurls = get(ENV, "CI", nothing) == "true",
 	),
