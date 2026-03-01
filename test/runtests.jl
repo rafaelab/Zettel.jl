@@ -1,8 +1,23 @@
 using Test
 using Zettel
-using Pybtex
+import Pybtex
+using OrderedCollections
 using PythonCall: pyconvert
 
+
+testRef =  """
+@article{doe2024,
+author = {Doe, Jane and Roe, John},
+title = {A Sample Entry},
+journal = {Journal of Testing},
+year = {2024},
+doi = {10.1000/example}
+}
+"""
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @testset "Crossref fetch" begin
 	payload = """{"status":"ok","message":{"DOI":"10.1000/test","title":["Example"]}}"""
 	record = fetchCrossrefJson("10.1000/test"; fetcher = _ -> payload)
@@ -12,37 +27,35 @@ using PythonCall: pyconvert
 	@test_throws ArgumentError fetchCrossrefJson("10.1000/test"; fetcher = _ -> "{\"status\":\"ok\"}")
 end
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @testset "BibTeX <-> JSON conversion" begin
 	mktempdir() do dir
 		inputBib = joinpath(dir, "input.bib")
 		outputJson = joinpath(dir, "library.json")
 		outputBib = joinpath(dir, "output.bib")
 
-		write(inputBib, """
-@article{doe2024,
-author = {Doe, Jane and Roe, John},
-title = {A Sample Entry},
-journal = {Journal of Testing},
-year = {2024},
-doi = {10.1000/example}
-}
-""")
+		write(inputBib, testRef)
 
 		bibTeXToJson(inputBib, outputJson)
 		jsonToBibTeX(outputJson, outputBib)
 
-		original = readBibtexDataBase(inputBib)
-		rebuilt = readBibtexDataBase(outputBib)
-		originalEntry = getEntry(original, "doe2024")
-		rebuiltEntry = getEntry(rebuilt, "doe2024")
+		original = Pybtex.readBibtexDataBase(inputBib)
+		rebuilt = Pybtex.readBibtexDataBase(outputBib)
+		originalEntry = Pybtex.getEntry(original, "doe2024")
+		rebuiltEntry = Pybtex.getEntry(rebuilt, "doe2024")
 
-		for field in getAllFields(originalEntry)
-			@test hasField(rebuiltEntry, field)
+		for field ∈ Pybtex.getAllFields(originalEntry)
+			@test Pybtex.hasField(rebuiltEntry, field)
 			@test pyconvert(String, originalEntry.info.fields[field]) == pyconvert(String, rebuiltEntry.info.fields[field])
 		end
-		@test length(collect(getAllFields(rebuiltEntry))) == length(collect(getAllFields(originalEntry)))
+		@test length(collect(Pybtex.getAllFields(rebuiltEntry))) == length(collect(Pybtex.getAllFields(originalEntry)))
 		@test length(rebuiltEntry.info.persons["author"]) == length(originalEntry.info.persons["author"])
-using OrderedCollections
+
+	end
+
+end
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -81,7 +94,7 @@ end
 		@test e.key == "Einstein1905"
 		@test e.entryType == "article"
 		@test hasField(e, "author")
-		@test !hasField(e, "abstract")
+		@test ! hasField(e, "abstract")
 	end
 
 	@testset "accessor helpers" begin
@@ -110,12 +123,12 @@ end
 	@testset "getAllFields" begin
 		e = _sampleArticle()
 		fs = getAllFields(e)
-		@test "author" in fs
-		@test "title" in fs
-		@test "journal" in fs
+		@test "author" ∈ fs
+		@test "title" ∈ fs
+		@test "journal" ∈ fs
 	end
 
-end # ZettelEntry
+end 
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -132,7 +145,7 @@ end # ZettelEntry
 		@test length(lib) == 2
 		@test haskey(lib, "Einstein1905")
 		@test haskey(lib, "Misner1973")
-		@test !haskey(lib, "notpresent")
+		@test ! haskey(lib, "notpresent")
 	end
 
 	@testset "getindex" begin
@@ -144,15 +157,15 @@ end # ZettelEntry
 	@testset "pop!" begin
 		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
 		pop!(lib, "Einstein1905")
-		@test !haskey(lib, "Einstein1905")
+		@test ! haskey(lib, "Einstein1905")
 		@test length(lib) == 1
 	end
 
 	@testset "iterate" begin
 		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
-		keys_found = [e.key for e in lib]
-		@test "Einstein1905" in keys_found
-		@test "Misner1973" in keys_found
+		keysFound = [e.key for e ∈ lib]
+		@test "Einstein1905" ∈ keysFound
+		@test "Misner1973" ∈ keysFound
 	end
 
 	@testset "vector constructor" begin
@@ -160,13 +173,14 @@ end # ZettelEntry
 		@test length(lib) == 2
 	end
 
-end # ZettelLibrary
+end 
 
 
 # ----------------------------------------------------------------------------------------------- #
 @testset "JSON round-trip" begin
 	lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
 	tmpfile = tempname() * ".json"
+
 	try
 		writeJsonLibrary(lib, tmpfile)
 		@test isfile(tmpfile)
@@ -190,16 +204,20 @@ end
 @testset "BibTeX round-trip" begin
 	lib = ZettelLibrary([_sampleArticle()])
 	tmpbib = tempname() * ".bib"
+
 	try
 		writeBibTeX(lib, tmpbib)
 		@test isfile(tmpbib)
 
 		lib2 = readBibTeX(tmpbib)
-		@test length(lib2) >= 1
+		@test length(lib2) ≥ 1
 		@test haskey(lib2, "Einstein1905")
 		e = lib2["Einstein1905"]
-		@test !isempty(getTitle(e))
+		@test ! isempty(getTitle(e))
+
 	finally
 		isfile(tmpbib) && rm(tmpbib)
 	end
+
+
 end
