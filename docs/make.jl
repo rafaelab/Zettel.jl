@@ -3,7 +3,7 @@ using Zettel
 
 makedocs(
 	sitename = "Zettel.jl",
-	authors  = "rafaelab and contributors",
+	authors  = "Rafael Alves Batista (@rafaelab)",
 	modules  = [Zettel],
 	format   = Documenter.HTML(
 		prettyurls = get(ENV, "CI", nothing) == "true",
