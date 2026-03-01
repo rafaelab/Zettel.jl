@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master, copilot/**]
+    branches: [main]
   pull_request:
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
         run: |
           julia --project=. -e '
             using Pkg
-            Pkg.develop(PackageSpec(url="https://github.com/rafaelab/pybtex.jl"))
+            Pkg.develop(PackageSpec(; url = "https://github.com/rafaelab/pybtex.jl"))
             Pkg.instantiate()
           '
 
