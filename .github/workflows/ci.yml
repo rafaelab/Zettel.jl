@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches: [main, master, copilot/**]
-  pull_request_target:
+  pull_request:
 
 permissions:
   contents: read
@@ -24,15 +24,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71
         with:
           version: ${{ matrix.version }}
 
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@d10a6fd8f31b12404a54613ebad242900567f2b9
 
       - name: Install Python pybtex
         run: |
@@ -46,13 +44,13 @@ jobs:
             Pkg.instantiate()
           '
 
-      - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-runtest@d60b785c6f2bdf4ebfb18b2b6f7d93b7dfb0efe3
         env:
           JULIA_NUM_THREADS: 2
 
-      - uses: julia-actions/julia-processcoverage@v1
+      - uses: julia-actions/julia-processcoverage@03114f09f119417c3242a9fb6e0b722676aedf38
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
