@@ -2,13 +2,6 @@
 
 [![CI](https://github.com/rafaelab/Zettel.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaelab/Zettel.jl/actions/workflows/ci.yml)
 
-Simple reference manager based on JSON with BibTeX capabilities.
-
-## Features
-
-- Fetch JSON metadata from Crossref by DOI.
-- Convert BibTeX to JSON and JSON back to BibTeX.
-- BibTeX parsing/writing is handled through [Pybtex.jl](https://github.com/rafaelab/pybtex.jl).
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://rafaelab.github.io/Zettel.jl/dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/rafaelab/Zettel.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/rafaelab/Zettel.jl)
@@ -24,6 +17,7 @@ Simple reference manager for Julia that stores bibliographic data as **JSON** wh
 | 📄 **JSON library** | Store and load references in a readable, VCS-friendly JSON format |
 | 🔍 **CrossRef fetch** | Automatically retrieve metadata from [CrossRef](https://www.crossref.org/) using a DOI |
 | 🔁 **BibTeX I/O** | Read and write `.bib` files via [Pybtex.jl](https://github.com/rafaelab/pybtex.jl) |
+| 🧭 **Query helpers** | Search and filter entries in a `ZettelLibrary` |
 | 🧩 **BibTeX fields** | Preserves all standard BibTeX fields (`author`, `title`, `journal`, `doi`, …) |
 | 💡 **Simple API** | camelCase helper functions, `@doc` docstrings, tab-indented JSON output |
 
@@ -52,12 +46,11 @@ jsonToBibTeX("references.json", "references_roundtrip.bib")
 
 record = fetchCrossrefJson("10.1038/nphys1170")
 println(record["DOI"])
+
+crossrefJsonToZettelJson(record, "crossref.json")
 ```
 
 See `examples/basic.jl` for a minimal end-to-end example.
-julia> using Pkg
-julia> Pkg.add(url="https://github.com/rafaelab/Zettel.jl")
-```
 
 > **Dependency**: Zettel.jl uses [Pybtex.jl](https://github.com/rafaelab/pybtex.jl) for
 > BibTeX parsing.  The Python package `pybtex` must be available in the environment used
@@ -109,9 +102,9 @@ writeBibTeX(lib, "library.bib")
 lib3 = readBibTeX("library.bib")
 ```
 
-### JSON format
+### Library JSON format
 
-Each entry is stored as a JSON object with three top-level keys:
+`writeJsonLibrary` and `readJsonLibrary` store a library as a list of entries:
 
 ```json
 [
@@ -132,7 +125,28 @@ Each entry is stored as a JSON object with three top-level keys:
 ]
 ```
 
-The file uses **tab characters** for indentation (one tab per nesting level).
+### Zettel JSON format
+
+`bibTeXToJson` and `crossrefJsonToZettelJson` use a per-key map with structured people:
+
+```json
+{
+    "Einstein1905": {
+        "entryType": "article",
+        "title": "Zur Elektrodynamik bewegter Körper",
+        "author": [
+            { "first": "A.", "last": "Einstein" }
+        ],
+        "year": "1905",
+        "journal": "Annalen der Physik",
+        "volume": "322",
+        "pages": "891-921"
+    }
+}
+```
+
+The file uses **4-space indentation**. Collaboration fields are emitted as a list of
+objects with a single `"name"` key.
 
 ---
 
@@ -151,6 +165,9 @@ The file uses **tab characters** for indentation (one tab per nesting level).
 |---|---|
 | `readJsonLibrary(filename)` | Load a library from a JSON file |
 | `writeJsonLibrary(lib, filename)` | Save a library to a JSON file |
+| `crossrefJsonToZettelJson(record, filename)` | Write a Crossref work message to Zettel JSON |
+| `bibTeXToJson(input, output)` | Convert BibTeX to Zettel JSON |
+| `jsonToBibTeX(input, output)` | Convert Zettel JSON to BibTeX |
 
 ### BibTeX I/O
 
@@ -166,12 +183,17 @@ The file uses **tab characters** for indentation (one tab per nesting level).
 | Function | Description |
 |---|---|
 | `fetchFromCrossref(doi)` | Fetch metadata from CrossRef and return a `ZettelEntry` |
+| `fetchCrossrefJson(doi)` | Fetch a Crossref work message |
 
 ### Entry accessors
 
 `getKey`, `getType`, `getTitle`, `getAuthors`, `getYear`, `getJournal`, `getDOI`,
 `getURL`, `getVolume`, `getNumber`, `getPages`, `getAbstract`, `getPublisher`,
 `getISBN`, `hasField`, `getField`, `getAllFields`
+
+### Query helpers
+
+`findByKey`, `searchEntries`, `filterByField`
 
 ---
 

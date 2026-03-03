@@ -346,6 +346,14 @@ end
 function _peopleToPersonLine(rawPeople)
 	people = String[]
 	for p ∈ rawPeople
+		if haskey(p, :name)
+			name = String(p[:name])
+			if ! isempty(name)
+				push!(people, name)
+			end
+			continue
+		end
+
 		first = haskey(p, :first) ? String(p[:first]) : ""
 		middle = haskey(p, :middle) ? String(p[:middle]) : ""
 		last = haskey(p, :last) ? String(p[:last]) : ""
@@ -544,7 +552,7 @@ function _collaborationToPersons(collabRaw::AbstractString)
 	for part ∈ parts
 		name = strip(_stripOuterBraces(part))
 		if ! isempty(name)
-			push!(people, Dict("last" => name))
+			push!(people, Dict("name" => name))
 		end
 	end
 	return people
