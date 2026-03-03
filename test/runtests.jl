@@ -1,5 +1,6 @@
 using Test
 using Zettel
+using JSON3
 import Pybtex
 using OrderedCollections
 using PythonCall: pyconvert
@@ -55,6 +56,38 @@ end
 
 	end
 
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "Zettel JSON format" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		outputJson = joinpath(dir, "library.json")
+
+		write(inputBib, """
+@article{bertone1938,
+author = {{Bertone}, Gianfranco and Roe, Jane},
+title = {{A} Title},
+collaboration = {ATLAS Collaboration},
+year = {1938}
+}
+""")
+
+		bibTeXToJson(inputBib, outputJson)
+		data = JSON3.read(read(outputJson, String))
+		entry = data[:bertone1938]
+
+		@test entry[:title] == "{A} Title"
+		@test haskey(entry, :author)
+		@test entry[:author][1][:first] == "Gianfranco"
+		@test entry[:author][1][:last] == "Bertone"
+		@test ! haskey(entry[:author][1], :middle)
+
+		@test haskey(entry, :collaboration)
+		@test entry[:collaboration][1][:name] == "ATLAS Collaboration"
+	end
 end
 
 
@@ -174,6 +207,24 @@ end
 	end
 
 end 
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "Query helpers" begin
+	lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+
+	@test findByKey(lib, "Einstein1905").key == "Einstein1905"
+	@test findByKey(lib, "missing") === nothing
+
+	titleMatches = filterByField(lib, "title", "Gravitation")
+	@test length(titleMatches) == 1
+	@test titleMatches[1].key == "Misner1973"
+
+	allMatches = searchEntries(lib; text = "Annalen")
+	@test length(allMatches) == 1
+	@test allMatches[1].key == "Einstein1905"
+end
 
 
 # ----------------------------------------------------------------------------------------------- #

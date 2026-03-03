@@ -34,9 +34,31 @@ lib = ZettelLibrary([entry])
 # save to JSON
 writeJsonLibrary(lib, "library.json")
 
+# save Crossref JSON in Zettel format
+record = fetchCrossrefJson("10.1002/andp.19384240107")
+crossrefJsonToZettelJson(record, "crossref.json")
+
 # save to BibTeX
 writeBibTeX(lib, "library.bib")
 
 # fetch from CrossRef
 entry2 = fetchFromCrossref("10.1002/andp.19053221004")
+```
+
+## Zettel JSON format
+
+`bibTeXToJson` and `crossrefJsonToZettelJson` emit a per-key JSON map with structured
+people lists, for example:
+
+```json
+{
+    "Einstein1905": {
+        "entryType": "article",
+        "title": "Zur Elektrodynamik bewegter Körper",
+        "author": [
+            { "first": "A.", "last": "Einstein" }
+        ],
+        "year": "1905"
+    }
+}
 ```
