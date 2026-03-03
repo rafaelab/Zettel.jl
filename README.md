@@ -1,12 +1,12 @@
 # Zettel.jl
 
 [![CI](https://github.com/rafaelab/Zettel.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaelab/Zettel.jl/actions/workflows/ci.yml)
-
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://rafaelab.github.io/Zettel.jl/dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/rafaelab/Zettel.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/rafaelab/Zettel.jl)
 
 Simple reference manager for Julia that stores bibliographic data as **JSON** while maintaining full **BibTeX** compatibility.
+It creates a new type, `ZettelEntry`, which is essentially equivalent to BibTeX, but in JSON, for performance.
 
 ---
 
