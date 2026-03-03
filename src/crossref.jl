@@ -182,3 +182,81 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+function defaultFetcher(url::AbstractString)
+	tmpFile = Downloads.download(url)
+	try
+		return read(tmpFile, String)
+	finally
+		rm(tmpFile; force = true)
+	end
+end
+
+
+function toPlainDict(node)
+	if node isa Dict
+		return Dict(String(k) => toPlainDict(v) for (k, v) ∈ node)
+	elseif node isa AbstractVector
+		return [toPlainDict(v) for v ∈ node]
+	elseif node isa JSON3.Object
+		return Dict(String(k) => toPlainDict(v) for (k, v) ∈ pairs(node))
+	elseif node isa JSON3.Array
+		return [toPlainDict(v) for v ∈ node]
+	else
+		return node
+	end
+end
+
+
+function encodeUriComponent(value::AbstractString)
+	io = IOBuffer()
+	for b ∈ codeunits(value)
+		if isAsciiUnreserved(b)
+			write(io, b)
+		else
+			print(io, '%')
+			print(io, uppercase(string(b, base = 16, pad = 2)))
+		end
+	end
+	return String(take!(io))
+end
+
+
+function isAsciiUnreserved(b::UInt8)
+	return (UInt8('A') ≤ b ≤ UInt8('Z')) ||
+		(UInt8('a') ≤ b ≤ UInt8('z')) ||
+		(UInt8('0') ≤ b ≤ UInt8('9')) ||
+		b == UInt8('-') ||
+		b == UInt8('.') ||
+		b == UInt8('_') ||
+		b == UInt8('~')
+end
+
+
+@doc """
+Fetch metadata for a DOI from CrossRef and return it as a JSON dictionary.
+"""
+function fetchCrossrefJson(doi::AbstractString; fetcher::Function = defaultFetcher)
+	escapedDoi = encodeUriComponent(String(doi))
+	payload = fetcher("$(CROSSREF_API)$(escapedDoi)")
+	parsed = try
+		JSON3.read(payload)
+	catch
+		throw(ArgumentError("CrossRef response was not valid JSON."))
+	end
+
+	if haskey(parsed, :message)
+		return toPlainDict(parsed[:message])
+	end
+
+	throw(ArgumentError("CrossRef response did not contain a message field."))
+end
+
+
+@doc """
+Fetch metadata for a DOI from CrossRef and save it to `outputPath`.
+"""
+function saveCrossrefJson(doi::AbstractString, outputPath::AbstractString; fetcher::Function = defaultFetcher)
+	record = fetchCrossrefJson(doi; fetcher = fetcher)
+	write(outputPath, JSON3.write(record))
+	return outputPath
+end
