@@ -36,9 +36,9 @@ Convert a `ZettelEntry` to an `OrderedDict` suitable for JSON serialisation.
 The layout is:
 ```
 {
-    "key": "...",
-    "type": "...",
-    "fields": { ... }
+	"key": "...",
+	"type": "...",
+	"fields": { ... }
 }
 ```
 """
@@ -82,15 +82,36 @@ The file uses tab characters for indentation (one tab per nesting level).  Each 
 stored as an object with `"key"`, `"type"`, and `"fields"` properties that mirror the
 corresponding BibTeX fields.
 """
+# function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
+# 	records = [_entryToOrderedDict(e) for e ∈ values(lib)]
+# 	buf = IOBuffer()
+# 	JSON3.pretty(buf, records, JSON3.AlignmentContext(indent = 4))
+# 	jsonStr = _indentJson(String(take!(buf)))
+# 	write(filename, jsonStr)
+# 	return nothing
+# end
+
 function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
 	records = [_entryToOrderedDict(e) for e ∈ values(lib)]
-	buf = IOBuffer()
-	JSON3.pretty(buf, records, JSON3.AlignmentContext(indent = 4))
-	jsonStr = _indentJson(String(take!(buf)))
-	write(filename, jsonStr)
+	open(filename, "w") do io
+		for (i, rec) ∈ enumerate(records)
+			buf = IOBuffer()
+			
+			# pretty-print single record with 4-space indent, then convert to tabs
+			JSON3.write(buf, rec; indent = 4)
+			jsonStr = _indentJson(String(take!(buf)); indent = "\t")
+			write(io, jsonStr)
+
+			# separate entries with a blank line
+			if i < length(records)
+				write(io, "\n\n")
+			else
+				write(io, "\n")
+			end
+		end
+	end
 	return nothing
 end
-
 
 # ----------------------------------------------------------------------------------------------- #
 #
