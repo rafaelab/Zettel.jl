@@ -1,13 +1,5 @@
 module Zettel
 
-using Downloads
-using JSON3
-using Pybtex
-using OrderedCollections
-using Printf
-using PythonCall
-using HTTP
-
 export 
 	ZettelEntry,
 	ZettelLibrary,
@@ -39,9 +31,22 @@ export
 	saveCrossrefJson,
 	crossrefJsonToZettelJson,
 	bibTeXToJson,
-	jsonToBibTeX
+	jsonToBibTeX,
+	findByKey,
+	searchEntries,
+	filterByField
 
-	
+
+
+using Downloads
+using JSON3
+using Pybtex
+using OrderedCollections
+using Printf
+using PythonCall
+using HTTP
+
+
 
 include("entry.jl")
 include("library.jl")
