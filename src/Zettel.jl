@@ -37,12 +37,18 @@ export
 	getAllFields,
 	fetchCrossrefJson,
 	saveCrossrefJson,
+	crossrefJsonToZettelJson,
 	bibTeXToJson,
 	jsonToBibTeX
 
-include("types.jl")
+	
+
+include("entry.jl")
+include("library.jl")
 include("jsonIO.jl")
 include("crossref.jl")
 include("bibtex.jl")
+include("query.jl")
+
 
 end
