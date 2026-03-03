@@ -1,4 +1,3 @@
-# Julia artifacts and build outputs
 Manifest.toml
 *.jl.cov
 *.jl.*.cov
@@ -6,12 +5,8 @@ Manifest.toml
 docs/build/
 docs/site/
 docs/_build*
-
-
-# CondaPkg managed environment (auto-generated)
+docs/Manifest.toml
 .CondaPkg/
-
-# Editor and OS artefacts
 .DS_Store
 *.swp
 *~
