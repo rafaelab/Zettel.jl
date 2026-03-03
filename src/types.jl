@@ -17,11 +17,6 @@ struct ZettelEntry
 	fields::OrderedDict{String, String}
 end
 
-@doc """
-	ZettelEntry(key, entryType)
-
-Construct an empty `ZettelEntry` with no fields.
-"""
 ZettelEntry(key::String, entryType::String) = ZettelEntry(key, entryType, OrderedDict{String, String}())
 
 
@@ -60,6 +55,9 @@ Return the number of entries in a `ZettelLibrary`.
 """
 Base.length(lib::ZettelLibrary) = length(lib.entries)
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	keys(lib)
 
@@ -67,6 +65,9 @@ Return the citation keys stored in a `ZettelLibrary`.
 """
 Base.keys(lib::ZettelLibrary) = keys(lib.entries)
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	values(lib)
 
@@ -74,6 +75,9 @@ Return all [`ZettelEntry`](@ref) objects stored in a `ZettelLibrary`.
 """
 Base.values(lib::ZettelLibrary) = values(lib.entries)
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getindex(lib, key)
 
@@ -81,6 +85,9 @@ Return the [`ZettelEntry`](@ref) with the given citation key.
 """
 Base.getindex(lib::ZettelLibrary, key::AbstractString) = lib.entries[key]
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	haskey(lib, key)
 
@@ -88,6 +95,9 @@ Return `true` if the library contains an entry with the given citation key.
 """
 Base.haskey(lib::ZettelLibrary, key::AbstractString) = haskey(lib.entries, key)
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	push!(lib, entry)
 
@@ -99,6 +109,9 @@ function Base.push!(lib::ZettelLibrary, entry::ZettelEntry)
 	return lib
 end
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	pop!(lib, key)
 
@@ -106,13 +119,16 @@ Remove and return the [`ZettelEntry`](@ref) with the given citation key.
 """
 Base.pop!(lib::ZettelLibrary, key::AbstractString) = pop!(lib.entries, key)
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	iterate(lib[, state])
 
 Iterate over the entries in a `ZettelLibrary`.
 """
 function Base.iterate(lib::ZettelLibrary, state = iterate(values(lib.entries)))
-    state === nothing && return nothing
+    isnothing(state) && return nothing
     entry, inner_state = state
     return (entry, iterate(values(lib.entries), inner_state))
 end
@@ -159,6 +175,9 @@ Return the citation key of a [`ZettelEntry`](@ref).
 """
 getKey(entry::ZettelEntry) = entry.key
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getType(entry)
 
@@ -166,6 +185,9 @@ Return the BibTeX entry type string (e.g. `"article"`) of a [`ZettelEntry`](@ref
 """
 getType(entry::ZettelEntry) = entry.entryType
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getTitle(entry)
 
@@ -173,6 +195,9 @@ Return the title of a [`ZettelEntry`](@ref), or `""` if the `title` field is abs
 """
 getTitle(entry::ZettelEntry) = getField(entry, "title")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getAuthors(entry)
 
@@ -180,6 +205,9 @@ Return the author string of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getAuthors(entry::ZettelEntry) = getField(entry, "author")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getYear(entry)
 
@@ -187,6 +215,9 @@ Return the year string of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getYear(entry::ZettelEntry) = getField(entry, "year")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getJournal(entry)
 
@@ -194,6 +225,9 @@ Return the journal name of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getJournal(entry::ZettelEntry) = getField(entry, "journal")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getDOI(entry)
 
@@ -201,6 +235,9 @@ Return the DOI of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getDOI(entry::ZettelEntry) = getField(entry, "doi")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getURL(entry)
 
@@ -208,6 +245,9 @@ Return the URL of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getURL(entry::ZettelEntry) = getField(entry, "url")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getVolume(entry)
 
@@ -215,6 +255,9 @@ Return the volume of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getVolume(entry::ZettelEntry) = getField(entry, "volume")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getNumber(entry)
 
@@ -222,6 +265,9 @@ Return the issue/number of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getNumber(entry::ZettelEntry) = getField(entry, "number")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getPages(entry)
 
@@ -229,6 +275,9 @@ Return the pages of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getPages(entry::ZettelEntry) = getField(entry, "pages")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getAbstract(entry)
 
@@ -236,6 +285,9 @@ Return the abstract of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getAbstract(entry::ZettelEntry) = getField(entry, "abstract")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getPublisher(entry)
 
@@ -243,6 +295,9 @@ Return the publisher of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getPublisher(entry::ZettelEntry) = getField(entry, "publisher")
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getISBN(entry)
 
@@ -260,6 +315,9 @@ Return `true` if `field` (case-insensitive) is present in the entry's fields.
 """
 hasField(entry::ZettelEntry, field::AbstractString) = haskey(entry.fields, lowercase(field))
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getAllFields(entry)
 
@@ -267,6 +325,9 @@ Return the collection of field names present in the entry.
 """
 getAllFields(entry::ZettelEntry) = keys(entry.fields)
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	getField(entry, field)
 

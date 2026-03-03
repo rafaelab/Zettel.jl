@@ -3,8 +3,7 @@
 @doc """
 	_pybtexPersonsToString(personsIterable)
 
-Convert a Pybtex persons iterable (of `Person` objects) to a BibTeX-style author/editor
-string `"Last1, First1 and Last2, First2 and ..."`.
+Convert a Pybtex persons iterable (of `Person` objects) to a BibTeX-style author/editor string `"Last1, First1 and Last2, First2 and ..."`.
 """
 function _pybtexPersonsToString(personsIterable)
 	parts = String[]
@@ -13,11 +12,11 @@ function _pybtexPersonsToString(personsIterable)
 		last = name.lastName
 		first = name.firstName
 		middle = name.middleName
-		full_first = isempty(middle) ? first : string(first, " ", middle)
+		fullFirst = isempty(middle) ? first : string(first, " ", middle)
 		if isempty(first) && isempty(middle)
 			push!(parts, last)
 		else
-			push!(parts, string(last, ", ", full_first))
+			push!(parts, string(last, ", ", fullFirst))
 		end
 	end
 	return join(parts, " and ")
@@ -31,8 +30,7 @@ end
 
 Convert a `Pybtex.BibLibrary` to a [`ZettelLibrary`](@ref).
 
-All BibTeX fields are preserved as string values; author and editor person lists are
-collapsed into the standard `"Last, First and ..."` notation.
+All BibTeX fields are preserved as string values; author and editor person lists are collapsed into the standard `"Last, First and ..."` notation.
 """
 function fromBibTeX(bibLib::Pybtex.BibLibrary)
 	entries = ZettelEntry[]
@@ -71,6 +69,7 @@ function fromBibTeX(bibLib::Pybtex.BibLibrary)
 
 		push!(entries, ZettelEntry(key, entryType, fields))
 	end
+
 	return ZettelLibrary(entries)
 end
 
@@ -88,6 +87,7 @@ function _pybtexFieldValue(entry::Pybtex.BibEntry, field::AbstractString)
 	end
 	raw = entry.info.fields[field]
 	s = Pybtex.stringPy2Jl(raw)
+
 	# strip surrounding braces added by pybtex
 	s = replace(s, r"^\{" => "")
 	s = replace(s, r"\}$" => "")
@@ -102,12 +102,12 @@ end
 
 Convert a [`ZettelLibrary`](@ref) to a `Pybtex.BibLibrary`.
 
-This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib`
-file with [`writeBibTeX`](@ref).
+This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib` file with [`writeBibTeX`](@ref).
 """
 function toBibTeX(lib::ZettelLibrary)
 	pydb = pyimport("pybtex.database")
 	bibData = pydb.BibliographyData()
+
 	for entry ∈ values(lib)
 		pyFields = pydict(Dict{String, Any}(entry.fields))
 
@@ -130,6 +130,7 @@ function toBibTeX(lib::ZettelLibrary)
 		pyEntry = pydb.Entry(entry.entryType, fields = pyFields, persons = pyPersons)
 		bibData.entries[entry.key] = pyEntry
 	end
+
 	return Pybtex.BibLibrary(bibData)
 end
 
@@ -139,8 +140,7 @@ end
 @doc """
 	_authorStringToPersonList(authorStr)
 
-Convert a BibTeX-style author string `"Last1, First1 and Last2, First2"` to a list of
-Pybtex `Person` objects.
+Convert a BibTeX-style author string `"Last1, First1 and Last2, First2"` to a list of Pybtex `Person` objects.
 """
 function _authorStringToPersonList(authorStr::AbstractString)
 	pyPerson = pyimport("pybtex.database").Person
@@ -158,8 +158,7 @@ end
 @doc """
 	writeBibTeX(lib, filename)
 
-Write the [`ZettelLibrary`](@ref) `lib` to a BibTeX `.bib` file at `filename` using
-Pybtex as the backend.
+Write the [`ZettelLibrary`](@ref) `lib` to a BibTeX `.bib` file at `filename` using Pybtex as the backend.
 """
 function writeBibTeX(lib::ZettelLibrary, filename::AbstractString)
 	bibLib = toBibTeX(lib)
@@ -174,7 +173,6 @@ end
 	readBibTeX(filename)
 
 Read a BibTeX `.bib` file and return a [`ZettelLibrary`](@ref).
-
 Uses Pybtex as the parsing backend.
 """
 function readBibTeX(filename::AbstractString)

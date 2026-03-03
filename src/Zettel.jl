@@ -44,6 +44,5 @@ include("types.jl")
 include("jsonIO.jl")
 include("crossref.jl")
 include("bibtex.jl")
-# crossrefJSON.jl merged into crossref.jl and jsonIO.jl
 
 end

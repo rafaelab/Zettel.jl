@@ -3,8 +3,6 @@
 const CROSSREF_API = "https://api.crossref.org/works/"
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 # map CrossRef `type` values to BibTeX entry types
 const crossrefTypeMap = Dict{String, String}(
 	"journal-article"          => "article",
@@ -49,8 +47,8 @@ end
 @doc """
 	crossrefYear(msg)
 
-Extract the publication year from a CrossRef work message.  Returns an empty string when
-no date information is available.
+Extract the publication year from a CrossRef work message. 
+Returns an empty string when no date information is available.
 """
 function crossrefYear(msg)
 	for key ∈ ("published", "published-print", "published-online", "issued")
@@ -74,13 +72,12 @@ end
 @doc """
 	fetchFromCrossref(doi; userAgent)
 
-Fetch bibliographic metadata from the CrossRef REST API for the given `doi` and return a
-[`ZettelEntry`](@ref).
+Fetch bibliographic metadata from the CrossRef REST API for the given `doi` and return a [`ZettelEntry`](@ref).
 `userAgent` can be set to a custom string (recommended by CrossRef polite-pool guidelines).
 
 # Example
 ```julia
-entry = fetchFromCrossref("10.1002/andp.19053221004")
+	entry = fetchFromCrossref("10.1002/andp.19053221004")
 ```
 """
 function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/0.1 (https://github.com/rafaelab/Zettel.jl)")
@@ -192,6 +189,8 @@ function defaultFetcher(url::AbstractString)
 end
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 function toPlainDict(node)
 	if node isa Dict
 		return Dict(String(k) => toPlainDict(v) for (k, v) ∈ node)
@@ -206,7 +205,8 @@ function toPlainDict(node)
 	end
 end
 
-
+# ----------------------------------------------------------------------------------------------- #
+#
 function encodeUriComponent(value::AbstractString)
 	io = IOBuffer()
 	for b ∈ codeunits(value)
@@ -220,7 +220,8 @@ function encodeUriComponent(value::AbstractString)
 	return String(take!(io))
 end
 
-
+# ----------------------------------------------------------------------------------------------- #
+#
 function isAsciiUnreserved(b::UInt8)
 	return (UInt8('A') ≤ b ≤ UInt8('Z')) ||
 		(UInt8('a') ≤ b ≤ UInt8('z')) ||
@@ -232,6 +233,8 @@ function isAsciiUnreserved(b::UInt8)
 end
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 Fetch metadata for a DOI from CrossRef and return it as a JSON dictionary.
 """
@@ -252,6 +255,8 @@ function fetchCrossrefJson(doi::AbstractString; fetcher::Function = defaultFetch
 end
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 Fetch metadata for a DOI from CrossRef and save it to `outputPath`.
 """
@@ -260,3 +265,6 @@ function saveCrossrefJson(doi::AbstractString, outputPath::AbstractString; fetch
 	write(outputPath, JSON3.write(record))
 	return outputPath
 end
+
+
+# ----------------------------------------------------------------------------------------------- #
