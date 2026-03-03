@@ -4,13 +4,13 @@
 	_indentJson(json, indent)
 
 Post-process a JSON string to replace groups of leading spaces on each line with the given `indent` string (typically `"\\t"`).
-
 JSON3 always emits spaces, so this function converts the indentation to tabs after the fact.  
 String contents that happen to start with spaces are not affected because the replacement only targets leading whitespace.
 """
 function _indentJson(json::AbstractString; indent::AbstractString = "\t")
 	lines = split(json, '\n')
 	result = String[]
+
 	for line ∈ lines
 		m = match(r"^( +)", line)
 		if isnothing(m)
@@ -21,6 +21,7 @@ function _indentJson(json::AbstractString; indent::AbstractString = "\t")
 			push!(result, indent ^ nTabs * line[nSpaces + 1 : end])
 		end
 	end
+
 	return join(result, '\n')
 end
 
@@ -154,7 +155,28 @@ function bibTeXToJson(inputPath::AbstractString, outputPath::AbstractString)
 	buf = IOBuffer()
 	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
 	jsonStr = String(take!(buf))
-	if ! isempty(jsonStr) && jsonStr[end] ≠ '\n'
+	if ! isempty(jsonStr) && jsonStr[end] != '\n'
+		jsonStr *= "\n"
+	end
+	write(outputPath, jsonStr)
+	return outputPath
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+Convert a Crossref work message (as returned by `fetchCrossrefJson`) to a Zettel-style JSON file.
+"""
+function crossrefJsonToZettelJson(record::Dict{String, Any}, outputPath::AbstractString; key::Union{Nothing, AbstractString} = nothing)
+	entryKey, entryDict = _crossrefMessageToZettelEntry(record; key = key)
+	data = OrderedDict{String, Any}()
+	data[entryKey] = _orderEntryFields(entryDict)
+
+	buf = IOBuffer()
+	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
+	jsonStr = String(take!(buf))
+	if ! isempty(jsonStr) && jsonStr[end] != '\n'
 		jsonStr *= "\n"
 	end
 	write(outputPath, jsonStr)
@@ -366,6 +388,137 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+function _crossrefMessageToZettelEntry(msg::Dict{String, Any}; key::Union{Nothing, AbstractString} = nothing)
+	crType = String(get(msg, "type", "other"))
+	entryType = get(crossrefTypeMap, crType, "misc")
+
+	authorList = get(msg, "author", [])
+	year = crossrefYear(msg)
+
+	entryKey = key
+	if isnothing(entryKey)
+		firstFamily = length(authorList) > 0 ? get(authorList[1], "family", "Unknown") : "Unknown"
+		entryKey = replace(String(firstFamily), " " => "") * (isempty(year) ? "" : year)
+	end
+
+	entryDict = OrderedDict{String, Any}()
+	entryDict["entryType"] = entryType
+
+	authors = _crossrefPeople(authorList)
+	if ! isempty(authors)
+		entryDict["author"] = authors
+	end
+
+	titleList = get(msg, "title", [])
+	if length(titleList) > 0
+		entryDict["title"] = _stripOuterBraces(String(titleList[1]))
+	end
+
+	containerTitles = get(msg, "container-title", [])
+	if length(containerTitles) > 0
+		ct = _stripOuterBraces(String(containerTitles[1]))
+		if entryType == "article"
+			entryDict["journal"] = ct
+		elseif entryType ∈ ("inproceedings", "proceedings")
+			entryDict["booktitle"] = ct
+		else
+			entryDict["journal"] = ct
+		end
+	end
+
+	if ! isempty(year)
+		entryDict["year"] = year
+	end
+
+	vol = get(msg, "volume", nothing)
+	if ! isnothing(vol)
+		entryDict["volume"] = _stripOuterBraces(String(vol))
+	end
+
+	issue = get(msg, "issue", nothing)
+	if ! isnothing(issue)
+		entryDict["number"] = _stripOuterBraces(String(issue))
+	end
+
+	pageStr = get(msg, "page", nothing)
+	if ! isnothing(pageStr)
+		entryDict["pages"] = _stripOuterBraces(String(pageStr))
+	end
+
+	doiVal = get(msg, "DOI", nothing)
+	if ! isnothing(doiVal)
+		entryDict["doi"] = String(doiVal)
+	end
+
+	urlVal = get(msg, "URL", nothing)
+	if ! isnothing(urlVal)
+		entryDict["url"] = String(urlVal)
+	end
+
+	pub = get(msg, "publisher", nothing)
+	if ! isnothing(pub)
+		entryDict["publisher"] = _stripOuterBraces(String(pub))
+	end
+
+	isbns = get(msg, "ISBN", [])
+	if length(isbns) > 0
+		entryDict["isbn"] = _stripOuterBraces(String(isbns[1]))
+	end
+
+	return entryKey, entryDict
+end
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _crossrefPeople(authorList)
+	people = []
+	for author ∈ authorList
+		name = get(author, "name", "")
+		family = get(author, "family", "")
+		given = get(author, "given", "")
+
+		personDict = Dict{String, String}()
+		if ! isempty(name)
+			personDict["last"] = _stripOuterBraces(String(name))
+		else
+			first, middle = _splitGivenName(String(given))
+			last = _stripOuterBraces(String(family))
+			if ! isempty(first)
+				personDict["first"] = first
+			end
+			if ! isempty(middle)
+				personDict["middle"] = middle
+			end
+			if ! isempty(last)
+				personDict["last"] = last
+			end
+		end
+
+		if ! isempty(personDict)
+			push!(people, personDict)
+		end
+	end
+	return people
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _splitGivenName(given::AbstractString)
+	g = strip(given)
+	if isempty(g)
+		return "", ""
+	end
+	parts = split(g, r"\\s+")
+	if length(parts) == 1
+		return parts[1], ""
+	end
+	return parts[1], join(parts[2 : end], " ")
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
 function _normalizeNameParts(first::AbstractString, middle::AbstractString, last::AbstractString)
 	f = strip(_stripOuterBraces(first))
 	m = strip(_stripOuterBraces(middle))
@@ -401,8 +554,7 @@ end
 #
 function _orderEntryFields(entryDict::OrderedDict{String, Any})
 	ordered = OrderedDict{String, Any}()
-	preferred = ["entryType", "title", "author", "editor", "translator", "collaboration",
-		"year", "journal", "volume", "pages"]
+	preferred = ["entryType", "title", "author", "editor", "translator", "collaboration", "year", "journal", "volume", "pages"]
 	for key ∈ preferred
 		if haskey(entryDict, key)
 			ordered[key] = entryDict[key]

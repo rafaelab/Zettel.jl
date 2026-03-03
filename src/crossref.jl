@@ -80,7 +80,7 @@ Fetch bibliographic metadata from the CrossRef REST API for the given `doi` and 
 	entry = fetchFromCrossref("10.1002/andp.19053221004")
 ```
 """
-function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/0.1 (https://github.com/rafaelab/Zettel.jl)")
+function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/0.2 (https://github.com/rafaelab/Zettel.jl)")
 	url = CROSSREF_API * HTTP.escapeuri(doi)
 	response = HTTP.get(url; headers = ["User-Agent" => userAgent])
 
