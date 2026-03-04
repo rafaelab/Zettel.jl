@@ -1,7 +1,4 @@
 Manifest.toml
-*.jl.cov
-*.jl.*.cov
-*.jl.mem
 docs/build/
 docs/site/
 docs/_build*
@@ -12,5 +9,8 @@ examples/*.log
 examples/*.pdf
 .CondaPkg/
 .DS_Store
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
 *.swp
 *~
