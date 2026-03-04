@@ -63,7 +63,7 @@ end
 @doc """
 	parseAuxFile(path)
 
-Parse a LaTeX `.aux` file and return an [`AuxData`](@ref).
+Parse a LaTeX `.aux` file and return an `AuxData`.
 This follows `\\@input{...}` references recursively and preserves citation order.
 """
 function parseAuxFile(path::AbstractString)
