@@ -21,6 +21,17 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+"""
+	StyleSpec
+
+Container for bibliographic style configuration.
+
+# Fields
+- name::String — human-readable style identifier.
+- order::Symbol — entry ordering; one of `:cite` (citation order) or `:alpha` (alphabetical).
+- label::Symbol — label style; one of `:numeric` (numeric labels) or `:alpha` (alphabetic labels).
+- variant::Symbol — output variant; one of `:plain` (compact) or `:full` (verbose).
+"""
 struct StyleSpec
 	name::String
 	order::Symbol      # :cite or :alpha
@@ -29,6 +40,8 @@ struct StyleSpec
 end
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 const STYLE_SPECS = Dict{String, StyleSpec}()
 
 
@@ -64,14 +77,7 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-function _parseAuxFile!(path::AbstractString,
-	citations::Vector{String},
-	citationSet::Set{String},
-	bibdata::Vector{String},
-	bibdataSet::Set{String},
-	bibstyleRef::Ref{Union{Nothing, String}},
-	citeAllRef::Ref{Bool},
-	visited::Set{String})
+function _parseAuxFile!(path::AbstractString, citations::Vector{String}, citationSet::Set{String}, bibdata::Vector{String}, bibdataSet::Set{String}, bibstyleRef::Ref{Union{Nothing, String}}, citeAllRef::Ref{Bool}, visited::Set{String})
 
 	absPath = abspath(path)
 	if absPath ∈ visited
@@ -575,13 +581,3 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
-# Style registrations
-include(joinpath("styles", "plain.jl"))
-include(joinpath("styles", "unsrt.jl"))
-include(joinpath("styles", "alpha.jl"))
-include(joinpath("styles", "ieeestr.jl"))
-include(joinpath("styles", "revtex.jl"))
-include(joinpath("styles", "jhep.jl"))
-include(joinpath("styles", "full.jl"))
-include(joinpath("styles", "abntex2-num.jl"))
-include(joinpath("styles", "abntex2-alpha.jl"))
