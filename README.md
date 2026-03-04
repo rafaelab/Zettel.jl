@@ -59,7 +59,17 @@ See `examples/basic.jl` for a minimal end-to-end example.
 
 ---
 
-## BibTeX-like workflow (aux → bbl)
+## CLI workflows
+
+### BibTeX → Zettel JSON
+
+Convert a `.bib` file to Zettel JSON (per-key map with structured people):
+
+```bash
+bin/zettel references.bib references.json
+```
+
+### BibTeX-like workflow (aux → bbl)
 
 Zettel can replace `bibtex` for a simple BibTeX-style workflow that reads citation keys
 from `.aux` files and writes a `.bbl` file using a `ZettelLibrary`:
@@ -78,12 +88,20 @@ library files:
 bin/zettel test.aux --library references.json
 ```
 
+Styles:
+
+`zettel` uses the style from `\\bibstyle{...}` in the `.aux` file by default.
+You can override it with `--style <name>`.
+
+Available styles: `plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`,
+`full`, `abntex2-num`, `abntex2-alpha`.
+
 Options:
 
 ```text
 -l, --library <file>   Path to a .json or .bib library (repeatable)
 -o, --output <file>    Output .bbl path (default: <auxfile>.bbl)
--s, --style <name>     Bibliography style (default: plain)
+-s, --style <name>     Bibliography style (default: auto -> \\bibstyle{...} or plain)
 ```
 
 ---
@@ -176,6 +194,8 @@ lib3 = readBibTeX("library.bib")
 
 The file uses **4-space indentation**. Collaboration fields are emitted as a list of
 objects with a single `"name"` key.
+
+`readJsonLibrary` accepts both formats.
 
 ---
 
