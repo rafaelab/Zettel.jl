@@ -10,6 +10,7 @@ data as JSON while maintaining full BibTeX compatibility.
 - Read and write BibTeX `.bib` files via
   [Pybtex.jl](https://github.com/rafaelab/pybtex.jl).
 - Simple, consistent API following Julia conventions.
+- BibTeX-like `.aux` → `.bbl` workflow with style selection.
 
 ## Quick start
 
@@ -45,6 +46,26 @@ writeBibTeX(lib, "library.bib")
 entry2 = fetchFromCrossref("10.1002/andp.19053221004")
 ```
 
+## CLI workflows
+
+### BibTeX → Zettel JSON
+
+```bash
+bin/zettel references.bib references.json
+```
+
+### Aux → bbl
+
+```bash
+pdflatex test.tex
+bin/zettel test.aux
+pdflatex test.tex
+```
+
+`bin/zettel` reads `\bibstyle{...}` from the `.aux` file by default and supports:
+`plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`, `full`, `abntex2-num`,
+`abntex2-alpha`.
+
 ## Zettel JSON format
 
 `bibTeXToJson` and `crossrefJsonToZettelJson` emit a per-key JSON map with structured
@@ -62,3 +83,6 @@ people lists, for example:
     }
 }
 ```
+
+`readJsonLibrary` accepts both the Zettel JSON map and the list-based library format
+produced by `writeJsonLibrary`.
