@@ -21,17 +21,6 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-"""
-	StyleSpec
-
-Container for bibliographic style configuration.
-
-# Fields
-- name::String — human-readable style identifier.
-- order::Symbol — entry ordering; one of `:cite` (citation order) or `:alpha` (alphabetical).
-- label::Symbol — label style; one of `:numeric` (numeric labels) or `:alpha` (alphabetic labels).
-- variant::Symbol — output variant; one of `:plain` (compact) or `:full` (verbose).
-"""
 @doc """
 	StyleSpec
 
