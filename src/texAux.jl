@@ -32,6 +32,17 @@ Container for bibliographic style configuration.
 - label::Symbol — label style; one of `:numeric` (numeric labels) or `:alpha` (alphabetic labels).
 - variant::Symbol — output variant; one of `:plain` (compact) or `:full` (verbose).
 """
+@doc """
+	StyleSpec
+
+Internal style configuration used for `.bbl` rendering.
+
+# Fields
+- `name::String`: style name
+- `order::Symbol`: `:cite` to keep citation order, `:alpha` to sort by author/year/title
+- `label::Symbol`: `:numeric` or `:alpha` label style for `\\bibitem`
+- `variant::Symbol`: `:plain` or `:full` output formatting
+"""
 struct StyleSpec
 	name::String
 	order::Symbol      # :cite or :alpha
@@ -47,6 +58,11 @@ const STYLE_SPECS = Dict{String, StyleSpec}()
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	registerStyle(spec)
+
+Register a bibliography style for `.bbl` generation.
+"""
 function registerStyle(spec::StyleSpec)
 	STYLE_SPECS[lowercase(spec.name)] = spec
 	return spec
@@ -328,6 +344,12 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_resolveStyleName(style, bibstyle)
+
+Resolve the effective style name. If `style == "auto"`, prefer `bibstyle` when present,
+otherwise fall back to `"plain"`.
+"""
 function _resolveStyleName(style::AbstractString, bibstyle::Union{Nothing, String})
 	key = lowercase(strip(style))
 	if key == "auto"
