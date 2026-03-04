@@ -58,6 +58,7 @@ include("crossref.jl")
 include("bibtex.jl")
 include("query.jl")
 include("texAux.jl")
+include("styles.jl")
 include("cli.jl")
 
 
