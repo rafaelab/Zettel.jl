@@ -92,6 +92,22 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+@testset "Read Zettel JSON as library" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		outputJson = joinpath(dir, "library.json")
+		write(inputBib, testRef)
+
+		bibTeXToJson(inputBib, outputJson)
+		lib = readJsonLibrary(outputJson)
+
+		@test haskey(lib, "doe2024")
+		@test getAuthors(lib["doe2024"]) == "Doe, Jane and Roe, John"
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
 # Helper: build a simple article entry for reuse across tests
 function _sampleArticle()
 	fields = OrderedDict{String, String}(
@@ -210,12 +226,39 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+@testset "Aux parsing and BBL output" begin
+	mktempdir() do dir
+		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+		libPath = joinpath(dir, "library.json")
+		writeJsonLibrary(lib, libPath)
+
+		auxPath = joinpath(dir, "test.aux")
+		write(auxPath, """
+\\relax
+\\citation{Einstein1905,Misner1973}
+\\bibdata{library}
+\\bibstyle{plain}
+""")
+
+		bblPath = joinpath(dir, "test.bbl")
+		result = writeBblFromAux(auxPath; outputPath = bblPath)
+
+		@test isfile(bblPath)
+		text = read(bblPath, String)
+		@test occursin("\\bibitem{Einstein1905}", text)
+		@test occursin("Einstein", text)
+		@test isempty(result.absent)
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
 #
 @testset "Query helpers" begin
 	lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
 
 	@test findByKey(lib, "Einstein1905").key == "Einstein1905"
-	@test findByKey(lib, "missing") === nothing
+	@test findByKey(lib, "absent") === nothing
 
 	titleMatches = filterByField(lib, "title", "Gravitation")
 	@test length(titleMatches) == 1

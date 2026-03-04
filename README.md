@@ -59,6 +59,35 @@ See `examples/basic.jl` for a minimal end-to-end example.
 
 ---
 
+## BibTeX-like workflow (aux → bbl)
+
+Zettel can replace `bibtex` for a simple BibTeX-style workflow that reads citation keys
+from `.aux` files and writes a `.bbl` file using a `ZettelLibrary`:
+
+```bash
+pdflatex test.tex
+bin/zettel test.aux
+pdflatex test.tex
+```
+
+By default, `zettel` reads `\\bibdata{...}` from `test.aux` and resolves each name to
+`name.json` (preferred) or `name.bib` next to the `.aux` file. You can also pass explicit
+library files:
+
+```bash
+bin/zettel test.aux --library references.json
+```
+
+Options:
+
+```text
+-l, --library <file>   Path to a .json or .bib library (repeatable)
+-o, --output <file>    Output .bbl path (default: <auxfile>.bbl)
+-s, --style <name>     Bibliography style (default: plain)
+```
+
+---
+
 ## Quick start
 
 ```julia
