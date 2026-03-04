@@ -1,0 +1,17 @@
+% Example: BibTeX-like workflow with Zettel.jl
+% 1) pdflatex aux_workflow.tex
+% 2) bin/zettel aux_workflow.aux
+% 3) pdflatex aux_workflow.tex
+%
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\begin{document}
+
+This cites Einstein~\cite{Einstein1905} and Misner et al.~\cite{Misner1973}.
+
+\bibliographystyle{plain}
+\bibliography{sample.json}
+
+\end{document}

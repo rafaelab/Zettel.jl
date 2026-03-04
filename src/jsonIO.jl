@@ -94,12 +94,112 @@ end
 @doc """
 	readJsonLibrary(filename)
 
-Read a JSON file previously written by [`writeJsonLibrary`](@ref) and return a [`ZettelLibrary`](@ref).
+Read a JSON file and return a [`ZettelLibrary`](@ref).
+
+This accepts both:
+- the list-based library format produced by [`writeJsonLibrary`](@ref)
+- the per-key Zettel JSON format produced by [`bibTeXToJson`](@ref)
 """
 function readJsonLibrary(filename::AbstractString)
 	data = JSON3.read(read(filename, String))
-	entries = ZettelEntry[_entryFromDict(d) for d ∈ data]
-	return ZettelLibrary(entries)
+
+	if data isa AbstractVector
+		entries = ZettelEntry[_entryFromDict(d) for d ∈ data]
+		return ZettelLibrary(entries)
+	elseif data isa AbstractDict
+		entries = ZettelEntry[_entryFromZettelJson(k, v) for (k, v) ∈ pairs(data)]
+		return ZettelLibrary(entries)
+	else
+		throw(ArgumentError("Unsupported JSON bibliography format in $(filename)."))
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _entryFromZettelJson(rawKey, rawEntry)
+	key = String(rawKey)
+	entryType = ""
+	fields = OrderedDict{String, String}()
+
+	for (rawField, rawValue) ∈ pairs(rawEntry)
+		field = String(rawField)
+		if field == "entryType"
+			entryType = lowercase(String(rawValue))
+			continue
+		end
+
+		if field == "author" || field == "editor" || field == "translator"
+			if rawValue isa AbstractVector
+				fields[field] = _personsToString(rawValue)
+			else
+				fields[field] = String(rawValue)
+			end
+		elseif field == "collaboration"
+			if rawValue isa AbstractVector
+				fields[field] = _collaborationPersonsToString(rawValue)
+			else
+				fields[field] = String(rawValue)
+			end
+		else
+			fields[field] = String(rawValue)
+		end
+	end
+
+	isempty(entryType) && throw(ArgumentError("Missing entryType for key $(key)."))
+	return ZettelEntry(key, entryType, fields)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _personsToString(persons)
+	parts = String[]
+	for p ∈ persons
+		name = _getString(p, "name")
+		if ! isempty(name)
+			push!(parts, name)
+			continue
+		end
+
+		last = _getString(p, "last")
+		first = _getString(p, "first")
+		middle = _getString(p, "middle")
+		fullFirst = isempty(middle) ? first : string(first, " ", middle)
+
+		if isempty(first) && isempty(middle)
+			push!(parts, last)
+		else
+			push!(parts, string(last, ", ", fullFirst))
+		end
+	end
+	return join(parts, " and ")
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _collaborationPersonsToString(persons)
+	parts = String[]
+	for p ∈ persons
+		name = _getString(p, "name")
+		isempty(name) || push!(parts, name)
+	end
+	return join(parts, " and ")
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _getString(obj, key::AbstractString)
+	sym = Symbol(key)
+	if haskey(obj, sym)
+		return String(obj[sym])
+	elseif haskey(obj, key)
+		return String(obj[key])
+	else
+		return ""
+	end
 end
 
 

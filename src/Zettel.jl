@@ -34,7 +34,10 @@ export
 	jsonToBibTeX,
 	findByKey,
 	searchEntries,
-	filterByField
+	filterByField,
+	parseAuxFile,
+	writeBblFromAux,
+	zettelCLI
 
 
 
@@ -54,6 +57,9 @@ include("jsonIO.jl")
 include("crossref.jl")
 include("bibtex.jl")
 include("query.jl")
+include("texAux.jl")
+include("styles.jl")
+include("cli.jl")
 
 
 end

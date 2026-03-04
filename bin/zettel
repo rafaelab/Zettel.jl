@@ -1,0 +1,5 @@
+#!/usr/bin/env -S julia --project=@.
+
+using Zettel
+
+exit(Zettel.zettelCLI(; args = ARGS))
