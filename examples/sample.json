@@ -1,0 +1,45 @@
+{
+    "Einstein1905": {
+        "entryType": "article",
+        "title": "Zur Elektrodynamik bewegter K{\\\"o}rper",
+        "author": [
+            {
+                "first": "A.",
+                "last": "Einstein"
+            }
+        ],
+        "year": "1905",
+        "journal": "Annalen der Physik",
+        "volume": "322",
+        "pages": "891-921",
+        "adsnote": "Provided by the SAO/NASA Astrophysics Data System",
+        "adsurl": "https://ui.adsabs.harvard.edu/abs/1905AnP...322..891E",
+        "doi": "10.1002/andp.19053221004",
+        "month": "January",
+        "number": "10"
+    },
+    "Misner1973": {
+        "entryType": "book",
+        "title": "Gravitation",
+        "author": [
+            {
+                "first": "Charles",
+                "last": "Misner",
+                "middle": "W."
+            },
+            {
+                "first": "Kip",
+                "last": "Thorne",
+                "middle": "S."
+            },
+            {
+                "first": "John",
+                "last": "Wheeler",
+                "middle": "A."
+            }
+        ],
+        "year": "1973",
+        "isbn": "978-0-7167-0344-0",
+        "publisher": "W. H. Freeman"
+    }
+}
