@@ -3,6 +3,10 @@ docs/build/
 docs/site/
 docs/_build*
 docs/Manifest.toml
+bin/Manifest.toml
+bin/Zettel.dylib
+bin/Zettel.so
+bin/Zettel.dll
 examples/*.aux
 examples/*.bbl
 examples/*.log
