@@ -7,6 +7,7 @@ examples/*.aux
 examples/*.bbl
 examples/*.log
 examples/*.pdf
+examples/sample_from_*
 .CondaPkg/
 .DS_Store
 *.jl.cov
