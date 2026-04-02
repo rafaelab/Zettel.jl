@@ -5,6 +5,8 @@ export
 	ZettelLibrary,
 	readJsonLibrary,
 	writeJsonLibrary,
+	readYamlLibrary,
+	writeYamlLibrary,
 	readBibTeX,
 	writeBibTeX,
 	toBibTeX,
@@ -31,7 +33,11 @@ export
 	saveCrossrefJson,
 	crossrefJsonToZettelJson,
 	bibTeXToJson,
+	bibTeXToYaml,
 	jsonToBibTeX,
+	yamlToBibTeX,
+	yamlToJson,
+	jsonToYaml,
 	findByKey,
 	searchEntries,
 	filterByField,
@@ -43,6 +49,7 @@ export
 
 using Downloads
 using JSON3
+using YAML
 using Pybtex
 using OrderedCollections
 using Printf
@@ -53,7 +60,9 @@ using HTTP
 
 include("entry.jl")
 include("library.jl")
+include("formatIO.jl")
 include("jsonIO.jl")
+include("yamlIO.jl")
 include("crossref.jl")
 include("bibtex.jl")
 include("query.jl")

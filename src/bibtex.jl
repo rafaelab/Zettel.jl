@@ -19,6 +19,7 @@ function _pybtexPersonsToString(personsIterable)
 			push!(parts, string(last, ", ", fullFirst))
 		end
 	end
+
 	return join(parts, " and ")
 end
 

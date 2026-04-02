@@ -18,6 +18,7 @@ const crossrefTypeMap = Dict{String, String}(
 	"posted-content"           => "misc",
 	"reference-entry"          => "misc",
 	"other"                    => "misc",
+	"code"                     => "misc",
 )
 
 # ----------------------------------------------------------------------------------------------- #
@@ -80,7 +81,7 @@ Fetch bibliographic metadata from the CrossRef REST API for the given `doi` and 
 	entry = fetchFromCrossref("10.1002/andp.19053221004")
 ```
 """
-function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/0.2 (https://github.com/rafaelab/Zettel.jl)")
+function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/2.0 (https://github.com/rafaelab/Zettel.jl)")
 	url = CROSSREF_API * HTTP.escapeuri(doi)
 	response = HTTP.get(url; headers = ["User-Agent" => userAgent])
 
@@ -191,24 +192,91 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-function toPlainDict(node)
-	if node isa Dict
-		return Dict(String(k) => toPlainDict(v) for (k, v) ∈ node)
-	elseif node isa AbstractVector
-		return [toPlainDict(v) for v ∈ node]
-	elseif node isa JSON3.Object
-		return Dict(String(k) => toPlainDict(v) for (k, v) ∈ pairs(node))
-	elseif node isa JSON3.Array
-		return [toPlainDict(v) for v ∈ node]
-	else
-		return node
-	end
-end
+@doc """
+	toPlainDict(node)
+
+Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
+
+# Input
+- `node`: Crossref payload node.
+
+# Output
+- A plain Julia value with `Dict` and `Vector` containers.
+"""
+toPlainDict(node) = node
+
+
+@doc """
+	toPlainDict(node)
+
+Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
+
+# Input
+- `node::JSON3.Object`: Crossref object node.
+
+# Output
+- A `Dict{String, Any}`.
+"""
+toPlainDict(node::JSON3.Object) = Dict(String(k) => toPlainDict(v) for (k, v) ∈ pairs(node))
+
+
+@doc """
+	toPlainDict(node)
+
+Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
+
+# Input
+- `node::JSON3.Array`: Crossref array node.
+
+# Output
+- A vector of plain Julia values.
+"""
+toPlainDict(node::JSON3.Array) = [toPlainDict(v) for v in node]
+
+
+@doc """
+	toPlainDict(node)
+
+Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
+
+# Input
+- `node::Dict`: Crossref dictionary node.
+
+# Output
+- A `Dict{String, Any}`.
+"""
+toPlainDict(node::Dict) = Dict(String(k) => toPlainDict(v) for (k, v) ∈ node)
+
+
+@doc """
+	toPlainDict(node)
+
+Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
+
+# Input
+- `node::AbstractVector`: Crossref array-like node.
+
+# Output
+- A vector of plain Julia values.
+"""
+toPlainDict(node::AbstractVector) = [toPlainDict(v) for v in node]
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	encodeUriComponent(value)
+
+Percent-encode a string for use in a URI path component.
+
+# Input
+- `value::AbstractString`: string to encode.
+
+# Output
+- The encoded URI component.
+"""
 function encodeUriComponent(value::AbstractString)
 	io = IOBuffer()
+
 	for b ∈ codeunits(value)
 		if isAsciiUnreserved(b)
 			write(io, b)
@@ -217,11 +285,23 @@ function encodeUriComponent(value::AbstractString)
 			print(io, uppercase(string(b, base = 16, pad = 2)))
 		end
 	end
+
 	return String(take!(io))
 end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	isAsciiUnreserved(b)
+
+Return whether a byte is an unreserved ASCII URI character.
+
+# Input
+- `b::UInt8`: byte to test.
+
+# Output
+- `true` if `b` is unreserved, otherwise `false`.
+"""
 function isAsciiUnreserved(b::UInt8)
 	return (UInt8('A') ≤ b ≤ UInt8('Z')) ||
 		(UInt8('a') ≤ b ≤ UInt8('z')) ||
