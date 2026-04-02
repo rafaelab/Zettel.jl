@@ -3,6 +3,7 @@ set -eu
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 ROOT_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
+BIN_ZETTEL="$ROOT_DIR/bin/zettel"
 
 INPUT_BIB="$SCRIPT_DIR/sample.bib"
 JSON_FROM_BIB="$SCRIPT_DIR/sample_from_bib.json"
@@ -10,17 +11,13 @@ YAML_FROM_BIB="$SCRIPT_DIR/sample_from_bib.yaml"
 BIB_FROM_YAML="$SCRIPT_DIR/sample_from_yaml.bib"
 JSON_FROM_YAML="$SCRIPT_DIR/sample_from_yaml.json"
 
-julia --project="$ROOT_DIR" -e 'using Zettel; zettelCLI(args = [ARGS[1], ARGS[2]])' \
-	"$INPUT_BIB" "$JSON_FROM_BIB"
+"$BIN_ZETTEL" --no-sysimage "$INPUT_BIB" "$JSON_FROM_BIB"
 
-julia --project="$ROOT_DIR" -e 'using Zettel; zettelCLI(args = ["convert", ARGS[1], ARGS[2], "--to", "yaml"])' \
-	"$JSON_FROM_BIB" "$YAML_FROM_BIB"
+"$BIN_ZETTEL" --no-sysimage convert "$JSON_FROM_BIB" "$YAML_FROM_BIB" --to yaml
 
-julia --project="$ROOT_DIR" -e 'using Zettel; zettelCLI(args = ["convert", ARGS[1], ARGS[2], "--to", "bib"])' \
-	"$YAML_FROM_BIB" "$BIB_FROM_YAML"
+"$BIN_ZETTEL" --no-sysimage convert "$YAML_FROM_BIB" "$BIB_FROM_YAML" --to bib
 
-julia --project="$ROOT_DIR" -e 'using Zettel; zettelCLI(args = ["convert", ARGS[1], ARGS[2], "--to", "json"])' \
-	"$YAML_FROM_BIB" "$JSON_FROM_YAML"
+"$BIN_ZETTEL" --no-sysimage convert "$YAML_FROM_BIB" "$JSON_FROM_YAML" --to json
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
@@ -32,8 +29,7 @@ cat > "$TMPDIR/workflow.aux" <<'EOF'
 \bibstyle{plain}
 EOF
 
-julia --project="$ROOT_DIR" -e 'using Zettel; zettelCLI(args = [ARGS[1], "-o", ARGS[2], "-l", ARGS[3]])' \
-	"$TMPDIR/workflow.aux" "$TMPDIR/workflow.bbl" "$SCRIPT_DIR/sample.yaml"
+"$BIN_ZETTEL" --no-sysimage "$TMPDIR/workflow.aux" -o "$TMPDIR/workflow.bbl" -l "$SCRIPT_DIR/sample.yaml"
 
 printf 'Wrote:\n'
 printf '  %s\n' "$JSON_FROM_BIB" "$YAML_FROM_BIB" "$BIB_FROM_YAML" "$JSON_FROM_YAML" "$TMPDIR/workflow.bbl"
