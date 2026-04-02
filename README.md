@@ -99,6 +99,15 @@ You can override it with `--style <name>`.
 Available styles: `plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`,
 `full`, `abntex2-num`, `abntex2-alpha`.
 
+For faster startup, build the optional sysimage with:
+
+```bash
+julia sysimage/build_sysimage.jl
+```
+
+`bin/zettel` will use `sysimage/Zettel.*` automatically when present. You can also
+override it with `ZETTEL_SYSIMAGE=/path/to/sysimage`.
+
 Options:
 
 ```text
