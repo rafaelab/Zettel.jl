@@ -22,6 +22,57 @@ ZettelEntry(key::String, entryType::String) = ZettelEntry(key, entryType, Ordere
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
+	intersect(left, right)
+
+Return a `ZettelEntry` containing only the fields that appear in both entries.
+
+# Input
+- `left::ZettelEntry`: left-hand entry.
+- `right::ZettelEntry`: right-hand entry.
+
+# Output
+- A `ZettelEntry` whose `key` and `entryType` come from `left`, and whose fields are the common field names present in both entries. 
+When a field is shared, the value from `left` is preserved.
+"""
+function Base.intersect(left::ZettelEntry, right::ZettelEntry)
+	fields = OrderedDict{String, String}()
+	for (field, value) ∈ left.fields
+		if haskey(right.fields, field)
+			fields[field] = value
+		end
+	end
+	return ZettelEntry(left.key, left.entryType, fields)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	union(left, right)
+
+Return a `ZettelEntry` containing the fields from both entries.
+
+# Input
+- `left::ZettelEntry`: left-hand entry.
+- `right::ZettelEntry`: right-hand entry.
+
+# Output
+- A `ZettelEntry` whose `key` and `entryType` come from `left`, and whose fields contain the
+  combination of fields from both entries. When a field exists in both entries, the value from
+  `right` overwrites the value from `left`.
+"""
+function Base.union(left::ZettelEntry, right::ZettelEntry)
+	fields = OrderedDict{String, String}(left.fields)
+	for (field, value) ∈ right.fields
+		fields[field] = value
+	end
+	return ZettelEntry(left.key, left.entryType, fields)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
 	show(io, entry)
 
 Print a human-readable summary of a `ZettelEntry`.

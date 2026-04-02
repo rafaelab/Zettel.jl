@@ -146,7 +146,8 @@ end
 Generate a `.bbl` file from a LaTeX `.aux` file using a [`ZettelLibrary`](@ref).
 
 If `libraryFiles` is not provided, the function uses `\\bibdata{...}` entries from the `.aux`
-file, resolving `name.json` (preferred) or `name.bib` relative to the `.aux` directory.
+file, resolving `name.json` (preferred), `name.yaml`, `name.yml`, or `name.bib`
+relative to the `.aux` directory.
 
 If `style` is `"auto"`, the function uses `\\bibstyle{...}` from the `.aux` when present,
 falling back to `"plain"` otherwise.
@@ -198,23 +199,28 @@ end
 #
 function _resolveLibraryFiles(auxPath::AbstractString, bibdata::Vector{String}, libraryFiles)
 	if ! isnothing(libraryFiles)
-		return _normalizeLibraryFiles(libraryFiles)
+		return _normaliseLibraryFiles(libraryFiles)
 	end
 
 	if isempty(bibdata)
 		throw(ArgumentError("No bibliography sources found in aux file and no libraryFiles provided."))
 	end
 
+	formats = (".json", ".yaml", ".yml", ".bib")
+
 	auxDir = dirname(auxPath)
 	resolved = String[]
 
 	for name ∈ bibdata
 		candidates = String[]
-		if endswith(lowercase(name), ".json") || endswith(lowercase(name), ".bib")
+
+		fileExt = splitext(name)[2]
+		if fileExt ∈ formats
 			push!(candidates, name)
 		else
-			push!(candidates, string(name, ".json"))
-			push!(candidates, string(name, ".bib"))
+			for ext ∈ formats
+				push!(candidates, string(name, ext))
+			end
 		end
 
 		found = nothing
@@ -227,7 +233,7 @@ function _resolveLibraryFiles(auxPath::AbstractString, bibdata::Vector{String}, 
 		end
 
 		if isnothing(found)
-			throw(ArgumentError("Bibliography source not found for $(name) (expected .json or .bib next to aux file)."))
+			throw(ArgumentError("Bibliography source not found for $(name) (expected .json, .yaml, .yml or .bib next to aux file)."))
 		end
 		push!(resolved, found)
 	end
@@ -238,7 +244,7 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-function _normalizeLibraryFiles(libraryFiles)
+function _normaliseLibraryFiles(libraryFiles)
 	files = String[]
 	for f ∈ libraryFiles
 		if occursin(",", f)
@@ -270,6 +276,8 @@ end
 function _readLibraryFile(path::AbstractString)
 	if endswith(lowercase(path), ".json")
 		return readJsonLibrary(path)
+	elseif endswith(lowercase(path), ".yaml") || endswith(lowercase(path), ".yml")
+		return readYamlLibrary(path)
 	elseif endswith(lowercase(path), ".bib")
 		return readBibTeX(path)
 	else
@@ -284,7 +292,7 @@ function _uniquePreserve(items::Vector{String})
 	seen = Set{String}()
 	out = String[]
 	for item ∈ items
-		if ! (item ∈ seen)
+		if item ∉ seen
 			push!(seen, item)
 			push!(out, item)
 		end
@@ -298,11 +306,10 @@ end
 function _renderBbl(keys::Vector{String}, entries::Vector{Union{ZettelEntry, Nothing}}; style::AbstractString = "plain")
 	spec = _getStyleSpec(style)
 	(keys, entries) = _orderEntries(keys, entries, spec)
-
 	n = length(keys)
 	lines = String[]
-	push!(lines, "\\begin{thebibliography}{$(n)}")
 
+	push!(lines, "\\begin{thebibliography}{$(n)}")
 	for (key, entry) ∈ zip(keys, entries)
 		push!(lines, "")
 		push!(lines, _bibitemLine(key, entry, spec))
@@ -312,9 +319,9 @@ function _renderBbl(keys::Vector{String}, entries::Vector{Union{ZettelEntry, Not
 			push!(lines, _formatEntry(entry; variant = spec.variant))
 		end
 	end
-
 	push!(lines, "")
 	push!(lines, "\\end{thebibliography}")
+
 	return join(lines, "\n")
 end
 
@@ -327,6 +334,7 @@ function _getStyleSpec(style::AbstractString)
 		available = sort(collect(keys(STYLE_SPECS)))
 		throw(ArgumentError("Unknown style: $(style). Available: $(join(available, ", "))"))
 	end
+
 	return STYLE_SPECS[key]
 end
 
@@ -358,8 +366,9 @@ function _orderEntries(keys::Vector{String}, entries::Vector{Union{ZettelEntry, 
 		return (keys, entries)
 	end
 
-	idx = collect(1:length(keys))
+	idx = collect(1 : length(keys))
 	sort!(idx; by = i -> _entrySortKey(entries[i], keys[i]))
+
 	return (keys[idx], entries[idx])
 end
 
@@ -401,9 +410,9 @@ function _alphaLabel(entry::Union{ZettelEntry, Nothing}, key::AbstractString)
 		return key
 	end
 
-	base = length(last) > 3 ? last[1:3] : last
+	base = length(last) > 3 ? last[1 : 3] : last
 	if ! isempty(year)
-		yy = length(year) >= 2 ? year[end-1:end] : year
+		yy = length(year) ≥ 2 ? year[end - 1 : end] : year
 		return string(base, yy)
 	end
 	return base
@@ -473,6 +482,7 @@ function _formatFullEntry(entry::ZettelEntry)
 	if isempty(parts)
 		return "Unformatted entry."
 	end
+
 	return join(parts, "; ") * "."
 end
 
@@ -587,6 +597,7 @@ function _formatGeneric(entry::ZettelEntry)
 	if isempty(parts)
 		return "Unformatted entry."
 	end
+	
 	return join(parts, " ")
 end
 
