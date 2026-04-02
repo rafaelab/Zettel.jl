@@ -1,11 +1,11 @@
 # Zettel.jl
 
 **Zettel.jl** is a lightweight reference manager for Julia that stores bibliographic
-data as JSON while maintaining full BibTeX compatibility.
+data as JSON/YAML while maintaining full BibTeX compatibility.
 
 ## Features
 
-- Store references in a JSON format that mirrors BibTeX fields.
+- Store references in JSON/YAML formats that mirror BibTeX fields.
 - Fetch metadata automatically from [CrossRef](https://www.crossref.org/) using a DOI.
 - Read and write BibTeX `.bib` files via
   [Pybtex.jl](https://github.com/rafaelab/pybtex.jl).
@@ -35,6 +35,9 @@ lib = ZettelLibrary([entry])
 # save to JSON
 writeJsonLibrary(lib, "library.json")
 
+# save to YAML
+writeYamlLibrary(lib, "library.yaml")
+
 # save Crossref JSON in Zettel format
 record = fetchCrossrefJson("10.1002/andp.19384240107")
 crossrefJsonToZettelJson(record, "crossref.json")
@@ -52,6 +55,13 @@ entry2 = fetchFromCrossref("10.1002/andp.19053221004")
 
 ```bash
 bin/zettel references.bib references.json
+```
+
+### Convert between JSON/YAML/BibTeX
+
+```bash
+bin/zettel convert references.yaml references.json --to json
+bin/zettel convert references.json references.bib --to bib
 ```
 
 ### Aux → bbl
@@ -84,5 +94,5 @@ people lists, for example:
 }
 ```
 
-`readJsonLibrary` accepts both the Zettel JSON map and the list-based library format
-produced by `writeJsonLibrary`.
+`readJsonLibrary` and `readYamlLibrary` accept both the per-key Zettel format and the
+list-based library format produced by `writeJsonLibrary`/`writeYamlLibrary`.
