@@ -1,5 +1,26 @@
-#!/usr/bin/env -S julia --project=@.
+#!/usr/bin/env bash
+set -euo pipefail
 
-using Zettel
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+JULIA_BIN="${JULIA_BIN:-julia}"
 
-exit(Zettel.zettelCLI(; args = ARGS))
+use_sysimage=true
+if [ "${1:-}" = "--no-sysimage" ]; then
+	use_sysimage=false
+	shift
+fi
+
+# Allow override via ZETTEL_SYSIMAGE environment variable
+sysimage="${ZETTEL_SYSIMAGE:-}"
+if $use_sysimage && [ -z "$sysimage" ]; then
+	for f in "$SCRIPT_DIR"/Zettel.{so,dylib,dll}; do
+		[ -f "$f" ] && sysimage="$f" && break
+	done
+fi
+
+if $use_sysimage && [ -n "$sysimage" ] && [ -f "$sysimage" ]; then
+	exec "$JULIA_BIN" -J "$sysimage" --project="$ROOT_DIR" -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- "$@"
+else
+	exec "$JULIA_BIN" --project="$ROOT_DIR" -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- "$@"
+fi
