@@ -96,3 +96,26 @@ end
 		@test occursin("doi:", text)
 	end
 end
+
+
+# ----------------------------------------------------------------------------------------------- #
+@testset "Aux resolves YAML libraries" begin
+	mktempdir() do dir
+		lib = ZettelLibrary([_sampleArticle()])
+		libPath = joinpath(dir, "library.yaml")
+		writeYamlLibrary(lib, libPath)
+
+		auxPath = joinpath(dir, "test.aux")
+		write(auxPath, """
+\\relax
+\\citation{Einstein1905}
+\\bibdata{library}
+\\bibstyle{plain}
+""")
+
+		bblPath = joinpath(dir, "test.bbl")
+		result = writeBblFromAux(auxPath; outputPath = bblPath)
+		@test isfile(bblPath)
+		@test isempty(result.absent)
+	end
+end
