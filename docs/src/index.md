@@ -3,6 +3,12 @@
 **Zettel.jl** is a lightweight reference manager for Julia that stores bibliographic
 data as JSON/YAML while maintaining full BibTeX compatibility.
 
+BibTeX parsing is handled by [Pybtex.jl](https://github.com/rafaelab/pybtex.jl), which
+expects the Python package `pybtex` in the Python interpreter used by
+[PythonCall.jl](https://github.com/JuliaPy/PythonCall.jl). When using a system Python,
+set `JULIA_CONDAPKG_BACKEND=Null` and `JULIA_PYTHONCALL_EXE=python`, then install
+`pybtex` with `python -m pip install pybtex`.
+
 ## Features
 
 - Store references in JSON/YAML formats that mirror BibTeX fields.

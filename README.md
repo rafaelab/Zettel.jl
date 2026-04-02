@@ -56,9 +56,10 @@ See `examples/basic.jl` for a minimal end-to-end example.
 See `examples/yaml_basic.jl` and `examples/yaml_aux_workflow.tex` for YAML-specific workflows.
 
 > **Dependency**: Zettel.jl uses [Pybtex.jl](https://github.com/rafaelab/pybtex.jl) for
-> BibTeX parsing.  The Python package `pybtex` must be available in the environment used
-> by [PythonCall.jl](https://github.com/JuliaPy/PythonCall.jl) (for example install it
-> with `pip install pybtex`).
+> BibTeX parsing.  The Python package `pybtex` must be available in the Python
+> interpreter used by [PythonCall.jl](https://github.com/JuliaPy/PythonCall.jl).
+> When using a system Python, set `JULIA_CONDAPKG_BACKEND=Null` and
+> `JULIA_PYTHONCALL_EXE=python`, then install `pybtex` with `python -m pip install pybtex`.
 
 ---
 
