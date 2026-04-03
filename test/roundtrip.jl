@@ -1,4 +1,5 @@
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "JSON round-trip" begin
 	lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
 	tmpfile = tempname() * ".json"
@@ -23,6 +24,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "BibTeX round-trip" begin
 	lib = ZettelLibrary([_sampleArticle()])
 	tmpbib = tempname() * ".bib"
@@ -41,3 +43,6 @@ end
 		isfile(tmpbib) && rm(tmpbib)
 	end
 end
+
+
+# ----------------------------------------------------------------------------------------------- #

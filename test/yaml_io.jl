@@ -1,4 +1,5 @@
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "JSON <-> YAML conversion" begin
 	mktempdir() do dir
 		inputBib = joinpath(dir, "input.bib")
@@ -24,6 +25,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "YAML library read/write" begin
 	mktempdir() do dir
 		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
@@ -39,6 +41,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Sample YAML fixture" begin
 	sampleYaml = joinpath(@__DIR__, "..", "examples", "sample.yaml")
 	lib = readYamlLibrary(sampleYaml)
@@ -46,3 +49,6 @@ end
 	@test haskey(lib, "Misner1973")
 	@test getJournal(lib["Einstein1905"]) == "Annalen der Physik"
 end
+
+
+# ----------------------------------------------------------------------------------------------- #

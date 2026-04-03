@@ -1,4 +1,5 @@
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Crossref fetch" begin
 	payload = """{"status":"ok","message":{"DOI":"10.1000/test","title":["Example"]}}"""
 	record = fetchCrossrefJson("10.1000/test"; fetcher = _ -> payload)
@@ -7,3 +8,5 @@
 	@test_throws ArgumentError fetchCrossrefJson("10.1000/test"; fetcher = _ -> "{")
 	@test_throws ArgumentError fetchCrossrefJson("10.1000/test"; fetcher = _ -> "{\"status\":\"ok\"}")
 end
+
+# ----------------------------------------------------------------------------------------------- #

@@ -1,5 +1,6 @@
 # ----------------------------------------------------------------------------------------------- #
-@testset "BibTeX <-> JSON conversion" begin
+#
+@testset "BibTeX--JSON conversion" begin
 	mktempdir() do dir
 		inputBib = joinpath(dir, "input.bib")
 		outputJson = joinpath(dir, "library.json")
@@ -27,19 +28,21 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Zettel JSON format" begin
 	mktempdir() do dir
 		inputBib = joinpath(dir, "input.bib")
 		outputJson = joinpath(dir, "library.json")
 
 		write(inputBib, """
-@article{bertone1938,
-author = {{Bertone}, Gianfranco and Roe, Jane},
-title = {{A} Title},
-collaboration = {ATLAS Collaboration},
-year = {1938}
-}
-""")
+			@article{bertone1938,
+				author = {{Bertone}, Gianfranco and Roe, Jane},
+				title = {{A} Title},
+				collaboration = {ATLAS Collaboration},
+				year = {1938}
+			}
+			"""
+		)
 
 		bibTeXToJson(inputBib, outputJson)
 		data = JSON3.read(read(outputJson, String))
@@ -58,6 +61,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Read Zettel JSON as library" begin
 	mktempdir() do dir
 		inputBib = joinpath(dir, "input.bib")

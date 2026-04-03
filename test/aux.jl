@@ -1,4 +1,5 @@
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Aux parsing and BBL output" begin
 	mktempdir() do dir
 		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
@@ -26,6 +27,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Aux style selection" begin
 	mktempdir() do dir
 		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
@@ -49,6 +51,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Style ordering" begin
 	mktempdir() do dir
 		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
@@ -76,6 +79,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Full style prints fields" begin
 	mktempdir() do dir
 		lib = ZettelLibrary([_sampleArticle()])
@@ -99,6 +103,7 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
 @testset "Aux resolves YAML libraries" begin
 	mktempdir() do dir
 		lib = ZettelLibrary([_sampleArticle()])
@@ -119,3 +124,6 @@ end
 		@test isempty(result.absent)
 	end
 end
+
+# ----------------------------------------------------------------------------------------------- #
+#
