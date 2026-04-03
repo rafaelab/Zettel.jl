@@ -23,7 +23,7 @@ set `JULIA_CONDAPKG_BACKEND=Null` and `JULIA_PYTHONCALL_EXE=python`, then instal
 ```julia
 using Zettel, OrderedCollections
 
-# Cceate an entry
+# Create an entry
 entry = ZettelEntry(
     "Einstein1905",
     "article",
@@ -70,6 +70,13 @@ bin/zettel convert references.yaml references.json --to json
 bin/zettel convert references.json references.bib --to bib
 ```
 
+### Paste BibTeX from stdin
+
+```bash
+pbpaste | bin/zettel paste --to yaml
+pbpaste | bin/zettel paste --to json --library references.json
+```
+
 ### Aux → bbl
 
 ```bash
@@ -85,10 +92,10 @@ pdflatex test.tex
 For faster startup, build the optional sysimage with:
 
 ```bash
-julia sysimage/build_sysimage.jl
+julia bin/buildExecutable.jl
 ```
 
-`bin/zettel` will use `sysimage/Zettel.*` automatically when present. You can also
+`bin/zettel` will use `bin/Zettel.*` automatically when present. You can also
 override it with `ZETTEL_SYSIMAGE=/path/to/sysimage`.
 
 ## Zettel JSON format

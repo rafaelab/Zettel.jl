@@ -5,21 +5,19 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/rafaelab/Zettel.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/rafaelab/Zettel.jl)
 
-Simple reference manager for Julia that stores bibliographic data as **JSON/YAML** while maintaining full **BibTeX** compatibility.
-It creates a new type, `ZettelEntry`, which is essentially equivalent to BibTeX, but in JSON/YAML, for performance.
+Simple reference manager for Julia that stores bibliographic data as **JSON / YAML** while maintaining full **BibTeX** compatibility.
+It creates a new type, `ZettelEntry`, which is essentially equivalent to BibTeX, but in JSON / YAML, for convenience.
 
 ---
 
 ## Features
 
-| Feature | Description |
-|---|---|
-| 📄 **JSON/YAML library** | Store and load references in readable, VCS-friendly JSON or YAML |
-| 🔍 **CrossRef fetch** | Automatically retrieve metadata from [CrossRef](https://www.crossref.org/) using a DOI |
-| 🔁 **BibTeX I/O** | Read and write `.bib` files via [Pybtex.jl](https://github.com/rafaelab/pybtex.jl) |
-| 🧭 **Query helpers** | Search and filter entries in a `ZettelLibrary` |
-| 🧩 **BibTeX fields** | Preserves all standard BibTeX fields (`author`, `title`, `journal`, `doi`, …) |
-| 💡 **Simple API** | camelCase helper functions, `@doc` docstrings, tab-indented JSON output |
+* **JSON/YAML library**: Store and load references in readable, VCS-friendly JSON or YAML
+* **CrossRef fetch**: Automatically retrieve metadata from [CrossRef](https://www.crossref.org/) using a DOI
+* **BibTeX I/O**: Read and write `.bib` files via [Pybtex.jl](https://github.com/rafaelab/pybtex.jl)
+* **Query helpers**: Search and filter entries in a `ZettelLibrary`
+* **BibTeX fields**: Preserves all standard BibTeX fields (`author`, `title`, `journal`, `doi`, …)
+* **Simple API**: camelCase helper functions, `@doc` docstrings, tab-indented JSON output
 
 ---
 
@@ -27,7 +25,7 @@ It creates a new type, `ZettelEntry`, which is essentially equivalent to BibTeX,
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/rafaelab/Zettel.jl")
+Pkg.add(url = "https://github.com/rafaelab/Zettel.jl")
 ```
 
 Pybtex.jl uses Python's `pybtex` package. Install it once with:
@@ -52,8 +50,8 @@ println(record["DOI"])
 crossrefJsonToZettelJson(record, "crossref.json")
 ```
 
-See `examples/basic.jl` for a minimal end-to-end example.
-See `examples/yaml_basic.jl` and `examples/yaml_aux_workflow.tex` for YAML-specific workflows.
+See `examples/basicCLI.jl` or `examples/example-simple.jl` for minimal end-to-end examples.
+See `examples/example-yaml.jl` and `examples/yaml_aux_workflow.tex` for YAML-specific workflows.
 
 > **Dependency**: Zettel.jl uses [Pybtex.jl](https://github.com/rafaelab/pybtex.jl) for
 > BibTeX parsing.  The Python package `pybtex` must be available in the Python
@@ -71,6 +69,20 @@ Convert a `.bib` file to Zettel JSON (per-key map with structured people):
 
 ```bash
 bin/zettel references.bib references.json
+```
+
+### Paste BibTeX from stdin → JSON/YAML (optional library update)
+
+Paste a BibTeX entry and convert it directly:
+
+```bash
+pbpaste | bin/zettel paste --to yaml
+```
+
+Add the pasted entry to a JSON/YAML library while keeping keys sorted alphabetically:
+
+```bash
+pbpaste | bin/zettel paste --to json --library references.json
 ```
 
 ### BibTeX-like workflow (aux → bbl)
@@ -97,17 +109,25 @@ Styles:
 `zettel` uses the style from `\\bibstyle{...}` in the `.aux` file by default.
 You can override it with `--style <name>`.
 
-Available styles: `plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`,
-`full`, `abntex2-num`, `abntex2-alpha`.
+Available styles: 
+- `plain`
+- `unsrt`
+- `alpha`
+- `ieeestr`
+- `revtex`
+- `jhep`
+- `full`
+- `abntex2-num`
+- `abntex2-alpha`
 
 For faster startup, build the optional sysimage with:
 
 ```bash
-julia sysimage/build_sysimage.jl
+julia bin/buildExecutable.jl
 ```
 
-`bin/zettel` will use `sysimage/Zettel.*` automatically when present. You can also
-override it with `ZETTEL_SYSIMAGE=/path/to/sysimage`.
+`bin/zettel` will use `bin/Zettel.*` automatically when present.
+You can also override it with `ZETTEL_SYSIMAGE=/path/to/sysimage`.
 
 Options:
 
@@ -127,7 +147,7 @@ Options:
 using Zettel
 using OrderedCollections
 
-# ── Create an entry manually ─────────────────────────────────────────────
+# create an entry manually
 entry = ZettelEntry(
     "Einstein1905",
     "article",
@@ -147,20 +167,20 @@ lib = ZettelLibrary([entry])
 println(lib)
 # ZettelLibrary containing 1 entries.
 
-# ── Fetch from CrossRef ───────────────────────────────────────────────────
+# fetch from CrossRef
 entry2 = fetchFromCrossref("10.1103/PhysRev.47.777")
 push!(lib, entry2)
 
-# ── Save to JSON ──────────────────────────────────────────────────────────
+# save to JSON
 writeJsonLibrary(lib, "library.json")
 
-# ── Load from JSON ────────────────────────────────────────────────────────
+# load from JSON
 lib2 = readJsonLibrary("library.json")
 
-# ── Save to BibTeX ────────────────────────────────────────────────────────
+# save to BibTeX
 writeBibTeX(lib, "library.bib")
 
-# ── Load from BibTeX ─────────────────────────────────────────────────────
+# load from BibTeX
 lib3 = readBibTeX("library.bib")
 ```
 
@@ -207,10 +227,25 @@ lib3 = readBibTeX("library.bib")
 }
 ```
 
-The file uses **4-space indentation**. Collaboration fields are emitted as a list of
-objects with a single `"name"` key.
-
+The file uses **4-space indentation**. Collaboration fields are emitted as a list of objects with a single `"name"` key.
 `readJsonLibrary` accepts both formats.
+
+### Format conversion mode
+
+Use `convert` mode to convert between JSON, YAML, and BibTeX:
+
+```bash
+bin/zettel convert references.yaml references.json --to json
+bin/zettel convert references.json references.bib --to bib
+bin/zettel convert references.bib references.yaml --to yaml
+```
+
+`--from` is optional and inferred from the input extension by default:
+
+```bash
+bin/zettel convert in.dat out.yaml --from json --to yaml
+```
+
 
 ---
 
@@ -276,18 +311,4 @@ See the [`examples/`](examples/) folder for runnable scripts.
 ## License
 
 MIT © rafaelab
-### Format conversion mode
 
-Use `convert` mode to convert between JSON, YAML, and BibTeX:
-
-```bash
-bin/zettel convert references.yaml references.json --to json
-bin/zettel convert references.json references.bib --to bib
-bin/zettel convert references.bib references.yaml --to yaml
-```
-
-`--from` is optional and inferred from the input extension by default:
-
-```bash
-bin/zettel convert in.dat out.yaml --from json --to yaml
-```
