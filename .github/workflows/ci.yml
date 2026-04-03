@@ -42,7 +42,7 @@ jobs:
 
       - name: Install Python pybtex
         run: |
-          python -m pip install pybtex
+          python -m pip install "pybtex[tex]"
 
       - name: Install dependencies
         run: |
