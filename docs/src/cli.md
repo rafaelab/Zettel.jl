@@ -11,9 +11,9 @@ bin/zettel [options] <input_file> [output_file]
 ```
 
 ### Option Flags
-
-- `--no-sysimage`: Ignore any precompiled sysimage and run with base Julia.
-- `-l`, `--library <files>`: Comma-separated list of library files (`.json`, `.yaml`, `.bib`) to load for `.aux` processing.
+```bash
+   julia bin/buildExecutable.jl
+```
 - `-o`, `--output <path>`: Specify the output file (alternative to positional argument).
 - `--help`: Show usage information.
 
