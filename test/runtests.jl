@@ -7,8 +7,8 @@ using PythonCall: pyconvert
 
 include("common.jl")
 include("crossref.jl")
-include("json_io.jl")
-include("yaml_io.jl")
+include("jsonIO.jl")
+include("yamlIO.jl")
 include("entry.jl")
 include("library.jl")
 include("aux.jl")
