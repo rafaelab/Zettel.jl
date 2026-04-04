@@ -1,17 +1,29 @@
-using PackageCompiler
 using Pkg
+using JuliaC
+
 
 Pkg.activate(@__DIR__)
-Pkg.instantiate()
 Pkg.develop(; path = joinpath(@__DIR__, ".."))
+Pkg.instantiate()
 
 
+const exeName = Sys.iswindows() ? "zettel.exe" : "zettel"
+const exeDir = joinpath(@__DIR__, "..", "lib")
+const exePath = joinpath(exeDir, exeName)
+const entrypoint = joinpath(@__DIR__, "entrypoint.jl")
 
-const libName = Sys.isapple() ? "zettel.dylib" : Sys.iswindows() ? "zettel.dll" : "zettel.so"
-const libPath = joinpath(@__DIR__, libName)
-const precompileFile = joinpath(@__DIR__, "precompile.jl")
+mkpath(exeDir)
 
+extraFlags = String.(split(get(ENV, "JULIAC_FLAGS", "")))
+args = String.(vcat(
+	["--project", abspath(@__DIR__), "--output-exe", exeName, abspath(entrypoint)],
+	extraFlags,
+))
 
-@info "building sysimage; writing to: $libPath"
-create_sysimage([:Zettel]; project = @__DIR__, precompile_execution_file = precompileFile, sysimage_path = libPath)
-@info "✓ sysimage created successfully"
+@info "building executable; writing to: $exePath"
+cd(exeDir) do
+	JuliaC.main(args)
+end
+
+isfile(exePath) || error("Executable was not produced at $exePath")
+@info "✓ executable created successfully"
