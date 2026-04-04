@@ -43,7 +43,7 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @testset "Sample YAML fixture" begin
-	sampleYaml = joinpath(@__DIR__, "..", "examples", "sample.yaml")
+	sampleYaml = joinpath(@__DIR__, "..", "examples", "data", "sample.yaml")
 	lib = readYamlLibrary(sampleYaml)
 	@test haskey(lib, "Einstein1905")
 	@test haskey(lib, "Misner1973")
