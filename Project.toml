@@ -1,6 +1,6 @@
 name = "Zettel"
 uuid = "2ca6f6d1-94fa-4d7c-a447-9ff9492802f1"
-version = "2.0.2"
+version = "2.1.0"
 authors = ["Rafael Alves Batista <rafaelab@users.noreply.github.com>"]
 repo-url = "https://github.com/rafaelab/Zettel.jl.git"
 
