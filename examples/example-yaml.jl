@@ -59,6 +59,6 @@ println("Reloaded from BibTeX: ", lib3)
 # ---------------------------------------------------------------------------
 # Load the sample YAML fixture shipped with the repository
 
-sampleYaml = joinpath(@__DIR__, "sample.yaml")
+sampleYaml = joinpath(@__DIR__, "data", "sample.yaml")
 sampleLib = readYamlLibrary(sampleYaml)
 println("Loaded sample YAML library with ", length(sampleLib), " entries.")
