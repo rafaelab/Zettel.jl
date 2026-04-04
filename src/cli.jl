@@ -1,5 +1,11 @@
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_cliUsage(; io::IO = stdout)
+
+Print the command-line usage/help text to `io` (defaults to stdout). 
+Used by the CLI when `-h`/`--help` is requested or when no arguments are provided.
+"""
 function _cliUsage(; io::IO = stdout)
 	println(io, "Usage:")
 	println(io, "  zettel convert <input> <output> [--from <fmt>] --to <fmt>")
@@ -70,6 +76,13 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_runConvertCLI(args::Vector{String})
+
+Handle the `convert` subcommand arguments and perform bibliography conversion.
+Expect: `<input> <output>` plus `--to <fmt>` and optional `--from <fmt>`.
+Throws ArgumentError for malformed or missing options.
+"""
 function _runConvertCLI(args::Vector{String})
 	length(args) < 2 && throw(ArgumentError("convert: expected <input> <output> --to <fmt> [--from <fmt>]"))
 	inputPath  = args[1]
@@ -171,6 +184,12 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
+
+Add entries from `incoming` into the library file at `libraryPath`, creating the
+library if it does not exist. The resulting library is sorted and written back to disk.
+"""
 function _addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
 	lib = isfile(libraryPath) ? loadLibrary(libraryPath) : ZettelLibrary()
 	for entry ∈ values(incoming)
@@ -184,6 +203,13 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_runAuxCLI(args::Vector{String}; output::IO = stdout)
+
+Handle the auxiliary-file (`.aux`) mode. Parse options for library files, output
+`.bbl` path, and bibliography style, then generate the `.bbl` using the provided
+libraries (or inferred ones). Prints a warning to `output` if any citation keys are missing.
+"""
 function _runAuxCLI(args::Vector{String}; output::IO = stdout)
 	auxPath   = nothing
 	libraries = String[]
@@ -230,8 +256,11 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-# paste --to output uses the structured per-key Zettel-JSON format ({"key": {entryType, ...}})
-# produced by _bibTeXToStructuredData, which is the native interchange format.
+@doc """
+	_renderPastedEntry(data::AbstractDict, ::JsonFormat)
+
+Render structured pasted entry data as pretty JSON (Zettel-JSON interchange format).
+"""
 function _renderPastedEntry(data::AbstractDict, ::JsonFormat)
 	buf = IOBuffer()
 	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
@@ -240,12 +269,23 @@ function _renderPastedEntry(data::AbstractDict, ::JsonFormat)
 	return text
 end
 
+@doc """
+	_renderPastedEntry(data::AbstractDict, ::YamlFormat)
+
+Render structured pasted entry data as YAML.
+"""
 function _renderPastedEntry(data::AbstractDict, ::YamlFormat)
 	text = YAML.write(_toYamlData(data))
 	endswith(text, "\n") || (text *= "\n")
 	return text
 end
 
+@doc """
+	_renderPastedEntry(data::AbstractDict, ::BibTeXFormat)
+
+Render structured pasted entry data back to BibTeX format. Returns the textual
+BibTeX entries as they would be written to stdout or a file.
+"""
 function _renderPastedEntry(data::AbstractDict, ::BibTeXFormat)
 	lib = _libraryFromParsedData(data, "<stdin>", "BibTeX")
 	io  = IOBuffer()
