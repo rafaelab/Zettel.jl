@@ -1,6 +1,7 @@
 # CLI Examples
 
 Each script is a self-contained example for a specific CLI option or subcommand.
+All generated files are written to `examples/tmp/`.
 
 1. `cli-help.sh` - Show help (`-h`).
 2. `cli-bib-to-json.sh` - Convert BibTeX to JSON using the two-argument form.
