@@ -12,6 +12,7 @@ examples/*.bbl
 examples/*.log
 examples/*.pdf
 examples/sample_from_*
+examples/tmp/*
 .CondaPkg/
 .DS_Store
 *.jl.cov
