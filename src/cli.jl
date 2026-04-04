@@ -9,17 +9,26 @@ Used by the CLI when `-h`/`--help` is requested or when no arguments are provide
 function _cliUsage(; io::IO = stdout)
 	println(io, "Usage:")
 	println(io, "  zettel convert <input> <output> [--from <fmt>] --to <fmt>")
+	println(io, "  zettel doi     <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]")
 	println(io, "  zettel paste   [--to <fmt>] --library <file>")
 	println(io, "  zettel paste   --to <fmt>")
 	println(io, "  zettel <auxfile> [options]")
 	println(io, "")
 	println(io, "Commands:")
 	println(io, "  convert        Convert a bibliography file between formats (bib, json, yaml).")
+	println(io, "  doi            Fetch a DOI from a metadata source and emit one ZettelEntry (bib, json, yaml).")
 	println(io, "  paste          Read a BibTeX entry from stdin; print it and/or add it to a library.")
 	println(io, "")
 	println(io, "Options (convert):")
 	println(io, "  -f, --from <fmt>       Input format (inferred from extension when omitted)")
 	println(io, "  -t, --to   <fmt>       Output format (required)")
+	println(io, "")
+	println(io, "Options (doi):")
+	println(io, "      --source <name>    Metadata source (default: crossref; supported: $(join(doiSources(), ", ")))")
+	println(io, "  -t, --to <fmt>         Output format for the fetched entry (bib, json, yaml; default: bib)")
+	println(io, "  -o, --output <file>    Write output to file instead of stdout")
+	println(io, "  -m, --mailto <email>   Contact email for Crossref polite access (crossref source)")
+	println(io, "      --plus-token <tok> Crossref Metadata Plus API token (crossref source, optional)")
 	println(io, "")
 	println(io, "Options (paste):")
 	println(io, "  -t, --to   <fmt>       Print the entry in this format to stdout (bib, json, yaml)")
@@ -57,6 +66,17 @@ function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 		return 0
 	end
 
+	if args[1] == "doi"
+		_runDoiCLI(args[2 : end]; output = output)
+		return 0
+	end
+
+	# shorthand DOI mode: zettel <doi> [doi-options]
+	if _looksLikeDoiInvocation(args)
+		_runDoiCLI(args; output = output)
+		return 0
+	end
+
 	# shorthand: zettel <input> <output>  (formats inferred from extensions)
 	if length(args) == 2 && ! startswith(args[1], "-") && ! startswith(args[2], "-")
 		convertBibliography(args[1], args[2], bibliographyFormat(args[1]), bibliographyFormat(args[2]))
@@ -71,6 +91,104 @@ function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 	# aux mode
 	_runAuxCLI(args; output = output)
 	return 0
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_looksLikeDoiInvocation(args)
+
+Return `true` when CLI args appear to be the DOI shorthand form:
+`zettel <doi> [--source ... --to ...]`.
+"""
+function _looksLikeDoiInvocation(args::Vector{String})
+	isempty(args) && return false
+	token = strip(args[1])
+	return startswith(token, "10.") && occursin("/", token)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_runDoiCLI(args::Vector{String}; output::IO = stdout)
+
+Handle the `doi` subcommand and fetch one entry from a DOI metadata source.
+
+Expected form:
+- `doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
+
+For source `crossref`, polite access requires a contact email via `--mailto` or `CROSSREF_MAILTO`.
+"""
+function _runDoiCLI(args::Vector{String}; output::IO = stdout)
+	doi = nothing
+	source = "crossref"
+	toFormat::BibliographyFormat = bibTeXFormat()
+	outputPath = nothing
+	mailto = nothing
+	plusToken = nothing
+
+	i = 1
+	while i ≤ length(args)
+		arg = args[i]
+		err = ArgumentError("Missing value for $(arg).")
+		if arg == "-t" || arg == "--to"
+			i += 1
+			i > length(args) && throw(err)
+			toFormat = parseBibliographyFormat(args[i])
+		elseif arg == "--source"
+			i += 1
+			i > length(args) && throw(err)
+			source = lowercase(strip(args[i]))
+		elseif arg == "-o" || arg == "--output"
+			i += 1
+			i > length(args) && throw(err)
+			outputPath = args[i]
+		elseif arg == "-m" || arg == "--mailto"
+			i += 1
+			i > length(args) && throw(err)
+			mailto = args[i]
+		elseif arg == "--plus-token"
+			i += 1
+			i > length(args) && throw(err)
+			plusToken = args[i]
+		elseif startswith(arg, "-")
+			throw(ArgumentError("Unknown option in doi mode: $(arg)"))
+		else
+			isnothing(doi) || throw(ArgumentError("Unexpected argument in doi mode: $(arg)"))
+			doi = arg
+		end
+		i += 1
+	end
+
+	isnothing(doi) && throw(ArgumentError("doi: expected a DOI value"))
+	source ∈ doiSources() || throw(ArgumentError("doi: unknown source '$(source)'. Supported: $(join(doiSources(), ", "))"))
+
+	if isnothing(mailto)
+		envMailto = get(ENV, "CROSSREF_MAILTO", "")
+		! isempty(strip(envMailto)) && (mailto = strip(envMailto))
+	end
+	if isnothing(plusToken)
+		envToken = get(ENV, "CROSSREF_PLUS_API_TOKEN", "")
+		! isempty(strip(envToken)) && (plusToken = strip(envToken))
+	end
+
+	if source == "crossref" && isnothing(mailto)
+		println(stderr, "Warning: Crossref polite access recommends a contact email.")
+		println(stderr, "Warning: set --mailto <email> (or CROSSREF_MAILTO). Continuing without it.")
+	end
+
+	entry = fetchFromDoiSource(doi; source = source, mailto = mailto, plusToken = plusToken)
+	text = _renderDoiEntry(entry, toFormat)
+
+	if isnothing(outputPath)
+		print(output, text)
+	else
+		write(outputPath, text)
+	end
+
+	return nothing
 end
 
 
@@ -251,6 +369,44 @@ function _runAuxCLI(args::Vector{String}; output::IO = stdout)
 	end
 
 	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
+
+Render a DOI-fetched entry in the same external representation style used by `paste`.
+For JSON/YAML this is the structured per-key format; for BibTeX it is a single BibTeX entry.
+"""
+function _renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
+	if format isa BibTeXFormat
+		text = entryToString(entry, format)
+		endswith(text, "\n") || (text *= "\n")
+		return text
+	end
+
+	data = _structuredDataFromEntry(entry)
+	return _renderPastedEntry(data, format)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_structuredDataFromEntry(entry::ZettelEntry)
+
+Convert one `ZettelEntry` into the structured per-key map used by JSON/YAML CLI output.
+"""
+function _structuredDataFromEntry(entry::ZettelEntry)
+	return mktempdir() do dir
+		path = joinpath(dir, "entry.bib")
+		text = entryToString(entry, bibTeXFormat())
+		endswith(text, "\n") || (text *= "\n")
+		write(path, text)
+		_bibTeXToStructuredData(path)
+	end
 end
 
 
