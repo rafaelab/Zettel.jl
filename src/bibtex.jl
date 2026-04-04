@@ -104,6 +104,12 @@ end
 Convert a [`ZettelLibrary`](@ref) to a `Pybtex.BibLibrary`.
 
 This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib` file with [`writeBibTeXLibrary`](@ref).
+
+# Input
+- `lib::ZettelLibrary`: the library to convert.
+
+# Output
+- A `Pybtex.BibLibrary` object containing the same entries as `lib`.
 """
 function toBibTeX(lib::ZettelLibrary)
 	pydb = pyimport("pybtex.database")
@@ -142,6 +148,12 @@ end
 	_authorStringToPersonList(authorStr)
 
 Convert a BibTeX-style author string `"Last1, First1 and Last2, First2"` to a list of Pybtex `Person` objects.
+
+# Input
+- `authorStr::AbstractString`: a BibTeX-style author/editor string.
+
+# Output
+- A list of Pybtex `Person` objects corresponding to the authors/editors in `authorStr`.
 """
 function _authorStringToPersonList(authorStr::AbstractString)
 	pyPerson = pyimport("pybtex.database").Person
@@ -160,6 +172,13 @@ end
 	writeBibTeXLibrary(lib, filename)
 
 Write the [`ZettelLibrary`](@ref) `lib` to a BibTeX `.bib` file at `filename` using Pybtex as the backend.
+
+# Input
+- `lib::ZettelLibrary`: the library to write.
+- `filename::AbstractString`: the destination file path.
+
+# Output
+- `nothing`
 """
 function writeBibTeXLibrary(lib::ZettelLibrary, filename::AbstractString)
 	bibLib = toBibTeX(lib)
@@ -175,6 +194,12 @@ end
 
 Read a BibTeX `.bib` file and return a [`ZettelLibrary`](@ref).
 Uses Pybtex as the parsing backend.
+
+# Input
+- `filename::AbstractString`: path to the `.bib` file to read.
+
+# Output
+- A [`ZettelLibrary`](@ref) containing the entries parsed from `filename`.
 """
 function readBibTeXLibrary(filename::AbstractString)
 	bibLib = Pybtex.readBibtexDataBase(filename)

@@ -112,8 +112,6 @@ function convertBibliography(inputPath::AbstractString, outputPath::AbstractStri
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 function _convertBibliography(inputPath::AbstractString, outputPath::AbstractString, ::JsonFormat, ::JsonFormat)
 	_writeJsonData(_readJsonData(inputPath), outputPath)
 	return outputPath

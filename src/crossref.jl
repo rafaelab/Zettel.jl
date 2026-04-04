@@ -1,24 +1,24 @@
 # ----------------------------------------------------------------------------------------------- #
 #
-const CROSSREF_API = "https://api.crossref.org/works/"
+const crossRefAPI= "https://api.crossref.org/works/"
 
 
 # map CrossRef `type` values to BibTeX entry types
 const crossrefTypeMap = Dict{String, String}(
-	"journal-article"          => "article",
-	"book"                     => "book",
-	"book-chapter"             => "inbook",
-	"edited-book"              => "book",
-	"monograph"                => "book",
-	"proceedings-article"      => "inproceedings",
-	"proceedings"              => "proceedings",
-	"report"                   => "techreport",
-	"dissertation"             => "phdthesis",
-	"dataset"                  => "misc",
-	"posted-content"           => "misc",
-	"reference-entry"          => "misc",
-	"other"                    => "misc",
-	"code"                     => "misc",
+	"journal-article" => "article",
+	"book" => "book",
+	"book-chapter" => "inbook",
+	"edited-book" => "book",
+	"monograph" => "book",
+	"proceedings-article" => "inproceedings",
+	"proceedings" => "proceedings",
+	"report" => "techreport",
+	"dissertation" => "phdthesis",
+	"dataset" => "misc",
+	"posted-content" => "misc",
+	"reference-entry" => "misc",
+	"other" => "misc",
+	"code" => "misc",
 )
 
 # ----------------------------------------------------------------------------------------------- #
@@ -27,6 +27,12 @@ const crossrefTypeMap = Dict{String, String}(
 	crossrefAuthors(authorList)
 
 Convert the CrossRef author array (each element has `"family"` and optionally `"given"` sub-fields) into a BibTeX-style author string `"Last1, First1 and Last2, First2 and ..."`.
+
+# Input
+- `authorList::Vector{Dict}`: list of author objects from CrossRef metadata.
+
+# Output
+- A string of authors formatted for BibTeX.
 """
 function crossrefAuthors(authorList)
 	parts = String[]
@@ -50,6 +56,12 @@ end
 
 Extract the publication year from a CrossRef work message. 
 Returns an empty string when no date information is available.
+
+# Input
+- `msg::Dict`: CrossRef work message dictionary.
+
+# Output
+- The publication year as a string, or an empty string if not found.
 """
 function crossrefYear(msg)
 	for key ∈ ("published", "published-print", "published-online", "issued")
@@ -81,8 +93,8 @@ Fetch bibliographic metadata from the CrossRef REST API for the given `doi` and 
 	entry = fetchFromCrossref("10.1002/andp.19053221004")
 ```
 """
-function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/2.0 (https://github.com/rafaelab/Zettel.jl)")
-	url = CROSSREF_API * HTTP.escapeuri(doi)
+function fetchFromCrossref(doi::AbstractString; userAgent::AbstractString = "Zettel.jl/2.1 (https://github.com/rafaelab/Zettel.jl)")
+	url = crossRefAPI * HTTP.escapeuri(doi)
 	response = HTTP.get(url; headers = ["User-Agent" => userAgent])
 
 	if response.status ≠ 200
@@ -180,6 +192,17 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	defaultFetcher(url)
+
+Default fetcher function for CrossRef metadata. Downloads the content at `url` to a temporary file, reads it as a string, and then deletes the temporary file.
+
+# Input
+- `url::AbstractString`: URL to fetch.
+
+# Output
+- The content at `url` as a string.
+"""
 function defaultFetcher(url::AbstractString)
 	tmpFile = Downloads.download(url)
 	try
@@ -231,7 +254,7 @@ Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
 # Output
 - A vector of plain Julia values.
 """
-toPlainDict(node::JSON3.Array) = [toPlainDict(v) for v in node]
+toPlainDict(node::JSON3.Array) = [toPlainDict(v) for v ∈ node]
 
 
 @doc """
@@ -259,7 +282,7 @@ Convert Crossref JSON-like nodes into plain Julia dictionaries and vectors.
 # Output
 - A vector of plain Julia values.
 """
-toPlainDict(node::AbstractVector) = [toPlainDict(v) for v in node]
+toPlainDict(node::AbstractVector) = [toPlainDict(v) for v ∈ node]
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -282,7 +305,7 @@ function encodeUriComponent(value::AbstractString)
 			write(io, b)
 		else
 			print(io, '%')
-			print(io, uppercase(string(b, base = 16, pad = 2)))
+			print(io, uppercase(string(b; base = 16, pad = 2)))
 		end
 	end
 
@@ -316,7 +339,16 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
+	fetchCrossrefJson(doi; fetcher)
+
 Fetch metadata for a DOI from CrossRef and return it as a JSON dictionary.
+
+# Input
+- `doi::AbstractString`: DOI to fetch metadata for.
+- `fetcher::Function`: function to fetch the CrossRef API response as a string (defaults to `defaultFetcher`).
+
+# Output
+- A `Dict` containing the CrossRef metadata for the DOI.
 """
 function fetchCrossrefJson(doi::AbstractString; fetcher::Function = defaultFetcher)
 	escapedDoi = encodeUriComponent(String(doi))
@@ -338,7 +370,17 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
+	saveCrossrefJson(doi, outputPath; fetcher)
+
 Fetch metadata for a DOI from CrossRef and save it to `outputPath`.
+
+# Input
+- `doi::AbstractString`: DOI to fetch metadata for.
+- `outputPath::AbstractString`: file path to save the metadata to.
+- `fetcher::Function`: function to fetch the CrossRef API response as a string (defaults to `defaultFetcher`).
+
+# Output
+- The `outputPath` string after writing the metadata to it.
 """
 function saveCrossrefJson(doi::AbstractString, outputPath::AbstractString; fetcher::Function = defaultFetcher)
 	record = fetchCrossrefJson(doi; fetcher = fetcher)
