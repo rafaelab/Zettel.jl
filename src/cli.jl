@@ -1,5 +1,22 @@
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	zettelCLI(; args = ARGS)
+
+Command-line entry point for `zettel`. Parses command-line arguments and dispatches to the appropriate functionality.
+
+# Usage
+- `zettel <auxfile> [options]`: Generate a .bbl file from a .aux file, optionally using specified libraries and style.
+- `zettel <input.bib> <output.json>`: Convert a BibTeX file to JSON format.
+- `zettel convert <input> <output> --to <json|yaml|bib> [--from <json|yaml|bib>]`: Convert a bibliography file between supported formats, with optional format inference.
+- `zettel paste --to <json|yaml> [--library <file>]`: Read a BibTeX entry from stdin and output it in the specified format, optionally adding it to a library.
+
+# Input
+- Command-line arguments as described above.
+
+# Output
+- Depends on the command used. Can be a .bbl file, a converted bibliography file, or a formatted bibliography entry printed to stdout.
+"""
 function _cliUsage(; io::IO = stdout)
 	println(io, "Usage: zettel <auxfile> [options]")
 	println(io, "       zettel <input.bib> <output.json>")
@@ -22,6 +39,17 @@ end
 	zettelCLI(; args = ARGS)
 
 Command-line entry point for `zettel`.
+
+# Usage
+- `zettel <auxfile> [options]`: Generate a .bbl file from a .aux file, optionally using specified libraries and style.
+- `zettel <input.bib> <output.json>`: Convert a BibTeX file to JSON format.
+- `zettel convert <input> <output> --to <json|yaml|bib> [--from <json|yaml|bib>]`: Convert a bibliography file between supported formats, with optional format inference.
+
+# Input
+- Command-line arguments as described above.
+
+# Output
+- Depends on the command used. Can be a .bbl file, a converted bibliography file, or a formatted bibliography entry printed to stdout.
 """
 function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 	if isempty(args) || ("-h" ∈ args) || ("--help" ∈ args)
@@ -97,6 +125,19 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_runPasteCLI(args; input, output)
+
+Run the "paste" subcommand of the CLI, which reads a BibTeX entry from stdin and outputs it in the specified format, optionally adding it to a library.	
+
+# Input
+- `args::Vector{String}`: command-line arguments for the paste subcommand.
+- `input::IO`: input stream to read the BibTeX entry from (default: `stdin`).
+- `output::IO`: output stream to write the formatted entry to (default: `stdout`).
+
+# Output
+- `nothing`. The formatted entry is written to `output`, and optionally added to a library if `--library` is specified.
+"""
 function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
 	toFormat = nothing
 	libraryPath = nothing
@@ -148,6 +189,22 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	zettelCLI(; args = ARGS)
+
+Command-line entry point for `zettel`. Parses command-line arguments and dispatches to the appropriate functionality.
+
+# Usage
+- `zettel <auxfile> [options]`: Generate a .bbl file from a .aux file, optionally using specified libraries and style.
+- `zettel <input.bib> <output.json>`: Convert a BibTeX file to JSON format.
+- `zettel convert <input> <output> --to <json|yaml|bib> [--from <json|yaml|bib>]`: Convert a bibliography file between supported formats, with optional format inference.
+
+# Input
+- Command-line arguments as described above.
+
+# Output
+- Depends on the command used. Can be a .bbl file, a converted bibliography file, or a formatted bibliography entry printed to stdout.
+"""
 function _bibTeXTextToStructuredData(bibTeXText::AbstractString)
 	return mktempdir() do dir
 		inputPath = joinpath(dir, "stdin_input.bib")
@@ -159,6 +216,18 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_renderStructuredData(data, format)
+
+Render structured bibliography data into a string in the specified format.
+
+# Input
+- `data::AbstractDict`: structured bibliography data (e.g., parsed from a BibTeX entry).
+- `format::BibliographyFormat`: format selector for the output string.
+
+# Output
+- A string representation of `data` in the specified format.
+"""
 function _renderStructuredData(data::AbstractDict, ::JsonFormat)
 	buf = IOBuffer()
 	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
@@ -181,6 +250,19 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_addStructuredDataToLibrary(data, libraryPath, toFormat)
+
+Add structured bibliography data to an existing library file, creating the library if it does not exist.
+
+# Input
+- `data::AbstractDict`: structured bibliography data (e.g., parsed from a BibTeX entry).
+- `libraryPath::AbstractString`: path to the library file.
+- `toFormat::BibliographyFormat`: format selector for the output string.
+
+# Output
+- Nothing. The library file is updated in place.
+"""
 function _addStructuredDataToLibrary(data::AbstractDict, libraryPath::AbstractString, toFormat::BibliographyFormat)
 	libraryFormat = bibliographyFormat(libraryPath)
 	typeof(libraryFormat) == typeof(toFormat) || throw(ArgumentError("Library format must match --to output format."))
@@ -193,12 +275,24 @@ function _addStructuredDataToLibrary(data::AbstractDict, libraryPath::AbstractSt
 	end
 
 	writeBibliography(libraryFormat, _sortedLibraryByKey(lib), libraryPath)
+
 	return nothing
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_sortedLibraryByKey(lib)
+
+Return a new `ZettelLibrary` with entries sorted by their keys.
+
+# Input
+- `lib::ZettelLibrary`: the library to be sorted.
+
+# Output
+- A new `ZettelLibrary` with entries sorted by their keys.
+"""
 function _sortedLibraryByKey(lib::ZettelLibrary)
 	sortedKeys = sort(collect(keys(lib.entries)))
 	entries = ZettelEntry[lib.entries[key] for key ∈ sortedKeys]
@@ -208,6 +302,17 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@doc """
+	_runConvertCLI(args)
+
+Run the "convert" subcommand of the CLI, which converts a bibliography file between supported formats.
+
+# Input
+- `args::Vector{String}`: command-line arguments for the convert subcommand.
+
+# Output
+- Nothing. The converted file is written to the specified output path.
+"""
 function _runConvertCLI(args::Vector{String})
 	length(args) < 2 && throw(ArgumentError("convert mode expects: zettel convert <input> <output> --to <type> [--from <type>]"))
 	inputPath = args[1]
@@ -216,7 +321,7 @@ function _runConvertCLI(args::Vector{String})
 	toFormat = nothing
 
 	i = 3
-	while i <= length(args)
+	while i ≤ length(args)
 		arg = args[i]
 		err = ArgumentError("Missing value for $(arg).")
 		if arg == "-f" || arg == "--from"
