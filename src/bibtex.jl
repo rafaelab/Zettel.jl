@@ -103,7 +103,7 @@ end
 
 Convert a [`ZettelLibrary`](@ref) to a `Pybtex.BibLibrary`.
 
-This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib` file with [`writeBibTeX`](@ref).
+This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib` file with [`writeBibTeXLibrary`](@ref).
 """
 function toBibTeX(lib::ZettelLibrary)
 	pydb = pyimport("pybtex.database")
@@ -157,11 +157,11 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	writeBibTeX(lib, filename)
+	writeBibTeXLibrary(lib, filename)
 
 Write the [`ZettelLibrary`](@ref) `lib` to a BibTeX `.bib` file at `filename` using Pybtex as the backend.
 """
-function writeBibTeX(lib::ZettelLibrary, filename::AbstractString)
+function writeBibTeXLibrary(lib::ZettelLibrary, filename::AbstractString)
 	bibLib = toBibTeX(lib)
 	Pybtex.writeBibtexDataBase(bibLib, filename)
 	return nothing
@@ -171,12 +171,12 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	readBibTeX(filename)
+	readBibTeXLibrary(filename)
 
 Read a BibTeX `.bib` file and return a [`ZettelLibrary`](@ref).
 Uses Pybtex as the parsing backend.
 """
-function readBibTeX(filename::AbstractString)
+function readBibTeXLibrary(filename::AbstractString)
 	bibLib = Pybtex.readBibtexDataBase(filename)
 	return fromBibTeX(bibLib)
 end

@@ -126,3 +126,69 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	sort(lib)
+
+Return a new [`ZettelLibrary`](@ref) with entries sorted alphabetically by citation key.
+
+# Input
+- `lib::ZettelLibrary`: library to sort.
+
+# Output
+- A new [`ZettelLibrary`](@ref) with entries in ascending key order.
+"""
+function Base.sort(lib::ZettelLibrary)
+	sortedKeys = sort(collect(keys(lib.entries)))
+	d = OrderedDict{String, ZettelEntry}()
+	for k ∈ sortedKeys
+		d[k] = lib.entries[k]
+	end
+	return ZettelLibrary(d)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	loadLibrary(filename)
+
+Load a [`ZettelLibrary`](@ref) from `filename`, inferring the format from the file extension.
+
+Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
+
+# Input
+- `filename::AbstractString`: path to the bibliography file.
+
+# Output
+- A [`ZettelLibrary`](@ref) parsed from `filename`.
+"""
+function loadLibrary(filename::AbstractString)
+	isfile(filename) || throw(ArgumentError("File not found: $(filename)"))
+	return readBibliography(bibliographyFormat(filename), filename)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	saveLibrary(lib, filename)
+
+Save a [`ZettelLibrary`](@ref) to `filename`, inferring the format from the file extension.
+
+Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
+
+# Input
+- `lib::ZettelLibrary`: library to save.
+- `filename::AbstractString`: destination file path.
+
+# Output
+- `nothing`.
+"""
+function saveLibrary(lib::ZettelLibrary, filename::AbstractString)
+	writeBibliography(bibliographyFormat(filename), lib, filename)
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #

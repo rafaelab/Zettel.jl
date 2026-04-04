@@ -30,10 +30,10 @@ end
 	tmpbib = tempname() * ".bib"
 
 	try
-		writeBibTeX(lib, tmpbib)
+		writeBibTeXLibrary(lib, tmpbib)
 		@test isfile(tmpbib)
 
-		lib2 = readBibTeX(tmpbib)
+		lib2 = readBibTeXLibrary(tmpbib)
 		@test length(lib2) ≥ 1
 		@test haskey(lib2, "Einstein1905")
 		e = lib2["Einstein1905"]

@@ -43,4 +43,70 @@
 
 end
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "sort" begin
+	# Insert in reverse alphabetical order so sort is non-trivial
+	e1 = _sampleArticle()  # key: Einstein1905
+	e2 = _sampleBook()     # key: Misner1973
+	lib = ZettelLibrary([e2, e1])
+
+	sorted = sort(lib)
+	sortedKeys = collect(keys(sorted))
+	@test sortedKeys == sort(sortedKeys)
+	@test sortedKeys[1] == "Einstein1905"
+	@test sortedKeys[2] == "Misner1973"
+
+	# original is unchanged
+	originalKeys = collect(keys(lib))
+	@test originalKeys[1] == "Misner1973"
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "loadLibrary / saveLibrary" begin
+	lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+
+	mktempdir() do dir
+		@testset "JSON" begin
+			path = joinpath(dir, "lib.json")
+			saveLibrary(lib, path)
+			@test isfile(path)
+			lib2 = loadLibrary(path)
+			@test length(lib2) == 2
+			@test haskey(lib2, "Einstein1905")
+			@test haskey(lib2, "Misner1973")
+			@test getTitle(lib2["Einstein1905"]) == getTitle(lib["Einstein1905"])
+		end
+
+		@testset "YAML" begin
+			path = joinpath(dir, "lib.yaml")
+			saveLibrary(lib, path)
+			@test isfile(path)
+			lib2 = loadLibrary(path)
+			@test length(lib2) == 2
+			@test haskey(lib2, "Einstein1905")
+		end
+
+		@testset "BibTeX" begin
+			path = joinpath(dir, "lib.bib")
+			saveLibrary(lib, path)
+			@test isfile(path)
+			lib2 = loadLibrary(path)
+			@test length(lib2) ≥ 1
+			@test haskey(lib2, "Einstein1905")
+		end
+
+		@testset "unknown extension" begin
+			@test_throws ArgumentError loadLibrary(joinpath(dir, "lib.txt"))
+		end
+
+		@testset "missing file" begin
+			@test_throws ArgumentError loadLibrary(joinpath(dir, "nonexistent.json"))
+		end
+	end
+end
+
 # ----------------------------------------------------------------------------------------------- #
