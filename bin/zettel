@@ -5,22 +5,31 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 JULIA_BIN="${JULIA_BIN:-julia}"
 
-use_sysimage=true
-if [ "${1:-}" = "--no-sysimage" ]; then
-	use_sysimage=false
+use_compiled=true
+if [ "${1:-}" = "--no-compile" ] || [ "${1:-}" = "--no-sysimage" ]; then
+	use_compiled=false
 	shift
 fi
 
-# Allow override via ZETTEL_SYSIMAGE environment variable
-sysimage="${ZETTEL_SYSIMAGE:-}"
-if $use_sysimage && [ -z "$sysimage" ]; then
-	for f in "$SCRIPT_DIR"/Zettel.{so,dylib,dll}; do
-		[ -f "$f" ] && sysimage="$f" && break
-	done
+exe_name="zettel"
+case "${OSTYPE:-}" in
+	msys*|cygwin*|win32*)
+		exe_name="zettel.exe"
+		;;
+esac
+
+# Allow override via ZETTEL_EXECUTABLE environment variable (deprecated alias: ZETTEL_SYSIMAGE)
+compiled="${ZETTEL_EXECUTABLE:-}"
+if [ -z "$compiled" ] && [ -n "${ZETTEL_SYSIMAGE:-}" ]; then
+	compiled="$ZETTEL_SYSIMAGE"
+fi
+if $use_compiled && [ -z "$compiled" ]; then
+	candidate="$ROOT_DIR/lib/$exe_name"
+	[ -x "$candidate" ] && compiled="$candidate"
 fi
 
-if $use_sysimage && [ -n "$sysimage" ] && [ -f "$sysimage" ]; then
-	exec "$JULIA_BIN" -J "$sysimage" --project="$ROOT_DIR" -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- "$@"
+if $use_compiled && [ -n "$compiled" ] && [ -x "$compiled" ]; then
+	exec "$compiled" "$@"
 else
 	exec "$JULIA_BIN" --project="$ROOT_DIR" -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- "$@"
 fi

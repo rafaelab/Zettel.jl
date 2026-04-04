@@ -11,13 +11,13 @@ YAML_FROM_BIB="$SCRIPT_DIR/sample_from_bib.yaml"
 BIB_FROM_YAML="$SCRIPT_DIR/sample_from_yaml.bib"
 JSON_FROM_YAML="$SCRIPT_DIR/sample_from_yaml.json"
 
-"$BIN_ZETTEL" --no-sysimage "$INPUT_BIB" "$JSON_FROM_BIB"
+"$BIN_ZETTEL" "$INPUT_BIB" "$JSON_FROM_BIB"
 
-"$BIN_ZETTEL" --no-sysimage convert "$JSON_FROM_BIB" "$YAML_FROM_BIB" --to yaml
+"$BIN_ZETTEL" convert "$JSON_FROM_BIB" "$YAML_FROM_BIB" --to yaml
 
-"$BIN_ZETTEL" --no-sysimage convert "$YAML_FROM_BIB" "$BIB_FROM_YAML" --to bib
+"$BIN_ZETTEL" convert "$YAML_FROM_BIB" "$BIB_FROM_YAML" --to bib
 
-"$BIN_ZETTEL" --no-sysimage convert "$YAML_FROM_BIB" "$JSON_FROM_YAML" --to json
+"$BIN_ZETTEL" convert "$YAML_FROM_BIB" "$JSON_FROM_YAML" --to json
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
@@ -29,7 +29,7 @@ cat > "$TMPDIR/workflow.aux" <<'EOF'
 \bibstyle{plain}
 EOF
 
-"$BIN_ZETTEL" --no-sysimage "$TMPDIR/workflow.aux" -o "$TMPDIR/workflow.bbl" -l "$SCRIPT_DIR/sample.yaml"
+"$BIN_ZETTEL" "$TMPDIR/workflow.aux" -o "$TMPDIR/workflow.bbl" -l "$SCRIPT_DIR/sample.yaml"
 
 printf 'Wrote:\n'
 printf '  %s\n' "$JSON_FROM_BIB" "$YAML_FROM_BIB" "$BIB_FROM_YAML" "$JSON_FROM_YAML" "$TMPDIR/workflow.bbl"

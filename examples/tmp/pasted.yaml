@@ -1,0 +1,8 @@
+Doe2024:
+  entryType: "article"
+  title: "Sample Entry"
+  author:
+    - first: "Jane"
+      last: "Doe"
+  year: "2024"
+  journal: "Journal of Examples"

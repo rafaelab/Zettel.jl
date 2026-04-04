@@ -69,10 +69,10 @@ println("Reloaded from JSON: ", lib2)
 # 4. Save to BibTeX and reload
 
 bibFile = tempname() * ".bib"
-writeBibTeX(lib, bibFile)
+writeBibTeXLibrary(lib, bibFile)
 println("BibTeX file written to: $bibFile")
 
-lib3 = readBibTeX(bibFile)
+lib3 = readBibTeXLibrary(bibFile)
 println("Reloaded from BibTeX: ", lib3)
 
 

@@ -52,7 +52,7 @@ println("Converted JSON to YAML: $yamlFile")
 yamlToBibTeX(yamlFile, bibFile)
 println("BibTeX written to: $bibFile")
 
-lib3 = readBibTeX(bibFile)
+lib3 = readBibTeXLibrary(bibFile)
 println("Reloaded from BibTeX: ", lib3)
 
 

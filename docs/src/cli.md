@@ -11,11 +11,14 @@ bin/zettel [options] <input_file> [output_file]
 ```
 
 ### Option Flags
-```bash
-   julia bin/buildExecutable.jl
-```
+- `--no-compile`: Run via the Julia interpreter even if a compiled executable is available.
+- `--no-sysimage`: Backward-compatible alias for `--no-compile`.
+- `-l`, `--library <file>`: Path to a `.json`, `.yaml/.yml`, or `.bib` library (repeatable).
 - `-o`, `--output <path>`: Specify the output file (alternative to positional argument).
-- `--help`: Show usage information.
+- `-s`, `--style <name>`: Bibliography style name.
+- `-f`, `--from <type>`: Input type for `convert` (optional; inferred from extension).
+- `-t`, `--to <type>`: Output type for `convert` (required in `convert` mode).
+- `-h`, `--help`: Show usage information.
 
 ## Common Workflows
 
@@ -128,25 +131,27 @@ Suppose you have:
    bin/zettel convert references.json references_updated.bib --to bib
    ```
 
-## Running Without Sysimage
+## Running Without the Compiled Executable
 
-If the sysimage is not present or you want to bypass it:
+If the compiled executable is not present or you want to bypass it:
 
 ```bash
-bin/zettel --no-sysimage references.bib references.json
+bin/zettel --no-compile references.bib references.json
 ```
 
 Startup will be slower, but the result is identical.
+`--no-sysimage` is still accepted as a backward-compatible alias.
 
 ## Environment Variables
 
-- `ZETTEL_SYSIMAGE`: Path to a custom sysimage. If set, `bin/zettel` will use it instead of looking in `bin/`.
+- `ZETTEL_EXECUTABLE`: Path to a custom compiled executable. If set, `bin/zettel` will use it instead of looking in `lib/`.
+- `ZETTEL_SYSIMAGE`: Deprecated alias for `ZETTEL_EXECUTABLE`.
 - `JULIA_BIN`: Path to the Julia executable (default: `julia`).
 
 Example:
 
 ```bash
-export ZETTEL_SYSIMAGE=/path/to/custom/Zettel.so
+export ZETTEL_EXECUTABLE=/path/to/compiled/zettel
 bin/zettel references.bib references.json
 ```
 
@@ -162,8 +167,8 @@ bin/zettel references.bib references.json
 - The style name is case-insensitive but must match exactly.
 
 **Slow startup:**
-- Build a sysimage (see [Sysimage Generation Guide](sysimage.md)).
-- Or use `--no-sysimage` to confirm the code logic is correct (then optimize with sysimage).
+- Build the compiled CLI (see [CLI Compilation Guide](juliac.md)).
+- Or use `--no-compile` to confirm the code logic is correct (then optimize with the compiled executable).
 
 ## Julia API (from Julia REPL)
 

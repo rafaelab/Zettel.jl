@@ -12,7 +12,7 @@ makedocs(
 	pages = [
 		"Home"      => "index.md",
 		"CLI Guide" => "cli.md",
-		"SysImage"  => "sysimage.md",
+		"CLI Build" => "juliac.md",
 		"API"       => "api.md",
 	],
 )

@@ -120,14 +120,14 @@ Available styles:
 - `abntex2-num`
 - `abntex2-alpha`
 
-For faster startup, build the optional sysimage with:
+For faster startup, build the optional compiled CLI with Julia >= 1.12:
 
 ```bash
-julia bin/buildExecutable.jl
+julia cli/buildExecutable.jl
 ```
 
-`bin/zettel` will use `bin/Zettel.*` automatically when present.
-You can also override it with `ZETTEL_SYSIMAGE=/path/to/sysimage`.
+`bin/zettel` will use `lib/zettel` automatically when present.
+You can also override it with `ZETTEL_EXECUTABLE=/path/to/compiled/zettel`.
 
 Options:
 
@@ -311,4 +311,3 @@ See the [`examples/`](examples/) folder for runnable scripts.
 ## License
 
 MIT © rafaelab
-
