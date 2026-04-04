@@ -12,13 +12,26 @@ function looksLikeBibPath(path::AbstractString)
 end
 
 function formatToken(token::AbstractString)
-	try 
-		n = Zettel._getFileExtension(token)
-		n = replace(n, r"^\." => "")
-		n = lowercase(n)
-	catch
-		return nothing
+	n = lowercase(strip(token))
+
+	if n ∈ ("bib", "bibtex")
+		return "bib"
+	elseif n == "json"
+		return "json"
+	elseif n ∈ ("yaml", "yml")
+		return "yaml"
 	end
+
+	ext = lowercase(replace(Zettel._getFileExtension(n), r"^\." => ""))
+	if ext ∈ ("bib", "bibtex")
+		return "bib"
+	elseif ext == "json"
+		return "json"
+	elseif ext ∈ ("yaml", "yml")
+		return "yaml"
+	end
+
+	return nothing
 end
 
 function isBibRelated(args::Vector{String})
