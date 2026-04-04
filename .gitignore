@@ -4,6 +4,7 @@ docs/site/
 docs/_build*
 docs/Manifest.toml
 bin/zettel
+lib/
 examples/*.aux
 examples/*.bbl
 examples/*.log
