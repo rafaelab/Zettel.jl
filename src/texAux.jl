@@ -71,6 +71,27 @@ This follows `\\@input{...}` references recursively and preserves citation order
 
 # Output
 - An `AuxData` struct containing parsed citations, bibliography data sources, and style information.
+
+# Example
+
+```julia
+using Zettel
+
+# Parse a LaTeX auxiliary file
+aux = parseAuxFile("paper.aux")
+
+# Inspect the results
+println("Citations: ", aux.citations)
+println("Bibliography sources: ", aux.bibdata)
+println("Style: ", aux.bibstyle)
+println("Cite all? ", aux.citeAll)
+
+# Output example:
+# Citations: String["Einstein1905", "Misner1973"]
+# Bibliography sources: String["references"]
+# Style: "plain"
+# Cite all? false
+```
 """
 function parseAuxFile(path::AbstractString)
 	citations = String[]
@@ -160,6 +181,31 @@ If `style` is `"auto"`, the function uses `\\bibstyle{...}` from the `.aux` when
 
 # Output
 - Returns a named tuple with `outputPath`, `absent`, and `usedKeys`.
+
+# Example
+
+```julia
+using Zettel
+
+# Typical LaTeX workflow
+# 1. Run pdflatex to generate paper.aux
+# 2. Generate paper.bbl from the library
+result = writeBblFromAux("paper.aux"; libraryFiles = ["references.json"])
+
+println("Output: ", result.outputPath)
+println("Used keys: ", result.usedKeys)
+println("Missing keys: ", result.absent)
+
+# With custom style
+result = writeBblFromAux(
+    "paper.aux";
+    libraryFiles = ["references.json"],
+    outputPath = "paper.bbl",
+    style = "alpha"
+)
+
+# The .bbl file can now be included in paper.tex via \\input{paper.bbl}
+```
 """
 function writeBblFromAux(auxPath::AbstractString; libraryFiles = nothing, outputPath = nothing, style::AbstractString = "auto")
 	aux = parseAuxFile(auxPath)

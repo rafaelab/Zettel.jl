@@ -327,6 +327,23 @@ bin/zettel convert in.dat out.yaml --from json --to yaml
 
 `findByKey`, `searchEntries`, `filterByField`
 
+### See Also
+
+* **[`examples/`](examples/) folder**: Runnable CLI and Julia scripts for common workflows
+  - `cli-*.sh` scripts demonstrate BibTeX conversion, DOI fetching, and LaTeX workflows
+  - `example-*.jl` Julia scripts show API usage patterns
+  - `data/sample.*` files contain example data in multiple formats
+
+* **[`docs/examples.md`](docs/src/examples.md)**: Comprehensive guide showing CLI and Julia API side-by-side
+  - Multiple workflow examples (BibTeX→JSON, format conversion, DOI fetch)
+  - Before/after data transformations with actual examples
+  - Links to corresponding example scripts
+
+* **[`docs/cli.md`](docs/src/cli.md)**: Detailed CLI workflow documentation
+  - Command-line usage patterns and options
+  - Complete LaTeX workflow example
+  - Troubleshooting guide
+
 ---
 
 ## Examples

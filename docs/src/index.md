@@ -118,3 +118,53 @@ people lists, for example:
 
 `readJsonLibrary` and `readYamlLibrary` accept both the per-key Zettel format and the
 list-based library format produced by `writeJsonLibrary`/`writeYamlLibrary`.
+
+## Examples
+
+### Before and After: BibTeX to JSON
+
+**Input** (`references.bib`):
+```bibtex
+@ARTICLE{Einstein1905,
+    author = {{Einstein}, A.},
+    title = {Zur Elektrodynamik bewegter Körper},
+    journal = {Annalen der Physik},
+    year = 1905,
+    volume = {322},
+    number = {10},
+    pages = {891-921},
+    doi = {10.1002/andp.19053221004}
+}
+```
+
+**Output** (`references.json`):
+```json
+{
+    "Einstein1905": {
+        "entryType": "article",
+        "title": "Zur Elektrodynamik bewegter Körper",
+        "author": [
+            {
+                "first": "A.",
+                "last": "Einstein"
+            }
+        ],
+        "year": "1905",
+        "journal": "Annalen der Physik",
+        "volume": "322",
+        "number": "10",
+        "pages": "891-921",
+        "doi": "10.1002/andp.19053221004"
+    }
+}
+```
+
+This shows the key transformation: BibTeX's flat structure becomes a per-key map with structured author information.
+
+### Learn by Example
+
+For comprehensive workflow examples showing both CLI and Julia API usage, see:
+
+- **[Examples Guide](examples.md)** — Multiple workflows with before/after transformations
+- **[`examples/` folder](../../../examples/)** — Runnable scripts for CLI and Julia
+- **[Sample Data](../../../examples/data/)** — `sample.bib`, `sample.json`, `sample.yaml` for reference

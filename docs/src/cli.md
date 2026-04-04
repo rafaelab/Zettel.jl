@@ -218,3 +218,56 @@ zettelCLI(args = ["references.bib", "references.json"])
 ```
 
 See the [API Reference](api.md) for full details.
+
+## Example Scripts Reference
+
+The [`examples/`](../../../examples/) folder contains runnable scripts demonstrating key patterns:
+
+### CLI Scripts (`.sh`)
+
+| Script | Purpose | Demonstrates |
+|--------|---------|--------------|
+| `cli-bib-to-json.sh` | Convert `.bib` to JSON | Basic format conversion |
+| `cli-convert-to.sh` | Convert with `--to` flag | Explicit output type specification |
+| `cli-convert-from-to.sh` | Convert with `-f`/`--from` and `-t`/`--to` | Ambiguous format handling |
+| `cli-aux-with-options.sh` | `.aux` workflow with library/output/style options | `.aux` → `.bbl` generation with custom settings |
+| `cli-paste-to.sh` | Paste BibTeX from stdin to JSON/YAML | Stdin input handling without library update |
+| `cli-paste-to-library.sh` | Paste entry and add to library | Library update workflow with key sorting |
+| `cli-crossref-doi.sh` | Fetch DOI from Crossref (default source) | Basic DOI metadata fetching |
+| `cli-doi-source.sh` | Fetch DOI with `--source` option | Alternative DOI sources (e.g., DataCite) |
+| `cli-tex_aux.sh` | Compile TeX, generate `.aux`, run zettel, recompile | Complete LaTeX bibliography workflow |
+| `cli-help.sh` | Display CLI help | Available options and subcommands |
+
+### Julia Scripts (`.jl`)
+
+| Script | Purpose | Pattern |
+|--------|---------|---------|
+| `example-simple.jl` | Basic end-to-end workflow | ZettelEntry creation, library I/O, JSON/BibTeX conversion |
+| `example-yaml.jl` | YAML-specific workflows | JSON ↔ YAML conversions, library manipulation |
+| `example-json.jl` | JSON library operations | Reading/writing JSON libraries |
+
+### Sample Data
+
+| File | Format | Content |
+|------|--------|---------|
+| `data/sample.bib` | BibTeX | 2 entries (Einstein1905 article, Misner1973 book) |
+| `data/sample.json` | Zettel JSON | Per-key map format with structured author fields |
+| `data/sample.yaml` | Zettel YAML | YAML equivalent of sample.json |
+
+### Running Example Scripts
+
+```bash
+# Make executable
+chmod +x examples/cli-*.sh
+
+# Run a conversion example
+bash examples/cli-bib-to-json.sh
+
+# Run a LaTeX workflow example (requires pdflatex)
+bash examples/cli-tex_aux.sh
+
+# Run a Julia example
+julia examples/example-simple.jl
+```
+
+For complete workflow examples with before/after data, see [Examples Guide](examples.md).

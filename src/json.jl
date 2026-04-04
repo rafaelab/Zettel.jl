@@ -79,6 +79,32 @@ Serialise a [`ZettelLibrary`](@ref) to a JSON file at `filename`.
 
 The file uses tab characters for indentation (one tab per nesting level).  
 Each entry is stored as an object with `"key"`, `"type"`, and `"fields"` properties that mirror the corresponding BibTeX fields.
+
+# Example
+
+```julia
+using Zettel, OrderedCollections
+
+# Create a library with one entry
+entry = ZettelEntry(
+    "Einstein1905",
+    "article",
+    OrderedDict(
+        "author"  => "Einstein, A.",
+        "title"   => "Zur Elektrodynamik bewegter Körper",
+        "journal" => "Annalen der Physik",
+        "year"    => "1905",
+    ),
+)
+
+lib = ZettelLibrary([entry])
+
+# Write to JSON file
+writeJsonLibrary(lib, "library.json")
+
+# The library can be loaded with readJsonLibrary
+loaded = readJsonLibrary("library.json")
+```
 """
 function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
 	records = [_entryToOrderedDict(e) for e ∈ values(lib)]
@@ -105,6 +131,24 @@ Read a JSON file and return a [`ZettelLibrary`](@ref).
 This accepts both:
 - the list-based library format produced by [`writeJsonLibrary`](@ref)
 - the per-key Zettel JSON format produced by [`bibTeXToJson`](@ref)
+
+# Example
+
+```julia
+using Zettel
+
+# Load a library from a JSON file
+lib = readJsonLibrary("library.json")
+
+# Access entries by key
+einstein = lib["Einstein1905"]
+println("Title: ", getTitle(einstein))
+
+# Iterate over all entries
+for (key, entry) in pairs(lib)
+    println("\$(key): \$(getTitle(entry))")
+end
+```
 """
 function readJsonLibrary(filename::AbstractString)
 	data = JSON3.read(read(filename, String))
@@ -203,6 +247,8 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
+	bibTeXToJson(inputPath, outputPath)
+
 Convert a BibTeX file into JSON while preserving entry type and fields, and structuring author/editor/translator persons as name parts.
 
 # Input
@@ -211,6 +257,23 @@ Convert a BibTeX file into JSON while preserving entry type and fields, and stru
 
 # Output
 - The `outputPath` string after writing the converted file.
+
+# Example
+
+```julia
+using Zettel
+
+# Convert a BibTeX file to JSON
+bibTeXToJson("references.bib", "references.json")
+
+# The output uses the per-key Zettel JSON format with structured author fields
+# You can then load and inspect it
+lib = readJsonLibrary("references.json")
+for (key, entry) in pairs(lib)
+    authors = getAuthors(entry)
+    println("\$(key): \$(authors)")
+end
+```
 """
 function bibTeXToJson(inputPath::AbstractString, outputPath::AbstractString)
 	return convertBibliography(inputPath, outputPath, bibTeXFormat(), jsonFormat())

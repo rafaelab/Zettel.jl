@@ -211,9 +211,26 @@ For Metadata Plus, set `plusToken` (or `CROSSREF_PLUS_API_TOKEN`).
 You may also override the user agent with `userAgent`.
 
 # Example
+
 ```julia
-	entry = fetchFromCrossref("10.1002/andp.19053221004")
+using Zettel
+
+# Fetch an entry by DOI with polite access
+entry = fetchFromCrossref("10.1002/andp.19053221004"; mailto = "you@example.org")
+
+# Check what we got
+println("Key: ", getKey(entry))
+println("Title: ", getTitle(entry))
+println("Authors: ", getAuthors(entry))
+println("Year: ", getYear(entry))
+
+# Add to a library and save
+lib = ZettelLibrary([entry])
+writeJsonLibrary(lib, "entry.json")
 ```
+
+# Note
+This function requires internet connectivity to access the CrossRef API.
 """
 function fetchFromCrossref(
 	doi::AbstractString;
@@ -644,6 +661,26 @@ Fetch metadata for a DOI from CrossRef and return it as a JSON dictionary.
 
 # Output
 - A `Dict` containing the CrossRef metadata for the DOI.
+
+# Example
+
+```julia
+using Zettel
+
+# Fetch raw CrossRef JSON data
+record = fetchCrossrefJson("10.1002/andp.19053221004"; mailto = "you@example.org")
+
+# Inspect the structure
+println("Type: ", record["type"])
+println("Title: ", record["title"])
+
+# Convert to Zettel JSON format
+crossrefJsonToZettelJson(record, "entry.json")
+```
+
+# Note
+This function requires internet connectivity and returns the raw CrossRef API response.
+For direct entry creation, use [`fetchFromCrossref`](@ref) instead.
 """
 function fetchCrossrefJson(
 	doi::AbstractString;
