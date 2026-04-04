@@ -54,6 +54,8 @@ Return the JSON format selector.
 jsonFormat() = JsonFormat()
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	yamlFormat()
 
@@ -65,6 +67,8 @@ Return the YAML format selector.
 yamlFormat() = YamlFormat()
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	bibTeXFormat()
 
@@ -74,6 +78,33 @@ Return the BibTeX format selector.
 - A [`BibTeXFormat`](@ref) singleton.
 """
 bibTeXFormat() = BibTeXFormat()
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	bibliographyFormat(path)
+
+Infer a bibliography format from a file extension.
+
+# Input
+- `path::AbstractString`: file path whose suffix identifies the format.
+
+# Output
+- A [`BibliographyFormat`](@ref) singleton inferred from the file extension.
+"""
+function bibliographyFormat(path::AbstractString)
+	ext = _getFileExtension(path)
+	if ext == ".json"
+		return JsonFormat()
+	elseif ext ∈ (".yaml", ".yml")
+		return YamlFormat()
+	elseif ext ∈ (".bib", ".bibtex")
+		return BibTeXFormat()
+	else
+		throw(ArgumentError("Cannot infer format from extension: $(path). Use --from <json|yaml|bib>."))
+	end
+end
 
 
 # ----------------------------------------------------------------------------------------------- #

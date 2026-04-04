@@ -154,7 +154,6 @@ end
 	loadLibrary(filename)
 
 Load a [`ZettelLibrary`](@ref) from `filename`, inferring the format from the file extension.
-
 Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
 
 # Input
@@ -175,7 +174,6 @@ end
 	saveLibrary(lib, filename)
 
 Save a [`ZettelLibrary`](@ref) to `filename`, inferring the format from the file extension.
-
 Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
 
 # Input

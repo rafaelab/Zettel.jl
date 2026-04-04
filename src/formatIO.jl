@@ -12,42 +12,15 @@ Parse a bibliography format name or extension into a dispatchable format object.
 - A [`BibliographyFormat`](@ref) singleton corresponding to the requested format.
 """
 function parseBibliographyFormat(name::AbstractString)
-	formattedName = lowercase(strip(name))
-	if formattedName == "json"
+	n = lowercase(strip(name))
+	if n == "json"
 		return JsonFormat()
-	elseif formattedName ∈ ("yaml", "yml")
+	elseif n ∈ ("yaml", "yml")
 		return YamlFormat()
-	elseif formattedName ∈ ("bib", "bibtex")
+	elseif n ∈ ("bib", "bibtex")
 		return BibTeXFormat()
 	else
 		throw(ArgumentError("Unsupported format: $(name). Supported: json, yaml, bib"))
-	end
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	bibliographyFormat(path)
-
-Infer a bibliography format from a file extension.
-
-# Input
-- `path::AbstractString`: file path whose suffix identifies the format.
-
-# Output
-- A [`BibliographyFormat`](@ref) singleton inferred from the file extension.
-"""
-function bibliographyFormat(path::AbstractString)
-	lowerPath = lowercase(path)
-	if endswith(lowerPath, ".json")
-		return JsonFormat()
-	elseif endswith(lowerPath, ".yaml") || endswith(lowerPath, ".yml")
-		return YamlFormat()
-	elseif endswith(lowerPath, ".bib")
-		return BibTeXFormat()
-	else
-		throw(ArgumentError("Cannot infer input format from extension: $(path). Use --from <json|yaml|bib>."))
 	end
 end
 
