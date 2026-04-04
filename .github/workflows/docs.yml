@@ -57,11 +57,13 @@ jobs:
         run: |
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          git clone --branch gh-pages "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+          git clone --depth 1 --branch gh-pages "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
           if [ ! -f /tmp/gh-pages/.nojekyll ]; then
             touch /tmp/gh-pages/.nojekyll
             cd /tmp/gh-pages
+            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
             git add .nojekyll
             git commit -m "Add .nojekyll to disable Jekyll processing"
             git push
+            git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
           fi
