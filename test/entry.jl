@@ -82,3 +82,65 @@
 	end
 
 end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "entryToString" begin
+	e = _sampleArticle()
+
+	@testset "BibTeX format" begin
+		s = entryToString(e, bibTeXFormat())
+		@test startswith(s, "@article{Einstein1905,")
+		@test occursin("author = {Einstein, A.}", s)
+		@test occursin("year = {1905}", s)
+		@test occursin("doi = {10.1002/andp.19053221004}", s)
+	end
+
+	@testset "JSON format" begin
+		s = entryToString(e, jsonFormat())
+		@test occursin("\"key\"", s)
+		@test occursin("\"Einstein1905\"", s)
+		@test occursin("\"type\"", s)
+		@test occursin("\"article\"", s)
+		@test occursin("\"fields\"", s)
+	end
+
+	@testset "YAML format" begin
+		s = entryToString(e, yamlFormat())
+		@test occursin("key:", s)
+		@test occursin("Einstein1905", s)
+		@test occursin("type:", s)
+		@test occursin("article", s)
+	end
+
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "entryFromString round-trip" begin
+	e = _sampleArticle()
+
+	@testset "JSON round-trip" begin
+		s = entryToString(e, jsonFormat())
+		e2 = entryFromString(s, jsonFormat())
+		@test e2.key == e.key
+		@test e2.entryType == e.entryType
+		@test getTitle(e2) == getTitle(e)
+		@test getYear(e2) == getYear(e)
+		@test getDOI(e2) == getDOI(e)
+	end
+
+	@testset "YAML round-trip" begin
+		s = entryToString(e, yamlFormat())
+		e2 = entryFromString(s, yamlFormat())
+		@test e2.key == e.key
+		@test e2.entryType == e.entryType
+		@test getTitle(e2) == getTitle(e)
+		@test getYear(e2) == getYear(e)
+	end
+
+end
+
+# ----------------------------------------------------------------------------------------------- #

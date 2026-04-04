@@ -5,13 +5,16 @@ import Pybtex
 using OrderedCollections
 using PythonCall: pyconvert
 
+
+
 include("common.jl")
 include("crossref.jl")
-include("jsonIO.jl")
-include("yamlIO.jl")
+include("json.jl")
+include("yaml.jl")
 include("entry.jl")
 include("library.jl")
 include("aux.jl")
 include("query.jl")
 include("roundtrip.jl")
+include("encoding.jl")
 include("cli.jl")
