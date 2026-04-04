@@ -13,7 +13,7 @@ It creates a new type, `ZettelEntry`, which is essentially equivalent to BibTeX,
 ## Features
 
 * **JSON/YAML library**: Store and load references in readable, VCS-friendly JSON or YAML
-* **CrossRef fetch**: Automatically retrieve metadata from [CrossRef](https://www.crossref.org/) using a DOI
+* **DOI metadata fetch**: Retrieve metadata from DOI providers (`crossref` default, `datacite` supported)
 * **BibTeX I/O**: Read and write `.bib` files via [Pybtex.jl](https://github.com/rafaelab/pybtex.jl)
 * **Query helpers**: Search and filter entries in a `ZettelLibrary`
 * **BibTeX fields**: Preserves all standard BibTeX fields (`author`, `title`, `journal`, `doi`, …)
@@ -85,6 +85,27 @@ Add the pasted entry to a JSON/YAML library while keeping keys sorted alphabetic
 pbpaste | bin/zettel paste --to json --library references.json
 ```
 
+### Fetch DOI from a source (`crossref` default)
+
+Crossref recommends including contact information (`mailto`) for polite access:
+
+```bash
+bin/zettel doi 10.1038/nphys1170 --mailto you@example.org --to yaml
+```
+
+Optional Metadata Plus token support:
+
+```bash
+export CROSSREF_PLUS_API_TOKEN=...
+bin/zettel doi 10.1038/nphys1170 --mailto you@example.org --to json --output entry.json
+```
+
+Fetch from DataCite explicitly:
+
+```bash
+bin/zettel doi <doi-from-datacite> --source datacite --to yaml
+```
+
 ### BibTeX-like workflow (aux → bbl)
 
 Zettel can replace `bibtex` for a simple BibTeX-style workflow that reads citation keys
@@ -137,6 +158,9 @@ Options:
 -s, --style <name>     Bibliography style (default: auto -> \\bibstyle{...} or plain)
 -f, --from <type>      Input type for convert mode (optional: infer from extension)
 -t, --to <type>        Output type for convert mode (mandatory in convert mode)
+    --source <name>    DOI metadata source (doi mode; default: crossref)
+-m, --mailto <email>   Contact email for Crossref polite access (doi mode)
+    --plus-token <t>   Crossref Metadata Plus token (doi mode, optional)
 ```
 
 ---
@@ -283,11 +307,14 @@ bin/zettel convert in.dat out.yaml --from json --to yaml
 | `toBibTeX(lib)` | Convert to a `Pybtex.BibLibrary` object |
 | `fromBibTeX(bibLib)` | Convert from a `Pybtex.BibLibrary` object |
 
-### CrossRef
+### DOI Metadata
 
 | Function | Description |
 |---|---|
 | `fetchFromCrossref(doi)` | Fetch metadata from CrossRef and return a `ZettelEntry` |
+| `fetchFromDataCite(doi)` | Fetch metadata from DataCite and return a `ZettelEntry` |
+| `fetchFromDoiSource(doi; source="crossref")` | Fetch metadata from a configured DOI source |
+| `doiSources()` | List supported DOI sources |
 | `fetchCrossrefJson(doi)` | Fetch a Crossref work message |
 
 ### Entry accessors

@@ -38,13 +38,18 @@ function isBibRelated(args::Vector{String})
 	isempty(args) && return false
 	cmd = args[1]
 
-	# Legacy 2-arg mode: zettel input.bib output.json
+	# legacy 2-arg mode: zettel input.bib output.json
 	if length(args) == 2 && !startswith(args[1], "-") && !startswith(args[2], "-")
 		return looksLikeBibPath(args[1]) || looksLikeBibPath(args[2])
 	end
 
 	if cmd == "paste"
 		# paste always parses BibTeX from stdin.
+		return true
+	end
+
+	if cmd == "doi" || (startswith(cmd, "10.") && occursin("/", cmd))
+		# DOI flows depend on runtime HTTP/Python behavior; keep them on interpreter path.
 		return true
 	end
 

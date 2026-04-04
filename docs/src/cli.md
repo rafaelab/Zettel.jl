@@ -18,6 +18,9 @@ bin/zettel [options] <input_file> [output_file]
 - `-s`, `--style <name>`: Bibliography style name.
 - `-f`, `--from <type>`: Input type for `convert` (optional; inferred from extension).
 - `-t`, `--to <type>`: Output type for `convert` (required in `convert` mode).
+- `--source <name>`: DOI metadata source in `doi` mode (`crossref` default; also supports `datacite`).
+- `-m`, `--mailto <email>`: Contact email for Crossref polite requests (`doi` mode).
+- `--plus-token <token>`: Crossref Metadata Plus token (`doi` mode; optional).
 - `-h`, `--help`: Show usage information.
 
 ## Common Workflows
@@ -101,6 +104,26 @@ for bib in *.bib; do
 done
 ```
 
+### 6. Fetch a DOI from a Source (`crossref` Default)
+
+Fetch one DOI from Crossref (default source) and print one `ZettelEntry`:
+
+```bash
+bin/zettel doi 10.1038/nphys1170 --mailto you@example.org --to yaml
+```
+
+Fetch from DataCite explicitly:
+
+```bash
+bin/zettel doi <doi-from-datacite> --source datacite --to yaml
+```
+
+Write Crossref output directly to a file:
+
+```bash
+bin/zettel doi 10.1038/nphys1170 --mailto you@example.org --to json --output entry.json
+```
+
 ## Example: Complete LaTeX Workflow
 
 Suppose you have:
@@ -147,6 +170,10 @@ Startup will be slower, but the result is identical.
 - `ZETTEL_EXECUTABLE`: Path to a custom compiled executable. If set, `bin/zettel` will use it instead of looking in `lib/`.
 - `ZETTEL_SYSIMAGE`: Deprecated alias for `ZETTEL_EXECUTABLE`.
 - `JULIA_BIN`: Path to the Julia executable (default: `julia`).
+- `CROSSREF_MAILTO`: Contact email used for Crossref polite access in `doi` mode.
+- `CROSSREF_PLUS_API_TOKEN`: Crossref Metadata Plus token (optional, for higher limits).
+- `CROSSREF_USER_AGENT`: Optional Crossref user-agent override.
+- `DATACITE_USER_AGENT`: Optional DataCite user-agent override.
 
 Example:
 
