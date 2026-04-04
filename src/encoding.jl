@@ -156,7 +156,7 @@ end
 @doc """
 	decodeTex(s)
 
-Convert TeX character commands in `s` to their UTF-8 equivalents using the [`tex2utf8`](@ref) table.
+Convert TeX character commands in `s` to their UTF-8 equivalents using the `tex2utf8` table.
 
 Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c}` is tried before a hypothetical `\\v`).
 
@@ -180,7 +180,7 @@ end
 @doc """
 	encodeTex(s)
 
-Convert UTF-8 characters in `s` to their TeX equivalents using the [`utf8ToTex`](@ref) table.
+Convert UTF-8 characters in `s` to their TeX equivalents using the `utf8ToTex` table.
 
 Replacements are applied longest-key-first.
 Note: left/right curly quotes (`\u201C`/`\u201D`) are encoded as ` `` ` and `''` respectively.

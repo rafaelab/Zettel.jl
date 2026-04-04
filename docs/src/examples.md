@@ -5,7 +5,7 @@ complete with actual data transformations.
 
 ## Overview
 
-The [`examples/`](../../../examples/) folder contains:
+The [`examples/`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/) folder contains:
 
 - **CLI Scripts** (`cli-*.sh`): Command-line usage patterns
 - **Julia Scripts** (`example-*.jl`): Julia REPL and script patterns
@@ -119,7 +119,7 @@ writeJsonLibrary(lib, "references.json")
 
 **Key transformation**: Authors are parsed into structured `{ "first", "middle", "last" }` objects.
 
-**Example script**: [`examples/cli-bib-to-json.sh`](../../../examples/cli-bib-to-json.sh)
+**Example script**: [`examples/cli-bib-to-json.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-bib-to-json.sh)
 
 ---
 
@@ -192,9 +192,9 @@ Einstein1905:
 ```
 
 **Example scripts**:
-- [`examples/cli-convert-to.sh`](../../../examples/cli-convert-to.sh) — Using `--to` flag
-- [`examples/cli-convert-from-to.sh`](../../../examples/cli-convert-from-to.sh) — Using `-f`/`--from` and `-t`/`--to`
-- [`examples/example-yaml.jl`](../../../examples/example-yaml.jl) — Julia YAML workflows
+- [`examples/cli-convert-to.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-convert-to.sh) — Using `--to` flag
+- [`examples/cli-convert-from-to.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-convert-from-to.sh) — Using `-f`/`--from` and `-t`/`--to`
+- [`examples/example-yaml.jl`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/example-yaml.jl) — Julia YAML workflows
 
 ---
 
@@ -265,8 +265,8 @@ ZettelEntry(
 **Limitations**: Requires internet connectivity. Crossref recommends polite access via `--mailto` parameter.
 
 **Example scripts**:
-- [`examples/cli-crossref-doi.sh`](../../../examples/cli-crossref-doi.sh) — Basic Crossref fetch
-- [`examples/cli-doi-source.sh`](../../../examples/cli-doi-source.sh) — Alternative sources
+- [`examples/cli-crossref-doi.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-crossref-doi.sh) — Basic Crossref fetch
+- [`examples/cli-doi-source.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-doi-source.sh) — Alternative sources
 
 ---
 
@@ -343,8 +343,8 @@ writeJsonLibrary(lib, "new_entry.json")
 ```
 
 **Example scripts**:
-- [`examples/cli-paste-to.sh`](../../../examples/cli-paste-to.sh) — Paste to stdout
-- [`examples/cli-paste-to-library.sh`](../../../examples/cli-paste-to-library.sh) — Paste to library
+- [`examples/cli-paste-to.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-paste-to.sh) — Paste to stdout
+- [`examples/cli-paste-to-library.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-paste-to-library.sh) — Paste to library
 
 ---
 
@@ -425,7 +425,7 @@ C.~W. Misner, K.~S. Thorne, and J.~A. Wheeler.
 **Available bibliography styles**:
 `plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`, `full`, `abntex2-num`, `abntex2-alpha`
 
-**Example script**: [`examples/cli-tex_aux.sh`](../../../examples/cli-tex_aux.sh)
+**Example script**: [`examples/cli-tex_aux.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-tex_aux.sh)
 
 ---
 
@@ -480,7 +480,7 @@ lib = ZettelLibrary([
 - `filterByField(lib, "year", "1905")` → All entries from 1905
 - `searchEntries(lib, r"gravitation")` → Entries matching pattern (title, author, journal)
 
-**Example script**: [`examples/example-simple.jl`](../../../examples/example-simple.jl)
+**Example script**: [`examples/example-simple.jl`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/example-simple.jl)
 
 ---
 
@@ -502,4 +502,4 @@ lib = ZettelLibrary([
 
 - [API Reference](api.md) — Complete function documentation
 - [CLI Guide](cli.md) — Detailed CLI documentation and troubleshooting
-- [`examples/` folder](../../../examples/) — Runnable scripts and sample data
+- [`examples/` folder](https://github.com/rafaelab/Zettel.jl/tree/main/examples/) — Runnable scripts and sample data

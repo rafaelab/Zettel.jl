@@ -221,7 +221,7 @@ See the [API Reference](api.md) for full details.
 
 ## Example Scripts Reference
 
-The [`examples/`](../../../examples/) folder contains runnable scripts demonstrating key patterns:
+The [`examples/`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/) folder contains runnable scripts demonstrating key patterns:
 
 ### CLI Scripts (`.sh`)
 

@@ -166,5 +166,5 @@ This shows the key transformation: BibTeX's flat structure becomes a per-key map
 For comprehensive workflow examples showing both CLI and Julia API usage, see:
 
 - **[Examples Guide](examples.md)** — Multiple workflows with before/after transformations
-- **[`examples/` folder](../../../examples/)** — Runnable scripts for CLI and Julia
-- **[Sample Data](../../../examples/data/)** — `sample.bib`, `sample.json`, `sample.yaml` for reference
+- **[`examples/` folder](https://github.com/rafaelab/Zettel.jl/tree/main/examples/)** — Runnable scripts for CLI and Julia
+- **[Sample Data](https://github.com/rafaelab/Zettel.jl/tree/main/examples/data/)** — `sample.bib`, `sample.json`, `sample.yaml` for reference
