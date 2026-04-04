@@ -76,6 +76,7 @@ using HTTP
 
 
 
+include("common.jl")
 include("formats.jl")
 include("entry.jl")
 include("encoding.jl")
