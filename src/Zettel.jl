@@ -1,14 +1,26 @@
 module Zettel
 
-export 
+export
 	ZettelEntry,
 	ZettelLibrary,
+	BibliographyFormat,
+	BibTeXFormat,
+	JsonFormat,
+	YamlFormat,
+	jsonFormat,
+	yamlFormat,
+	bibTeXFormat,
+	parseBibliographyFormat,
+	bibliographyFormat,
+	readBibliography,
+	writeBibliography,
+	convertBibliography,
 	readJsonLibrary,
 	writeJsonLibrary,
 	readYamlLibrary,
 	writeYamlLibrary,
-	readBibTeX,
-	writeBibTeX,
+	readBibTeXLibrary,
+	writeBibTeXLibrary,
 	toBibTeX,
 	fromBibTeX,
 	fetchFromCrossref,
@@ -38,6 +50,12 @@ export
 	yamlToBibTeX,
 	yamlToJson,
 	jsonToYaml,
+	loadLibrary,
+	saveLibrary,
+	entryToString,
+	entryFromString,
+	decodeTex,
+	encodeTex,
 	findByKey,
 	searchEntries,
 	filterByField,
@@ -58,11 +76,13 @@ using HTTP
 
 
 
+include("formats.jl")
 include("entry.jl")
+include("encoding.jl")
 include("library.jl")
 include("formatIO.jl")
-include("jsonIO.jl")
-include("yamlIO.jl")
+include("json.jl")
+include("yaml.jl")
 include("crossref.jl")
 include("bibtex.jl")
 include("query.jl")

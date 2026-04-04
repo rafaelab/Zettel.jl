@@ -57,9 +57,8 @@ Return a `ZettelEntry` containing the fields from both entries.
 - `right::ZettelEntry`: right-hand entry.
 
 # Output
-- A `ZettelEntry` whose `key` and `entryType` come from `left`, and whose fields contain the
-  combination of fields from both entries. When a field exists in both entries, the value from
-  `right` overwrites the value from `left`.
+- A `ZettelEntry` whose `key` and `entryType` come from `left`, and whose fields contain the combination of fields from both entries. 
+When a field exists in both entries, the value from `right` overwrites the value from `left`.
 """
 function Base.union(left::ZettelEntry, right::ZettelEntry)
 	fields = OrderedDict{String, String}(left.fields)
@@ -262,6 +261,87 @@ Return the value of `field` in the entry, or `""` if the field is absent.
 function getField(entry::ZettelEntry, field::AbstractString)
 	k = lowercase(field)
 	return get(entry.fields, k, "")
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	entryToString(entry, format)
+
+Serialise a [`ZettelEntry`](@ref) to a string in the requested bibliography format.
+
+# Input
+- `entry::ZettelEntry`: entry to serialise.
+- `format::BibliographyFormat`: format selector; one of [`JsonFormat`](@ref), [`YamlFormat`](@ref), or [`BibTeXFormat`](@ref).
+
+# Output
+- A `String` containing the entry in the chosen format.
+
+# Examples
+```julia
+s = entryToString(entry, jsonFormat())
+s = entryToString(entry, yamlFormat())
+s = entryToString(entry, bibTeXFormat())
+```
+"""
+function entryToString(entry::ZettelEntry, ::JsonFormat)
+	d = _entryToOrderedDict(entry)
+	buf = IOBuffer()
+	JSON3.pretty(buf, d, JSON3.AlignmentContext(indent = 4))
+	return _indentJson(String(take!(buf)))
+end
+
+
+function entryToString(entry::ZettelEntry, ::YamlFormat)
+	d = _entryToOrderedDict(entry)
+	result = try
+		YAML.write(_toYamlData(d))
+	catch
+		throw(ArgumentError("Failed to serialise entry $(entry.key) to YAML."))
+	end
+	return result
+end
+
+
+function entryToString(entry::ZettelEntry, ::BibTeXFormat)
+	io = IOBuffer()
+	println(io, "@$(entry.entryType){$(entry.key),")
+	for (field, value) ∈ entry.fields
+		println(io, "\t$(field) = {$(value)},")
+	end
+	print(io, "}")
+	return String(take!(io))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	entryFromString(s, format)
+
+Parse a [`ZettelEntry`](@ref) from a string in the given format.
+
+The string must contain a single entry in the library format:
+- JSON: `{"key": "...", "type": "...", "fields": {...}}`
+- YAML: equivalent YAML mapping
+
+# Input
+- `s::AbstractString`: the serialised entry.
+- `format::BibliographyFormat`: format selector; one of [`JsonFormat`](@ref) or [`YamlFormat`](@ref).
+
+# Output
+- A [`ZettelEntry`](@ref) parsed from `s`.
+"""
+function entryFromString(s::AbstractString, ::JsonFormat)
+	data = _normaliseParsedData(JSON3.read(s))
+	return _entryFromDict(data)
+end
+
+
+function entryFromString(s::AbstractString, ::YamlFormat)
+	data = _normaliseParsedData(YAML.load(s))
+	return _entryFromDict(data)
 end
 
 

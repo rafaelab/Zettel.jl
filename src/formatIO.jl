@@ -1,60 +1,6 @@
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	BibliographyFormat
-
-Abstract supertype for bibliography serialization formats.
-"""
-abstract type BibliographyFormat end
-
-
-struct JsonFormat <: BibliographyFormat end
-
-
-struct YamlFormat <: BibliographyFormat end
-
-
-struct BibTeXFormat <: BibliographyFormat end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	jsonFormat()
-
-Return the JSON format selector.
-
-# Output
-- A [`JsonFormat`](@ref) singleton.
-"""
-jsonFormat() = JsonFormat()
-
-
-@doc """
-	yamlFormat()
-
-Return the YAML format selector.
-
-# Output
-- A [`YamlFormat`](@ref) singleton.
-"""
-yamlFormat() = YamlFormat()
-
-
-@doc """
-	bibTeXFormat()
-
-Return the BibTeX format selector.
-
-# Output
-- A [`BibTeXFormat`](@ref) singleton.
-"""
-bibTeXFormat() = BibTeXFormat()
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
 	parseBibliographyFormat(name)
 
 Parse a bibliography format name or extension into a dispatchable format object.
@@ -68,11 +14,11 @@ Parse a bibliography format name or extension into a dispatchable format object.
 function parseBibliographyFormat(name::AbstractString)
 	formattedName = lowercase(strip(name))
 	if formattedName == "json"
-		return jsonFormat()
-	elseif formattedName == "yaml" || formattedName == "yml"
-		return yamlFormat()
-	elseif formattedName == "bib" || formattedName == "bibtex"
-		return bibTeXFormat()
+		return JsonFormat()
+	elseif formattedName ∈ ("yaml", "yml")
+		return YamlFormat()
+	elseif formattedName ∈ ("bib", "bibtex")
+		return BibTeXFormat()
 	else
 		throw(ArgumentError("Unsupported format: $(name). Supported: json, yaml, bib"))
 	end
@@ -95,11 +41,11 @@ Infer a bibliography format from a file extension.
 function bibliographyFormat(path::AbstractString)
 	lowerPath = lowercase(path)
 	if endswith(lowerPath, ".json")
-		return jsonFormat()
+		return JsonFormat()
 	elseif endswith(lowerPath, ".yaml") || endswith(lowerPath, ".yml")
-		return yamlFormat()
+		return YamlFormat()
 	elseif endswith(lowerPath, ".bib")
-		return bibTeXFormat()
+		return BibTeXFormat()
 	else
 		throw(ArgumentError("Cannot infer input format from extension: $(path). Use --from <json|yaml|bib>."))
 	end
@@ -122,7 +68,7 @@ Read a bibliography file using the requested format.
 """
 readBibliography(::JsonFormat, filename::AbstractString) = readJsonLibrary(filename)
 readBibliography(::YamlFormat, filename::AbstractString) = readYamlLibrary(filename)
-readBibliography(::BibTeXFormat, filename::AbstractString) = readBibTeX(filename)
+readBibliography(::BibTeXFormat, filename::AbstractString) = readBibTeXLibrary(filename)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -142,7 +88,7 @@ Write a bibliography library using the requested format.
 """
 writeBibliography(::JsonFormat, lib::ZettelLibrary, filename::AbstractString) = writeJsonLibrary(lib, filename)
 writeBibliography(::YamlFormat, lib::ZettelLibrary, filename::AbstractString) = writeYamlLibrary(lib, filename)
-writeBibliography(::BibTeXFormat, lib::ZettelLibrary, filename::AbstractString) = writeBibTeX(lib, filename)
+writeBibliography(::BibTeXFormat, lib::ZettelLibrary, filename::AbstractString) = writeBibTeXLibrary(lib, filename)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -202,7 +148,7 @@ end
 
 function _convertBibliography(inputPath::AbstractString, outputPath::AbstractString, ::JsonFormat, ::BibTeXFormat)
 	lib = readJsonLibrary(inputPath)
-	writeBibTeX(lib, outputPath)
+	writeBibTeXLibrary(lib, outputPath)
 	return outputPath
 end
 
@@ -216,7 +162,7 @@ end
 
 function _convertBibliography(inputPath::AbstractString, outputPath::AbstractString, ::YamlFormat, ::BibTeXFormat)
 	lib = readYamlLibrary(inputPath)
-	writeBibTeX(lib, outputPath)
+	writeBibTeXLibrary(lib, outputPath)
 	return outputPath
 end
 
@@ -231,6 +177,7 @@ end
 function _convertBibliography(inputPath::AbstractString, outputPath::AbstractString, fromFormat::BibliographyFormat, toFormat::BibliographyFormat)
 	throw(ArgumentError("Unsupported conversion: $(typeof(fromFormat)) -> $(typeof(toFormat))"))
 end
+
 
 # ----------------------------------------------------------------------------------------------- #
 #
