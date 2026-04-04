@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------------------------- #
 #
-const crossRefAPI= "https://api.crossref.org/works/"
+const crossRefAPI = "https://api.crossref.org/works/"
 
 
 # map CrossRef `type` values to BibTeX entry types
@@ -352,7 +352,7 @@ Fetch metadata for a DOI from CrossRef and return it as a JSON dictionary.
 """
 function fetchCrossrefJson(doi::AbstractString; fetcher::Function = defaultFetcher)
 	escapedDoi = encodeUriComponent(String(doi))
-	payload = fetcher("$(CROSSREF_API)$(escapedDoi)")
+	payload = fetcher("$(crossRefAPI)$(escapedDoi)")
 	parsed = try
 		JSON3.read(payload)
 	catch
