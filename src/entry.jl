@@ -39,12 +39,30 @@ struct ZettelEntry
 
 	function ZettelEntry(key::String, entryType::String, fields::OrderedDict{String, String})
 		entry = new(key, entryType, OrderedDict{String, String}(fields))
+		_normaliseCommonFields!(entry.fields)
 		orderFields!(entry)
 		return entry
 	end
 end
 
 ZettelEntry(key::String, entryType::String) = ZettelEntry(key, entryType, OrderedDict{String, String}())
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function _normaliseCommonFields!(fields::OrderedDict{String, String})
+	if haskey(fields, "month")
+		rawMonth = lowercase(strip(fields["month"]))
+		fields["month"] = get(monthsDict, rawMonth, fields["month"])
+	end
+
+	if haskey(fields, "journal")
+		rawJournal = strip(fields["journal"])
+		fields["journal"] = get(journalAbbreviationsDict, rawJournal, fields["journal"])
+	end
+
+	return fields
+end
 
 
 # ----------------------------------------------------------------------------------------------- #

@@ -834,6 +834,10 @@ function _bibTeXToStructuredData(inputPath::AbstractString)
 			fieldValue = decodeTex(_stripOuterBraces(pyconvert(String, entry.info.fields[field])))
 			if fieldName == "collaboration"
 				collabRaw = fieldValue
+			elseif fieldName == "month"
+				entryDict[fieldName] = get(monthsDict, lowercase(strip(fieldValue)), fieldValue)
+			elseif fieldName == "journal"
+				entryDict[fieldName] = get(journalAbbreviationsDict, strip(fieldValue), fieldValue)
 			else
 				entryDict[fieldName] = fieldValue
 			end
