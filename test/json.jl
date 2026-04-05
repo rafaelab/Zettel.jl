@@ -78,3 +78,31 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "BibTeX to JSON decodes TeX escapes" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		outputJson = joinpath(dir, "library.json")
+
+		write(inputBib, """
+			@article{accented2026,
+				author = {{M{\\\"u}ller}, Andr\\'e},
+				title = {Caf\\'e and Schr{\\\"o}dinger},
+				journal = {Journal of Testing},
+				year = {2026}
+			}
+			"""
+		)
+
+		bibTeXToJson(inputBib, outputJson)
+		data = JSON3.read(read(outputJson, String))
+		entry = data[:accented2026]
+
+		@test entry[:title] == "Café and Schrödinger"
+		@test entry[:author][1][:first] == "André"
+		@test entry[:author][1][:last] == "Müller"
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #

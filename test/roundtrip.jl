@@ -46,3 +46,32 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "BibTeX TeX/UTF-8 normalization" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		write(inputBib, """
+			@article{accented2026,
+				author = {{M{\\\"u}ller}, Andr\\'e},
+				title = {Caf\\'e and Schr{\\\"o}dinger},
+				journal = {Journal of Testing},
+				year = {2026}
+			}
+			"""
+		)
+
+		loaded = readBibTeXLibrary(inputBib)
+		entry = loaded["accented2026"]
+		@test getAuthors(entry) == "Müller, André"
+		@test getTitle(entry) == "Café and Schrödinger"
+
+		outputBib = joinpath(dir, "output.bib")
+		writeBibTeXLibrary(loaded, outputBib)
+		rebuiltBib = read(outputBib, String)
+		@test occursin("\\\"u", rebuiltBib)
+		@test occursin("\\'e", rebuiltBib)
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #

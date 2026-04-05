@@ -345,11 +345,11 @@ function pybtexPersonsToNameParts(entry, role::AbstractString)
 	try
 		rolePersons = entry.info.persons[role]
 		for person ∈ rolePersons
-			first = _stripOuterBraces(joinNameParts(person, "first_names"))
-			middle = _stripOuterBraces(joinNameParts(person, "middle_names"))
-			last = _stripOuterBraces(joinNameParts(person, "last_names"))
-			prelast = _stripOuterBraces(joinNameParts(person, "prelast_names"))
-			lineage = _stripOuterBraces(joinNameParts(person, "lineage_names"))
+			first = decodeTex(_stripOuterBraces(joinNameParts(person, "first_names")))
+			middle = decodeTex(_stripOuterBraces(joinNameParts(person, "middle_names")))
+			last = decodeTex(_stripOuterBraces(joinNameParts(person, "last_names")))
+			prelast = decodeTex(_stripOuterBraces(joinNameParts(person, "prelast_names")))
+			lineage = decodeTex(_stripOuterBraces(joinNameParts(person, "lineage_names")))
 
 			lastParts = String[]
 			if ! isempty(prelast)
@@ -831,7 +831,7 @@ function _bibTeXToStructuredData(inputPath::AbstractString)
 		collabRaw = ""
 		for field ∈ Pybtex.getAllFields(entry)
 			fieldName = String(field)
-			fieldValue = _stripOuterBraces(pyconvert(String, entry.info.fields[field]))
+			fieldValue = decodeTex(_stripOuterBraces(pyconvert(String, entry.info.fields[field])))
 			if fieldName == "collaboration"
 				collabRaw = fieldValue
 			else

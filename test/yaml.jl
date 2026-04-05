@@ -52,3 +52,29 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "BibTeX to YAML decodes TeX escapes" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		outputYaml = joinpath(dir, "library.yaml")
+		write(inputBib, """
+			@article{accented2026,
+				author = {{M{\\\"u}ller}, Andr\\'e},
+				title = {Caf\\'e and Schr{\\\"o}dinger},
+				journal = {Journal of Testing},
+				year = {2026}
+			}
+			"""
+		)
+
+		bibTeXToYaml(inputBib, outputYaml)
+		yamlText = read(outputYaml, String)
+		@test occursin("Café and Schrödinger", yamlText)
+		@test occursin("André", yamlText)
+		@test occursin("Müller", yamlText)
+		@test ! occursin("\\\"o", yamlText)
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #

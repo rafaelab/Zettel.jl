@@ -120,6 +120,7 @@ end
 		s = entryToString(e, bibTeXFormat())
 		@test startswith(s, "@article{Einstein1905,")
 		@test occursin("author = {Einstein, A.}", s)
+		@test occursin("K\\\"orper", s)
 		@test occursin("year = {1905}", s)
 		@test occursin("doi = {10.1002/andp.19053221004}", s)
 	end

@@ -9,9 +9,9 @@ function _pybtexPersonsToString(personsIterable)
 	parts = String[]
 	for p ∈ personsIterable
 		name = Pybtex.pybtexToPersonName(p)
-		last = name.lastName
-		first = name.firstName
-		middle = name.middleName
+		last = decodeTex(name.lastName)
+		first = decodeTex(name.firstName)
+		middle = decodeTex(name.middleName)
 		fullFirst = isempty(middle) ? first : string(first, " ", middle)
 		if isempty(first) && isempty(middle)
 			push!(parts, last)
@@ -31,7 +31,9 @@ end
 
 Convert a `Pybtex.BibLibrary` to a [`ZettelLibrary`](@ref).
 
-All BibTeX fields are preserved as string values; author and editor person lists are collapsed into the standard `"Last, First and ..."` notation.
+All BibTeX fields are preserved as string values and TeX accent escapes are decoded
+to UTF-8; author and editor person lists are collapsed into the standard
+`"Last, First and ..."` notation.
 """
 function fromBibTeX(bibLib::Pybtex.BibLibrary)
 	entries = ZettelEntry[]
@@ -92,7 +94,7 @@ function _pybtexFieldValue(entry::Pybtex.BibEntry, field::AbstractString)
 	# strip surrounding braces added by pybtex
 	s = replace(s, r"^\{" => "")
 	s = replace(s, r"\}$" => "")
-	return s
+	return decodeTex(s)
 end
 
 
@@ -104,6 +106,7 @@ end
 Convert a [`ZettelLibrary`](@ref) to a `Pybtex.BibLibrary`.
 
 This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib` file with [`writeBibTeXLibrary`](@ref).
+UTF-8 accent characters are encoded to TeX escapes before emitting BibTeX.
 
 # Input
 - `lib::ZettelLibrary`: the library to convert.
@@ -116,7 +119,11 @@ function toBibTeX(lib::ZettelLibrary)
 	bibData = pydb.BibliographyData()
 
 	for entry ∈ values(lib)
-		pyFields = pydict(Dict{String, Any}(entry.fields))
+		encodedFields = Dict{String, Any}()
+		for (field, value) ∈ entry.fields
+			encodedFields[field] = encodeTex(value)
+		end
+		pyFields = pydict(encodedFields)
 
 		# remove author/editor from fields dict; pybtex stores them separately
 		pyFields.pop("author", nothing)
@@ -124,12 +131,12 @@ function toBibTeX(lib::ZettelLibrary)
 
 		pyPersons = pydict(Dict{String, Any}())
 
-		authorStr = get(entry.fields, "author", "")
+		authorStr = encodeTex(get(entry.fields, "author", ""))
 		if ! isempty(authorStr)
 			pyPersons["author"] = pylist(_authorStringToPersonList(authorStr))
 		end
 
-		editorStr = get(entry.fields, "editor", "")
+		editorStr = encodeTex(get(entry.fields, "editor", ""))
 		if ! isempty(editorStr)
 			pyPersons["editor"] = pylist(_authorStringToPersonList(editorStr))
 		end

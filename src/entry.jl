@@ -385,7 +385,7 @@ function entryToString(entry::ZettelEntry, ::BibTeXFormat)
 	io = IOBuffer()
 	println(io, "@$(entry.entryType){$(entry.key),")
 	for (field, value) ∈ entry.fields
-		println(io, "\t$(field) = {$(value)},")
+		println(io, "\t$(field) = {$(encodeTex(value))},")
 	end
 	print(io, "}")
 	return String(take!(io))

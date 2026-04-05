@@ -168,9 +168,21 @@ Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c
 """
 function decodeTex(s::AbstractString)
 	result = String(s)
+	
+	# normalise grouped accent macros (e.g. {\"o} -> \"o) first
+	result = replace(result, r"\{\\([\"'`^~=])([A-Za-z])\}" => s"\\\1\2")
+	result = replace(result, r"\{\\([\"'`^~=])\{([A-Za-z])\}\}" => s"\\\1\2")
+	
+	# normalise accent macros written with a braced single letter (e.g. {\"o} -> \"o) so they are handled by the lookup table
+	result = replace(result, r"\\([\"'`^~=])\{([A-Za-z])\}" => s"\\\1\2")
 	for tex ∈ sort(collect(keys(tex2utf8)); by = length, rev = true)
 		result = replace(result, tex => tex2utf8[tex])
 	end
+
+	# some BibTeX parsers preserve grouping braces around already-decoded glyphs (e.g. M{ü}ller)
+	# drop those wrappers while keeping ASCII-protection braces
+	result = replace(result, r"\{([^\x00-\x7F])\}" => s"\1")
+	
 	return result
 end
 

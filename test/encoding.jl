@@ -43,6 +43,13 @@
 		@test decodeTex("") == ""
 	end
 
+	@testset "grouped braces" begin
+		@test decodeTex("{\\'a}") == "á"
+		@test decodeTex("{\\'{a}}") == "á"
+		@test decodeTex("{\\\"{o}}") == "ö"
+		@test decodeTex("M{\\\"{u}}ller") == "Müller"
+	end
+
 end
 
 
