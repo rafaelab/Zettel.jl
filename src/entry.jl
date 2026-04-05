@@ -1,6 +1,7 @@
 # ----------------------------------------------------------------------------------------------- #
 #
 const preferredFieldOrder = (
+	"collaboration",
 	"author",
 	"title",
 	"booktitle",
