@@ -61,7 +61,8 @@ end
 			@article{accented2026,
 				author = {{M{\\\"u}ller}, Andr\\'e},
 				title = {Caf\\'e and Schr{\\\"o}dinger},
-				journal = {Journal of Testing},
+				journal = {\\apj},
+				month = {jan},
 				year = {2026}
 			}
 			"""
@@ -72,6 +73,8 @@ end
 		@test occursin("Café and Schrödinger", yamlText)
 		@test occursin("André", yamlText)
 		@test occursin("Müller", yamlText)
+		@test occursin("The Astrophysical Journal", yamlText)
+		@test occursin("month: '01'", yamlText) || occursin("month: \"01\"", yamlText) || occursin("month: 01", yamlText)
 		@test ! occursin("\\\"o", yamlText)
 	end
 end

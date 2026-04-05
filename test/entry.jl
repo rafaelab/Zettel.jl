@@ -108,6 +108,19 @@
 		@test collect(keys(entry2.fields)) == ["Year", "AUTHOR", "title"]
 	end
 
+	@testset "common field normalization" begin
+		e = ZettelEntry(
+			"normalized",
+			"article",
+			OrderedDict{String, String}(
+				"journal" => "\\apj",
+				"month" => "jan",
+			),
+		)
+		@test getJournal(e) == "The Astrophysical Journal"
+		@test getField(e, "month") == "01"
+	end
+
 end
 
 

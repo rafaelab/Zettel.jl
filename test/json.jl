@@ -88,7 +88,8 @@ end
 			@article{accented2026,
 				author = {{M{\\\"u}ller}, Andr\\'e},
 				title = {Caf\\'e and Schr{\\\"o}dinger},
-				journal = {Journal of Testing},
+				journal = {\\apj},
+				month = {jan},
 				year = {2026}
 			}
 			"""
@@ -101,6 +102,8 @@ end
 		@test entry[:title] == "Café and Schrödinger"
 		@test entry[:author][1][:first] == "André"
 		@test entry[:author][1][:last] == "Müller"
+		@test entry[:journal] == "The Astrophysical Journal"
+		@test entry[:month] == "01"
 	end
 end
 
