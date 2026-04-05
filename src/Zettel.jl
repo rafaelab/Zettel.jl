@@ -44,6 +44,7 @@ export
 	getPublisher,
 	getISBN,
 	getAllFields,
+	orderFields!,
 	fetchCrossrefJson,
 	saveCrossrefJson,
 	crossrefJsonToZettelJson,

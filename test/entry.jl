@@ -81,6 +81,33 @@
 		@test combined.fields["isbn"] == "978-0-00-000000-0"
 	end
 
+	@testset "field ordering" begin
+		entry = ZettelEntry(
+			"ordered",
+			"article",
+			OrderedDict{String, String}(
+				"doi" => "10.1000/pref",
+				"custom" => "extra",
+				"title" => "Preferred Title",
+				"year" => "2022",
+				"author" => "Author, A.",
+			),
+		)
+		@test collect(keys(entry.fields)) == ["author", "title", "year", "doi", "custom"]
+
+		entry2 = ZettelEntry(
+			"ordered2",
+			"article",
+			OrderedDict(
+				"Year" => "2023",
+				"AUTHOR" => "Author, B.",
+				"title" => "Another Title",
+			),
+		)
+		orderFields!(entry2; preferredOrder = ["year", "author"])
+		@test collect(keys(entry2.fields)) == ["Year", "AUTHOR", "title"]
+	end
+
 end
 
 

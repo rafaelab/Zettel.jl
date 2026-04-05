@@ -1,5 +1,24 @@
 # ----------------------------------------------------------------------------------------------- #
 #
+const preferredFieldOrder = (
+	"author",
+	"title",
+	"booktitle",
+	"journal",
+	"publisher",
+	"year",
+	"volume",
+	"number",
+	"pages",
+	"doi",
+	"url",
+	"isbn",
+	"note",
+	"abstract",
+)
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
 	ZettelEntry
 
@@ -14,6 +33,12 @@ struct ZettelEntry
 	key::String
 	entryType::String
 	fields::OrderedDict{String, String}
+
+	function ZettelEntry(key::String, entryType::String, fields::OrderedDict{String, String})
+		entry = new(key, entryType, OrderedDict{String, String}(fields))
+		orderFields!(entry)
+		return entry
+	end
 end
 
 ZettelEntry(key::String, entryType::String) = ZettelEntry(key, entryType, OrderedDict{String, String}())
@@ -88,6 +113,55 @@ function Base.show(io::IO, entry::ZettelEntry)
 		s *= @sprintf("  year: %s\n", entry.fields["year"])
 	end
 	print(io, s)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	orderFields!(entry; preferredOrder = preferredFieldOrder)
+
+Reorder `entry.fields` in-place so that the field names listed in `preferredOrder` appear first and in the requested sequence. 
+Matching is case-insensitive and any remaining fields are appended in their original relative order.
+Returns the mutated entry for convenience.
+
+# Input
+- `entry::ZettelEntry`: the entry to reorder.
+- `preferredOrder::AbstractVector{<:AbstractString}`: the preferred field order (e.g. `["author", "title", "year"]`).
+
+# Output
+- The input `entry` with its `fields` reordered according to the specified preferences.
+"""
+function orderFields!(entry::ZettelEntry; preferredOrder = preferredFieldOrder)
+	existing = OrderedDict(entry.fields)
+	empty!(entry.fields)
+
+	existingKeys = collect(keys(existing))
+	existingLower = lowercase.(existingKeys)
+
+	preferredLower = lowercase.(string.(collect(preferredOrder)))
+	inserted = Set{String}()
+
+	for pref ∈ preferredLower
+		for (key, keyLower) ∈ zip(existingKeys, existingLower)
+			if key ∈ inserted
+				continue
+			end
+			if keyLower == pref
+				entry.fields[key] = existing[key]
+				push!(inserted, key)
+				break
+			end
+		end
+	end
+
+	for key ∈ existingKeys
+		if key ∉ inserted
+			entry.fields[key] = existing[key]
+		end
+	end
+
+	return entry
 end
 
 
