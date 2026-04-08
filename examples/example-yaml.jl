@@ -49,10 +49,10 @@ println("JSON written to: $jsonFile")
 jsonToYaml(jsonFile, yamlFile)
 println("Converted JSON to YAML: $yamlFile")
 
-yamlToBibTeX(yamlFile, bibFile)
+yamlToBibtex(yamlFile, bibFile)
 println("BibTeX written to: $bibFile")
 
-lib3 = readBibTeXLibrary(bibFile)
+lib3 = readBibtexLibrary(bibFile)
 println("Reloaded from BibTeX: ", lib3)
 
 
