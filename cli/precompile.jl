@@ -19,12 +19,12 @@ mktempdir() do dir
 		"""
 	)
 
-	bibTeXToJson(bibPath, jsonPath)
+	bibtexToJson(bibPath, jsonPath)
 	jsonToYaml(jsonPath, yamlPath)
-	yamlToBibTeX(yamlPath, bibOutPath)
+	yamlToBibtex(yamlPath, bibOutPath)
 	readJsonLibrary(jsonPath)
 	readYamlLibrary(yamlPath)
-	readBibTeXLibrary(bibOutPath)
+	readBibtexLibrary(bibOutPath)
 
 	write(auxPath, """
 		\\relax
@@ -48,7 +48,7 @@ mktempdir() do dir
 	lib = ZettelLibrary([entry])
 	writeJsonLibrary(lib, jsonPath)
 	writeYamlLibrary(lib, yamlPath)
-	writeBibTeXLibrary(lib, bibOutPath)
+	writeBibtexLibrary(lib, bibOutPath)
 	zettelCLI(args = [bibPath, jsonPath])
 	zettelCLI(args = ["convert", jsonPath, yamlPath, "--to", "yaml"])
 end

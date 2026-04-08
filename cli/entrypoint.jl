@@ -22,7 +22,7 @@ function formatToken(token::AbstractString)
 		return "yaml"
 	end
 
-	ext = lowercase(replace(Zettel._getFileExtension(n), r"^\." => ""))
+	ext = lowercase(replace(Zettel.getFileExtension(n), r"^\." => ""))
 	if ext ∈ ("bib", "bibtex")
 		return "bib"
 	elseif ext == "json"
