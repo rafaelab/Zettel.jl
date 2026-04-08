@@ -81,4 +81,44 @@ end
 	@test occursin("/10.1234/example.doi", seenUrl[])
 end
 
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "fetchFromDoiSource dispatch" begin
+	crossrefPayload = """{"status":"ok","message":{"DOI":"10.1000/cr","type":"journal-article","title":["CR Title"],"author":[{"family":"Smith","given":"J."}]}}"""
+	datacitePayload = """
+	{
+		"data": {
+			"attributes": {
+				"types": { "resourceTypeGeneral": "JournalArticle" },
+				"creators": [{ "familyName": "Jones", "givenName": "A." }],
+				"publicationYear": "2020",
+				"titles": [{ "title": "DC Title" }],
+				"doi": "10.1000/dc"
+			}
+		}
+	}
+	"""
+
+	# string dispatch → crossref
+	crEntry = fetchFromDoiSource("10.1000/cr", "crossref"; fetcher = _ -> crossrefPayload)
+	@test getField(crEntry, "title") == "CR Title"
+
+	# type dispatch → crossref
+	crEntry2 = fetchFromDoiSource("10.1000/cr", CrossRefSource(); fetcher = _ -> crossrefPayload)
+	@test getField(crEntry2, "title") == "CR Title"
+
+	# keyword source= dispatch → datacite
+	dcEntry = fetchFromDoiSource("10.1000/dc"; source = "datacite", fetcher = _ -> datacitePayload)
+	@test getField(dcEntry, "title") == "DC Title"
+
+	# type dispatch → datacite
+	dcEntry2 = fetchFromDoiSource("10.1000/dc", DataCiteSource(); fetcher = _ -> datacitePayload)
+	@test getField(dcEntry2, "title") == "DC Title"
+
+	# unknown source
+	@test_throws ArgumentError fetchFromDoiSource("10.1000/x", "unknown")
+end
+
+
 # ----------------------------------------------------------------------------------------------- #

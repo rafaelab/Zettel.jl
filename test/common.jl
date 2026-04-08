@@ -13,7 +13,7 @@ const TEST_REF =  """
 # ----------------------------------------------------------------------------------------------- #
 #
 # Helper: build a simple article entry for reuse across tests
-function _sampleArticle()
+function sampleArticle()
 	fields = OrderedDict{String, String}(
 		"author"  => "Einstein, A.",
 		"title"   => "Zur Elektrodynamik bewegter Körper",
@@ -29,7 +29,7 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-function _sampleBook()
+function sampleBook()
 	fields = OrderedDict{String, String}(
 		"author"    => "Misner, Charles W. and Thorne, Kip S. and Wheeler, John A.",
 		"title"     => "Gravitation",

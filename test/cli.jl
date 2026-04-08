@@ -11,7 +11,8 @@
 		@test isfile(outputJson)
 
 		data = JSON3.read(read(outputJson, String))
-		@test haskey(data, :doe2024)
+		@test length(data) == 1
+		@test data[1][:key] == "doe2024"
 	end
 end
 
@@ -46,7 +47,7 @@ end
 @testset "Format dispatch" begin
 	@test Zettel.parseBibliographyFormat("json") isa Zettel.JsonFormat
 	@test Zettel.parseBibliographyFormat("yml") isa Zettel.YamlFormat
-	@test Zettel.bibliographyFormat("example.bib") isa Zettel.BibTeXFormat
+	@test Zettel.bibliographyFormat("example.bib") isa Zettel.BibtexFormat
 end
 
 
@@ -66,13 +67,13 @@ end
 	codeJson = zettelCLI(; args = ["paste", "--to", "json"], input = IOBuffer(pastedBib), output = outputJson)
 	@test codeJson == 0
 	jsonPayload = JSON3.read(String(take!(outputJson)))
-	@test haskey(jsonPayload, :Einstein1905)
-	@test jsonPayload[:Einstein1905][:entryType] == "article"
+	@test jsonPayload[:key] == "Einstein1905"
+	@test jsonPayload[:type] == "article"
 
 	mktempdir() do dir
 		jsonLibraryPath = joinpath(dir, "library.json")
 		yamlLibraryPath = joinpath(dir, "library.yaml")
-		baseLib = ZettelLibrary([_sampleBook()])
+		baseLib = ZettelLibrary([sampleBook()])
 		writeJsonLibrary(baseLib, jsonLibraryPath)
 		writeYamlLibrary(baseLib, yamlLibraryPath)
 

@@ -1,26 +1,26 @@
 # ----------------------------------------------------------------------------------------------- #
 #
-@testset "JSON <-> YAML conversion" begin
-	# mktempdir() do dir
-	# 	inputBib = joinpath(dir, "input.bib")
-	# 	outputJson = joinpath(dir, "library.json")
-	# 	outputYaml = joinpath(dir, "library.yaml")
-	# 	outputBib = joinpath(dir, "output.bib")
+@testset "JSON <-> YAML round-trip" begin
+	mktempdir() do dir
+		inputBib   = joinpath(dir, "input.bib")
+		outputJson = joinpath(dir, "library.json")
+		outputYaml = joinpath(dir, "library.yaml")
+		outputBib  = joinpath(dir, "output.bib")
+		write(inputBib, TEST_REF)
 
-	# 	write(inputBib, TEST_REF)
-	# 	bibTeXToJson(inputBib, outputJson)
-	# 	jsonToYaml(outputJson, outputYaml)
-	# 	yamlToBibTeX(outputYaml, outputBib)
+		bibtexToJson(inputBib, outputJson)
+		jsonToYaml(outputJson, outputYaml)
+		yamlToBibtex(outputYaml, outputBib)
 
-	# 	@test isfile(outputYaml)
-	# 	@test isfile(outputBib)
+		@test isfile(outputYaml)
+		@test isfile(outputBib)
 
-	# 	original = Pybtex.readBibtexDataBase(inputBib)
-	# 	rebuilt = Pybtex.readBibtexDataBase(outputBib)
-	# 	originalEntry = Pybtex.getEntry(original, "doe2024")
-	# 	rebuiltEntry = Pybtex.getEntry(rebuilt, "doe2024")
-	# 	@test pyconvert(String, originalEntry.info.fields["title"]) == pyconvert(String, rebuiltEntry.info.fields["title"])
-	# end
+		original = Pybtex.readBibtexDataBase(inputBib)
+		rebuilt  = Pybtex.readBibtexDataBase(outputBib)
+		origEntry    = Pybtex.getEntry(original, "doe2024")
+		rebuiltEntry = Pybtex.getEntry(rebuilt,  "doe2024")
+		@test pyconvert(String, origEntry.info.fields["title"]) == pyconvert(String, rebuiltEntry.info.fields["title"])
+	end
 end
 
 
@@ -28,7 +28,7 @@ end
 #
 @testset "YAML library read/write" begin
 	mktempdir() do dir
-		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
 		yamlPath = joinpath(dir, "library.yaml")
 		writeYamlLibrary(lib, yamlPath)
 		lib2 = readYamlLibrary(yamlPath)
@@ -68,7 +68,7 @@ end
 			"""
 		)
 
-		bibTeXToYaml(inputBib, outputYaml)
+		bibtexToYaml(inputBib, outputYaml)
 		yamlText = read(outputYaml, String)
 		@test occursin("Café and Schrödinger", yamlText)
 		@test occursin("André", yamlText)

@@ -3,7 +3,7 @@
 @testset "ZettelEntry" begin
 
 	@testset "construction" begin
-		e = _sampleArticle()
+		e = sampleArticle()
 		@test e.key == "Einstein1905"
 		@test e.entryType == "article"
 		@test hasField(e, "author")
@@ -11,7 +11,7 @@
 	end
 
 	@testset "accessor helpers" begin
-		e = _sampleArticle()
+		e = sampleArticle()
 		@test getKey(e) == "Einstein1905"
 		@test getType(e) == "article"
 		@test getTitle(e) == "Zur Elektrodynamik bewegter Körper"
@@ -27,14 +27,14 @@
 	end
 
 	@testset "getField" begin
-		e = _sampleArticle()
+		e = sampleArticle()
 		@test getField(e, "year") == "1905"
 		@test getField(e, "YEAR") == "1905"  # case insensitive
 		@test getField(e, "nonexistent") == ""
 	end
 
 	@testset "getAllFields" begin
-		e = _sampleArticle()
+		e = sampleArticle()
 		fs = getAllFields(e)
 		@test "author" ∈ fs
 		@test "title" ∈ fs
@@ -127,10 +127,10 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @testset "entryToString" begin
-	e = _sampleArticle()
+	e = sampleArticle()
 
 	@testset "BibTeX format" begin
-		s = entryToString(e, bibTeXFormat())
+		s = entryToString(e, BibtexFormat())
 		@test startswith(s, "@article{Einstein1905,")
 		@test occursin("author = {Einstein, A.}", s)
 		@test occursin("K\\\"orper", s)
@@ -139,7 +139,7 @@ end
 	end
 
 	@testset "JSON format" begin
-		s = entryToString(e, jsonFormat())
+		s = entryToString(e, JsonFormat())
 		@test occursin("\"key\"", s)
 		@test occursin("\"Einstein1905\"", s)
 		@test occursin("\"type\"", s)
@@ -148,7 +148,7 @@ end
 	end
 
 	@testset "YAML format" begin
-		s = entryToString(e, yamlFormat())
+		s = entryToString(e, YamlFormat())
 		@test occursin("key:", s)
 		@test occursin("Einstein1905", s)
 		@test occursin("type:", s)
@@ -161,11 +161,11 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @testset "entryFromString round-trip" begin
-	e = _sampleArticle()
+	e = sampleArticle()
 
 	@testset "JSON round-trip" begin
-		s = entryToString(e, jsonFormat())
-		e2 = entryFromString(s, jsonFormat())
+		s = entryToString(e, JsonFormat())
+		e2 = entryFromString(s, JsonFormat())
 		@test e2.key == e.key
 		@test e2.entryType == e.entryType
 		@test getTitle(e2) == getTitle(e)
@@ -174,8 +174,8 @@ end
 	end
 
 	@testset "YAML round-trip" begin
-		s = entryToString(e, yamlFormat())
-		e2 = entryFromString(s, yamlFormat())
+		s = entryToString(e, YamlFormat())
+		e2 = entryFromString(s, YamlFormat())
 		@test e2.key == e.key
 		@test e2.entryType == e.entryType
 		@test getTitle(e2) == getTitle(e)
@@ -183,5 +183,25 @@ end
 	end
 
 end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "entryToDict / constructor from dict" begin
+	e = sampleArticle()
+	d = entryToDict(e)
+
+	@test d["key"] == "Einstein1905"
+	@test d["type"] == "article"
+	@test d["fields"]["title"] == "Zur Elektrodynamik bewegter Körper"
+	@test d["fields"]["year"] == "1905"
+
+	e2 = ZettelEntry(d)
+	@test e2.key == e.key
+	@test e2.entryType == e.entryType
+	@test getTitle(e2) == getTitle(e)
+	@test getYear(e2) == getYear(e)
+end
+
 
 # ----------------------------------------------------------------------------------------------- #

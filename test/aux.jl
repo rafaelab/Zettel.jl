@@ -2,7 +2,7 @@
 #
 @testset "Aux parsing and BBL output" begin
 	mktempdir() do dir
-		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
 		libPath = joinpath(dir, "library.json")
 		writeJsonLibrary(lib, libPath)
 
@@ -30,7 +30,7 @@ end
 #
 @testset "Aux style selection" begin
 	mktempdir() do dir
-		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
 		libPath = joinpath(dir, "library.json")
 		writeJsonLibrary(lib, libPath)
 
@@ -54,7 +54,7 @@ end
 #
 @testset "Style ordering" begin
 	mktempdir() do dir
-		lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
 		libPath = joinpath(dir, "library.json")
 		writeJsonLibrary(lib, libPath)
 
@@ -82,7 +82,7 @@ end
 #
 @testset "Full style prints fields" begin
 	mktempdir() do dir
-		lib = ZettelLibrary([_sampleArticle()])
+		lib = ZettelLibrary([sampleArticle()])
 		libPath = joinpath(dir, "library.json")
 		writeJsonLibrary(lib, libPath)
 
@@ -106,7 +106,7 @@ end
 #
 @testset "Aux resolves YAML libraries" begin
 	mktempdir() do dir
-		lib = ZettelLibrary([_sampleArticle()])
+		lib = ZettelLibrary([sampleArticle()])
 		libPath = joinpath(dir, "library.yaml")
 		writeYamlLibrary(lib, libPath)
 

@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------- #
 #
 @testset "JSON round-trip" begin
-	lib = ZettelLibrary([_sampleArticle(), _sampleBook()])
+	lib = ZettelLibrary([sampleArticle(), sampleBook()])
 	tmpfile = tempname() * ".json"
 
 	try
@@ -26,21 +26,23 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @testset "BibTeX round-trip" begin
-	lib = ZettelLibrary([_sampleArticle()])
+	lib = ZettelLibrary([sampleArticle()])
 	tmpbib = tempname() * ".bib"
 
 	try
-		writeBibTeXLibrary(lib, tmpbib)
+		writeBibtexLibrary(lib, tmpbib)
 		@test isfile(tmpbib)
 
-		lib2 = readBibTeXLibrary(tmpbib)
+		lib2 = readBibtexLibrary(tmpbib)
 		@test length(lib2) ≥ 1
 		@test haskey(lib2, "Einstein1905")
 		e = lib2["Einstein1905"]
 		@test ! isempty(getTitle(e))
 
 	finally
-		isfile(tmpbib) && rm(tmpbib)
+		if isfile(tmpbib)
+			rm(tmpbib)
+		end
 	end
 end
 
@@ -60,13 +62,13 @@ end
 			"""
 		)
 
-		loaded = readBibTeXLibrary(inputBib)
+		loaded = readBibtexLibrary(inputBib)
 		entry = loaded["accented2026"]
 		@test getAuthors(entry) == "Müller, André"
 		@test getTitle(entry) == "Café and Schrödinger"
 
 		outputBib = joinpath(dir, "output.bib")
-		writeBibTeXLibrary(loaded, outputBib)
+		writeBibtexLibrary(loaded, outputBib)
 		rebuiltBib = read(outputBib, String)
 		@test occursin("\\\"u", rebuiltBib)
 		@test occursin("\\'e", rebuiltBib)

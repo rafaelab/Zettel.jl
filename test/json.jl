@@ -1,35 +1,29 @@
 # ----------------------------------------------------------------------------------------------- #
 #
-@testset "BibTeX <-> JSON conversion" begin
-	# mktempdir() do dir
-	# 	inputBib = joinpath(dir, "input.bib")
-	# 	outputJson = joinpath(dir, "library.json")
-	# 	outputBib = joinpath(dir, "output.bib")
+@testset "BibTeX <-> JSON round-trip" begin
+	mktempdir() do dir
+		inputBib  = joinpath(dir, "input.bib")
+		outputJson = joinpath(dir, "library.json")
+		outputBib  = joinpath(dir, "output.bib")
+		write(inputBib, TEST_REF)
 
-	# 	write(inputBib, TEST_REF)
+		bibtexToJson(inputBib, outputJson)
+		jsonToBibtex(outputJson, outputBib)
 
-	# 	bibTeXToJson(inputBib, outputJson)
-	# 	jsonToBibTeX(outputJson, outputBib)
+		original = Pybtex.readBibtexDataBase(inputBib)
+		rebuilt  = Pybtex.readBibtexDataBase(outputBib)
+		origEntry    = Pybtex.getEntry(original, "doe2024")
+		rebuiltEntry = Pybtex.getEntry(rebuilt,  "doe2024")
 
-	# 	original = Pybtex.readBibtexDataBase(inputBib)
-	# 	rebuilt = Pybtex.readBibtexDataBase(outputBib)
-	# 	originalEntry = Pybtex.getEntry(original, "doe2024")
-	# 	rebuiltEntry = Pybtex.getEntry(rebuilt, "doe2024")
-
-	# 	for field ∈ Pybtex.getAllFields(originalEntry)
-	# 		@test Pybtex.hasField(rebuiltEntry, field)
-	# 		@test pyconvert(String, originalEntry.info.fields[field]) == pyconvert(String, rebuiltEntry.info.fields[field])
-	# 	end
-	# 	@test length(collect(Pybtex.getAllFields(rebuiltEntry))) == length(collect(Pybtex.getAllFields(originalEntry)))
-	# 	@test length(rebuiltEntry.info.persons["author"]) == length(originalEntry.info.persons["author"])
-
-	# end
+		@test pyconvert(String, origEntry.info.fields["title"]) == pyconvert(String, rebuiltEntry.info.fields["title"])
+		@test length(rebuiltEntry.info.persons["author"]) == length(origEntry.info.persons["author"])
+	end
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
-@testset "Zettel JSON format" begin
+@testset "JSON library record format" begin
 	mktempdir() do dir
 		inputBib = joinpath(dir, "input.bib")
 		outputJson = joinpath(dir, "library.json")
@@ -44,18 +38,16 @@ end
 			"""
 		)
 
-		bibTeXToJson(inputBib, outputJson)
+		bibtexToJson(inputBib, outputJson)
 		data = JSON3.read(read(outputJson, String))
-		entry = data[:bertone1938]
+		@test length(data) == 1
+		entry = data[1]
 
-		@test entry[:title] == "{A} Title"
-		@test haskey(entry, :author)
-		@test entry[:author][1][:first] == "Gianfranco"
-		@test entry[:author][1][:last] == "Bertone"
-		@test ! haskey(entry[:author][1], :middle)
-
-		@test haskey(entry, :collaboration)
-		@test entry[:collaboration][1][:name] == "ATLAS Collaboration"
+		@test entry[:key] == "bertone1938"
+		@test entry[:type] == "article"
+		@test entry[:fields][:title] == "{A} Title"
+		@test entry[:fields][:author] == "Bertone, Gianfranco and Roe, Jane"
+		@test entry[:fields][:collaboration] == "ATLAS Collaboration"
 	end
 end
 
@@ -68,7 +60,7 @@ end
 		outputJson = joinpath(dir, "library.json")
 		write(inputBib, TEST_REF)
 
-		bibTeXToJson(inputBib, outputJson)
+		bibtexToJson(inputBib, outputJson)
 		lib = readJsonLibrary(outputJson)
 
 		@test haskey(lib, "doe2024")
@@ -95,13 +87,12 @@ end
 			"""
 		)
 
-		bibTeXToJson(inputBib, outputJson)
+		bibtexToJson(inputBib, outputJson)
 		data = JSON3.read(read(outputJson, String))
-		entry = data[:accented2026]
+		entry = data[1][:fields]
 
 		@test entry[:title] == "Café and Schrödinger"
-		@test entry[:author][1][:first] == "André"
-		@test entry[:author][1][:last] == "Müller"
+		@test entry[:author] == "Müller, André"
 		@test entry[:journal] == "The Astrophysical Journal"
 		@test entry[:month] == "01"
 	end
