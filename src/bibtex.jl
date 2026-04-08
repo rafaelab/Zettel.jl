@@ -1,22 +1,56 @@
+export
+	readBibtexFile,
+	readBibtexString,
+	readBibtexEntry,
+	readBibtexLibrary,
+	writeBibtexLibrary
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_pybtexPersonsToString(personsIterable)
+	_normalisePybtexNamePart(parts)
 
-Convert a Pybtex persons iterable (of `Person` objects) to a BibTeX-style author/editor string `"Last1, First1 and Last2, First2 and ..."`.
+Convert one pybtex name-part sequence to plain text.
 """
-function _pybtexPersonsToString(personsIterable)
+function _normalisePybtexNamePart(parts)
+	textParts = String[]
+	for value ∈ pyconvert(Vector{String}, pylist(parts))
+		text = strip(decodeTex(stripOuterBraces(String(value))))
+		if ! isempty(text)
+			push!(textParts, text)
+		end
+	end
+	return join(textParts, " ")
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_bibtexNamesFromPersons(personsIterable)
+
+Convert a pybtex persons iterable to one BibTeX-style name line.
+"""
+function _bibtexNamesFromPersons(personsIterable)
 	parts = String[]
-	for p ∈ personsIterable
-		name = Pybtex.pybtexToPersonName(p)
-		last = decodeTex(name.lastName)
-		first = decodeTex(name.firstName)
-		middle = decodeTex(name.middleName)
-		fullFirst = isempty(middle) ? first : string(first, " ", middle)
-		if isempty(first) && isempty(middle)
-			push!(parts, last)
-		else
-			push!(parts, string(last, ", ", fullFirst))
+
+	for person ∈ personsIterable
+		first = _normalisePybtexNamePart(person.first_names)
+		middle = _normalisePybtexNamePart(person.middle_names)
+		prelast = _normalisePybtexNamePart(person.prelast_names)
+		last = _normalisePybtexNamePart(person.last_names)
+		lineage = _normalisePybtexNamePart(person.lineage_names)
+
+		familyParts = String[]
+		! isempty(prelast) && push!(familyParts, prelast)
+		! isempty(last) && push!(familyParts, last)
+		! isempty(lineage) && push!(familyParts, lineage)
+		family = join(familyParts, " ")
+
+		formatted = formatBibtexPerson(PersonName(first, middle, family, ""))
+		if ! isempty(formatted)
+			push!(parts, formatted)
 		end
 	end
 
@@ -27,52 +61,120 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	fromBibTeX(bibLib)
+	readBibtexString(inputString)
 
-Convert a `Pybtex.BibLibrary` to a [`ZettelLibrary`](@ref).
-
-All BibTeX fields are preserved as string values and TeX accent escapes are decoded
-to UTF-8; author and editor person lists are collapsed into the standard
-`"Last, First and ..."` notation.
+Read and parse a BibTeX bibliography string into a dictionary keyed by citation key.
 """
-function fromBibTeX(bibLib::Pybtex.BibLibrary)
-	entries = ZettelEntry[]
-	for key ∈ Pybtex.keys(bibLib)
-		pyEntry = Pybtex.getEntry(bibLib, key)
-		entryType = Pybtex.getType(pyEntry)
-
-		fields = OrderedDict{String, String}()
-
-		# authors
-		try
-			authors = pyEntry.info.persons["author"]
-			if ! isempty(authors)
-				fields["author"] = _pybtexPersonsToString(authors)
-			end
-		catch
-		end
-
-		# editors
-		try
-			editors = pyEntry.info.persons["editor"]
-			if ! isempty(editors)
-				fields["editor"] = _pybtexPersonsToString(editors)
-			end
-		catch
-		end
-
-		# all other fields
-		allFields = Pybtex.getAllFields(pyEntry)
-		for field ∈ allFields
-			val = _pybtexFieldValue(pyEntry, field)
-			if ! isempty(val)
-				fields[field] = val
-			end
-		end
-
-		push!(entries, ZettelEntry(key, entryType, fields))
+function readBibtexString(inputString::AbstractString)
+	parser = pyimport("pybtex.database.input.bibtex").Parser()
+	parsed = try
+		parser.parse_string(String(inputString))
+	catch
+		throw(ArgumentError("Input BibTeX string is not valid BibTeX."))
 	end
 
+	records = OrderedDict{String, Any}()
+	keysList = pyconvert(Vector{String}, pylist(parsed.entries.keys()))
+
+	for key ∈ keysList
+		pyEntry = parsed.entries[key]
+		fields = OrderedDict{String, String}()
+
+		for (field, value) ∈ pyconvert(Dict{String, Any}, pyEntry.fields)
+			text = strip(decodeTex(String(value)))
+			if ! isempty(text)
+				fields[String(field)] = text
+			end
+		end
+
+		for role ∈ pyconvert(Vector{String}, pylist(pyEntry.persons.keys()))
+			names = _bibtexNamesFromPersons(pyEntry.persons[role])
+			if ! isempty(names)
+				fields[role] = names
+			end
+		end
+
+		entryDict = OrderedDict{String, Any}()
+		entryDict["key"] = key
+		entryDict["type"] = lowercase(strip(pyconvert(String, pyEntry.type)))
+		entryDict["fields"] = fields
+		records[key] = entryDict
+	end
+
+	return records
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	readBibtexFile(filename)
+
+Read and parse a BibTeX bibliography file into a dictionary keyed by citation key.
+"""
+function readBibtexFile(filename::AbstractString)
+	if ! isfile(filename)
+		throw(ArgumentError("Input BibTeX file not found: $(filename)."))
+	end
+
+	return readBibtexString(read(filename, String))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	readBibtexEntry(filename)
+
+Read one BibTeX entry from `filename`.
+Throws if the file contains zero or multiple entries.
+"""
+function readBibtexEntry(filename::AbstractString)
+	records = readBibtexFile(filename)
+	if length(records) ≠ 1
+		throw(ArgumentError("BibTeX file $(filename) contains $(length(records)) entries; expected exactly one."))
+	end
+	return ZettelEntry(first(values(records)))
+end
+
+function readBibtexEntry(records::AbstractDict)
+	if dictionaryResemblesEntry(records)
+		return ZettelEntry(records)
+	end
+	if length(records) ≠ 1
+		throw(ArgumentError("BibTeX dictionary contains $(length(records)) entries; expected exactly one."))
+	end
+	rawEntry = first(values(records))
+	if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
+		throw(ArgumentError(_errorMsgNotEntryLike))
+	end
+	return ZettelEntry(rawEntry)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	readBibtexLibrary(filename)
+
+Read a BibTeX bibliography file and return a [`ZettelLibrary`](@ref).
+"""
+function readBibtexLibrary(filename::AbstractString)
+	return readBibtexLibrary(readBibtexFile(filename))
+end
+
+function readBibtexLibrary(records::AbstractDict)
+	if dictionaryResemblesEntry(records)
+		return ZettelLibrary([ZettelEntry(records)])
+	end
+
+	entries = ZettelEntry[]
+	for rawEntry ∈ values(records)
+		if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
+			throw(ArgumentError(_errorMsgNotEntryLike))
+		end
+		push!(entries, ZettelEntry(rawEntry))
+	end
 	return ZettelLibrary(entries)
 end
 
@@ -80,139 +182,36 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_pybtexFieldValue(entry, field)
+	writeBibtexLibrary(lib, outputPath)
 
-Extract the string value of `field` from a Pybtex `BibEntry`.
+Write a [`ZettelLibrary`](@ref) as a BibTeX `.bib` file.
 """
-function _pybtexFieldValue(entry::Pybtex.BibEntry, field::AbstractString)
-	if ! Pybtex.hasField(entry, field)
-		return ""
-	end
-	raw = entry.info.fields[field]
-	s = Pybtex.stringPy2Jl(raw)
-
-	# strip surrounding braces added by pybtex
-	s = replace(s, r"^\{" => "")
-	s = replace(s, r"\}$" => "")
-	return decodeTex(s)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	toBibTeX(lib)
-
-Convert a [`ZettelLibrary`](@ref) to a `Pybtex.BibLibrary`.
-
-This builds a Pybtex in-memory database so that it can subsequently be written to a `.bib` file with [`writeBibTeXLibrary`](@ref).
-UTF-8 accent characters are encoded to TeX escapes before emitting BibTeX.
-
-# Input
-- `lib::ZettelLibrary`: the library to convert.
-
-# Output
-- A `Pybtex.BibLibrary` object containing the same entries as `lib`.
-"""
-function toBibTeX(lib::ZettelLibrary)
+function writeBibtexLibrary(lib::ZettelLibrary, outputPath::AbstractString)
 	pydb = pyimport("pybtex.database")
+	pywriter = pyimport("pybtex.database.output.bibtex").Writer()
 	bibData = pydb.BibliographyData()
 
 	for entry ∈ values(lib)
-		encodedFields = Dict{String, Any}()
+		fields = Dict{String, Any}()
 		for (field, value) ∈ entry.fields
-			encodedFields[field] = encodeTex(value)
-		end
-		pyFields = pydict(encodedFields)
-
-		# remove author/editor from fields dict; pybtex stores them separately
-		pyFields.pop("author", nothing)
-		pyFields.pop("editor", nothing)
-
-		pyPersons = pydict(Dict{String, Any}())
-
-		authorStr = encodeTex(get(entry.fields, "author", ""))
-		if ! isempty(authorStr)
-			pyPersons["author"] = pylist(_authorStringToPersonList(authorStr))
+			text = strip(value)
+			if isempty(text)
+				continue
+			end
+			fields[field] = encodeTex(text)
 		end
 
-		editorStr = encodeTex(get(entry.fields, "editor", ""))
-		if ! isempty(editorStr)
-			pyPersons["editor"] = pylist(_authorStringToPersonList(editorStr))
-		end
-
-		pyEntry = pydb.Entry(entry.entryType, fields = pyFields, persons = pyPersons)
+		pyEntry = pydb.Entry(entry.entryType, fields = pydict(fields))
 		bibData.entries[entry.key] = pyEntry
 	end
 
-	return Pybtex.BibLibrary(bibData)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_authorStringToPersonList(authorStr)
-
-Convert a BibTeX-style author string `"Last1, First1 and Last2, First2"` to a list of Pybtex `Person` objects.
-
-# Input
-- `authorStr::AbstractString`: a BibTeX-style author/editor string.
-
-# Output
-- A list of Pybtex `Person` objects corresponding to the authors/editors in `authorStr`.
-"""
-function _authorStringToPersonList(authorStr::AbstractString)
-	pyPerson = pyimport("pybtex.database").Person
-	persons = []
-	for part ∈ split(authorStr, " and ")
-		part = strip(part)
-		push!(persons, pyPerson(part))
+	text = pyconvert(String, pywriter.to_string(bibData))
+	if ! isempty(text) && text[end] ≠ '\n'
+		text *= "\n"
 	end
-	return persons
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	writeBibTeXLibrary(lib, filename)
-
-Write the [`ZettelLibrary`](@ref) `lib` to a BibTeX `.bib` file at `filename` using Pybtex as the backend.
-
-# Input
-- `lib::ZettelLibrary`: the library to write.
-- `filename::AbstractString`: the destination file path.
-
-# Output
-- `nothing`
-"""
-function writeBibTeXLibrary(lib::ZettelLibrary, filename::AbstractString)
-	bibLib = toBibTeX(lib)
-	Pybtex.writeBibtexDataBase(bibLib, filename)
+	write(outputPath, text)
 	return nothing
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	readBibTeXLibrary(filename)
-
-Read a BibTeX `.bib` file and return a [`ZettelLibrary`](@ref).
-Uses Pybtex as the parsing backend.
-
-# Input
-- `filename::AbstractString`: path to the `.bib` file to read.
-
-# Output
-- A [`ZettelLibrary`](@ref) containing the entries parsed from `filename`.
-"""
-function readBibTeXLibrary(filename::AbstractString)
-	bibLib = Pybtex.readBibtexDataBase(filename)
-	return fromBibTeX(bibLib)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#

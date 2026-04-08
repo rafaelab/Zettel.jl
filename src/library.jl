@@ -1,3 +1,9 @@
+export
+	ZettelLibrary,
+	loadLibrary,
+	saveLibrary
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
@@ -105,11 +111,8 @@ Base.pop!(lib::ZettelLibrary, key::AbstractString) = pop!(lib.entries, key)
 
 Iterate over the entries in a `ZettelLibrary`.
 """
-function Base.iterate(lib::ZettelLibrary, state = iterate(values(lib.entries)))
-	isnothing(state) && return nothing
-	entry, inner_state = state
-	return (entry, iterate(values(lib.entries), inner_state))
-end
+Base.iterate(lib::ZettelLibrary) = iterate(values(lib.entries))
+Base.iterate(lib::ZettelLibrary, state) = iterate(values(lib.entries), state)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -147,6 +150,29 @@ function Base.sort(lib::ZettelLibrary)
 	return ZettelLibrary(d)
 end
 
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+    sort!(lib)
+
+Sort a [`ZettelLibrary`](@ref) in-place by citation key in ascending order.
+
+# Input
+- `lib::ZettelLibrary`: library to sort.
+
+# Output
+- The input `lib` with entries reordered alphabetically by key.
+"""
+function Base.sort!(lib::ZettelLibrary)
+	sortedKeys = sort(collect(keys(lib.entries)))
+	entriesBackup = copy(lib.entries)
+	empty!(lib.entries)
+	for k ∈ sortedKeys
+		lib.entries[k] = entriesBackup[k]
+	end
+	return lib
+end
+
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -163,8 +189,10 @@ Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
 - A [`ZettelLibrary`](@ref) parsed from `filename`.
 """
 function loadLibrary(filename::AbstractString)
-	isfile(filename) || throw(ArgumentError("File not found: $(filename)"))
-	return readBibliography(bibliographyFormat(filename), filename)
+	if ! isfile(filename)
+		throw(ArgumentError("File not found: $(filename)"))
+	end
+	return readBibliography(identifyBibliographyFormat(filename), filename)
 end
 
 
@@ -184,7 +212,7 @@ Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
 - `nothing`.
 """
 function saveLibrary(lib::ZettelLibrary, filename::AbstractString)
-	writeBibliography(bibliographyFormat(filename), lib, filename)
+	writeBibliography(identifyBibliographyFormat(filename), lib, filename)
 	return nothing
 end
 

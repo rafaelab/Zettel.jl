@@ -1,171 +1,119 @@
+export
+	readYamlFile,
+	readYamlString,
+	readYamlEntry,
+	readYamlLibrary,
+	writeYamlLibrary
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	writeYamlLibrary(lib, filename)
+	normaliseYaml(value)
 
-Serialise a [`ZettelLibrary`](@ref) to a YAML file at `filename`.
-
-# Input
-- `lib::ZettelLibrary`: bibliography library to serialise.
-- `filename::AbstractString`: destination YAML file.
-
-# Output
-- `nothing`.
-
-The file stores each entry as an object with `"key"`, `"type"`, and `"fields"` properties
-that mirror the corresponding BibTeX fields.
+Convert YAML-parsed data to plain Julia collections with string keys.
 """
-function writeYamlLibrary(lib::ZettelLibrary, filename::AbstractString)
-	records = [_entryToOrderedDict(entry) for entry ∈ values(lib)]
-	_writeYamlData(records, filename)
-	return nothing
+function normaliseYaml(value)
+	return value
+end
+
+function normaliseYaml(value::AbstractDict)
+	out = OrderedDict{String, Any}()
+	for (k, v) ∈ pairs(value)
+		out[String(k)] = normaliseYaml(v)
+	end
+	return out
+end
+
+function normaliseYaml(value::AbstractVector)
+	return [normaliseYaml(v) for v ∈ value]
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	readYamlLibrary(filename)
+	readYamlFile(filename)
 
-Read a YAML file and return a [`ZettelLibrary`](@ref).
-
-# Input
-- `filename::AbstractString`: path to a YAML bibliography file.
-
-# Output
-- A [`ZettelLibrary`](@ref).
-
-This accepts both:
-- the list-based library format produced by [`writeYamlLibrary`](@ref)
-- the per-key Zettel format produced by [`bibTeXToYaml`](@ref)
+Read and parse a YAML bibliography file into a dictionary keyed by citation key.
 """
-function readYamlLibrary(filename::AbstractString)
-	isfile(filename) || throw(ArgumentError("Input YAML file not found: $(filename)."))
-	data = _readYamlData(filename)
-	return _libraryFromParsedData(data, filename, "YAML")
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-Convert a BibTeX file into YAML while preserving entry type and fields, and structuring author/editor/translator persons as name parts.
-
-# Input
-- `inputPath::AbstractString`: source `.bib` file.
-- `outputPath::AbstractString`: destination `.yaml` file.
-
-# Output
-- The `outputPath` string after writing the converted file.
-"""
-function bibTeXToYaml(inputPath::AbstractString, outputPath::AbstractString)
-	return convertBibliography(inputPath, outputPath, bibTeXFormat(), yamlFormat())
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-Convert a YAML bibliography into JSON.
-
-# Input
-- `inputPath::AbstractString`: source `.yaml` or `.yml` file.
-- `outputPath::AbstractString`: destination `.json` file.
-
-# Output
-- The `outputPath` string after writing the converted file.
-"""
-function yamlToJson(inputPath::AbstractString, outputPath::AbstractString)
-	return convertBibliography(inputPath, outputPath, yamlFormat(), jsonFormat())
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-Convert a JSON bibliography into YAML.
-
-# Input
-- `inputPath::AbstractString`: source `.json` file.
-- `outputPath::AbstractString`: destination `.yaml` file.
-
-# Output
-- The `outputPath` string after writing the converted file.
-"""
-function jsonToYaml(inputPath::AbstractString, outputPath::AbstractString)
-	return convertBibliography(inputPath, outputPath, jsonFormat(), yamlFormat())
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-Convert a YAML bibliography into BibTeX.
-
-# Input
-- `inputPath::AbstractString`: source `.yaml` or `.yml` file.
-- `outputPath::AbstractString`: destination `.bib` file.
-
-# Output
-- The `outputPath` string after writing the converted file.
-"""
-function yamlToBibTeX(inputPath::AbstractString, outputPath::AbstractString)
-	return convertBibliography(inputPath, outputPath, yamlFormat(), bibTeXFormat())
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_readYamlData(filename)
-
-Read and normalise a YAML bibliography payload.
-
-# Input
-- `filename::AbstractString`: path to the YAML file.
-
-# Output
-- The parsed and normalised YAML payload.
-"""
-function _readYamlData(filename::AbstractString)
-	if ! isfile(filename) 
-		throw(ArgumentError("Input YAML file not found: $(filename)"))
+function readYamlFile(filename::AbstractString)
+	if ! isfile(filename)
+		throw(ArgumentError("Input YAML file not found: $(filename)."))
 	end
 
+	return readYamlString(read(filename, String))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	readYamlString(inputString)
+
+Read and parse a YAML bibliography string into a dictionary keyed by citation key.
+Accepted YAML shapes:
+- one entry object (`{"key","type","fields"}`)
+- list of entry objects (`[{"key","type","fields"}, ...]`)
+"""
+function readYamlString(inputString::AbstractString)
 	parsed = try
-		YAML.load(read(filename, String))
+		YAML.load(String(inputString))
 	catch
-		throw(ArgumentError("Input YAML file is not valid YAML: $(filename)"))
+		throw(ArgumentError("Input YAML string is not valid YAML."))
 	end
-	return _normaliseParsedData(parsed)
+
+	data = normaliseYaml(parsed)
+	records = OrderedDict{String, Any}()
+
+	if data isa AbstractDict
+		if ! dictionaryResemblesEntry(data)
+			throw(ArgumentError("Invalid YAML string: expected entry object or list of entry objects."))
+		end
+		key = strip(String(data["key"]))
+		isempty(key) && throw(ArgumentError("Invalid YAML string: entry key must be non-empty."))
+		records[key] = data
+		return records
+	end
+
+	if data isa AbstractVector
+		for (i, rawEntry) ∈ enumerate(data)
+			if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
+				throw(ArgumentError("Invalid YAML string: element $(i) is not an entry object with keys \"key\", \"type\", \"fields\"."))
+			end
+
+			key = strip(String(rawEntry["key"]))
+			isempty(key) && throw(ArgumentError("Invalid YAML string: element $(i) has an empty entry key."))
+			if haskey(records, key)
+				throw(ArgumentError("Invalid YAML string: duplicate entry key \"$(key)\"."))
+			end
+			records[key] = rawEntry
+		end
+		return records
+	end
+
+	throw(ArgumentError("Invalid YAML string: expected entry object or list of entry objects."))
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_writeYamlData(data, filename)
+	writeYamlFile(data, filename)
 
-Write normalised bibliography data to a YAML file.
-
-# Input
-- `data`: bibliography payload to serialise.
-- `filename::AbstractString`: destination YAML file.
-
-# Output
-- `nothing`.
+Write plain Julia collections to a YAML file.
 """
-function _writeYamlData(data, filename::AbstractString)
-	yamlData = _toYamlData(data)
-	yamlString = try
-		YAML.write(yamlData)
+function writeYamlFile(data, filename::AbstractString)
+	text = try
+		YAML.write(normaliseYaml(data))
 	catch
 		throw(ArgumentError("Failed to serialise bibliography to YAML."))
 	end
-	if ! isempty(yamlString) && yamlString[end] ≠ '\n'
-		yamlString *= "\n"
+	
+	if ! isempty(text) && text[end] ≠ '\n'
+		text *= "\n"
 	end
-	write(filename, yamlString)
+	write(filename, text)
 	
 	return nothing
 end
@@ -174,54 +122,81 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_toYamlData(value)
+	readYamlEntry(filename)
 
-Convert nested Julia collections into YAML-friendly data structures.
+Read one entry from a YAML bibliography file and return a [`ZettelEntry`](@ref).
 
-# Input
-- `value`: bibliography payload or nested collection.
-
-# Output
-- A YAML-serialisable value.
+Accepted YAML shapes:
+- one entry object (`{"key","type","fields"}`)
+- one-element list (`[{"key","type","fields"}]`)
 """
-function _toYamlData(value::Any)
-	return value
-end
-
-
-@doc """
-	_toYamlData(value)
-
-Convert nested Julia collections into YAML-friendly data structures.
-
-# Input
-- `value::AbstractDict`: dictionary-like value.
-
-# Output
-- An `OrderedDict{String, Any}` with string keys.
-"""
-function _toYamlData(value::AbstractDict)
-	out = OrderedDict{String, Any}()
-	for (key, child) ∈ pairs(value)
-		out[String(key)] = _toYamlData(child)
+function readYamlEntry(filename::AbstractString)
+	records = readYamlFile(filename)
+	if length(records) ≠ 1
+		throw(ArgumentError("YAML file $(filename) contains $(length(records)) entries; expected exactly one."))
 	end
-	return out
+	return ZettelEntry(first(values(records)))
+end
+
+function readYamlEntry(records::AbstractDict)
+	if dictionaryResemblesEntry(records)
+		return ZettelEntry(records)
+	end
+	if length(records) ≠ 1
+		throw(ArgumentError("YAML dictionary contains $(length(records)) entries; expected exactly one."))
+	end
+	rawEntry = first(values(records))
+	if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
+		throw(ArgumentError(_errorMsgNotEntryLike))
+	end
+	return ZettelEntry(rawEntry)
 end
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
 @doc """
-	_toYamlData(value)
+	readYamlLibrary(filename)
 
-Convert nested Julia collections into YAML-friendly data structures.
+Read a YAML bibliography file and return a [`ZettelLibrary`](@ref).
 
-# Input
-- `value::AbstractVector`: vector-like value.
-
-# Output
-- A vector of YAML-serialisable values.
+Accepted YAML shapes:
+- one entry object (`{"key","type","fields"}`)
+- list of entry objects (`[{"key","type","fields"}, ...]`)
 """
-function _toYamlData(value::AbstractVector)
-	return [_toYamlData(child) for child ∈ value]
+function readYamlLibrary(filename::AbstractString)
+	return readYamlLibrary(readYamlFile(filename))
+end
+
+function readYamlLibrary(records::AbstractDict)
+	if dictionaryResemblesEntry(records)
+		return ZettelLibrary([ZettelEntry(records)])
+	end
+
+	entries = ZettelEntry[]
+	for rawEntry ∈ values(records)
+		if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
+			throw(ArgumentError(_errorMsgNotEntryLike))
+		end
+		push!(entries, ZettelEntry(rawEntry))
+	end
+
+	return ZettelLibrary(entries)
+end
+
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	writeYamlLibrary(lib, filename)
+
+Write a bibliography library to YAML as a list of entry objects.
+"""
+function writeYamlLibrary(lib::ZettelLibrary, filename::AbstractString)
+	records = [entryToDict(entry) for entry ∈ values(lib)]
+	writeYamlFile(records, filename)
+	return nothing
 end
 
 

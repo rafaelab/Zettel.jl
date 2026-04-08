@@ -1,3 +1,7 @@
+export
+	zettelCLI
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
@@ -50,7 +54,7 @@ end
 
 Command-line entry point for `zettel`.
 
-## Commands
+# Commands
 - `zettel convert <input> <output> [--from <fmt>] --to <fmt>`: convert between bib/json/yaml.
 - `zettel paste [--to <fmt>] [--library <file>]`: read a BibTeX entry from stdin, print it in the requested format and/or add it to a library.
 - `zettel <auxfile> [options]`: generate a `.bbl` file from a `.aux` file.
@@ -103,7 +107,9 @@ Return `true` when CLI args appear to be the DOI shorthand form:
 `zettel <doi> [--source ... --to ...]`.
 """
 function _looksLikeDoiInvocation(args::Vector{String})
-	isempty(args) && return false
+	if isempty(args)
+		return false
+	end
 	token = strip(args[1])
 	return startswith(token, "10.") && occursin("/", token)
 end
@@ -124,7 +130,7 @@ For source `crossref`, polite access requires a contact email via `--mailto` or 
 function _runDoiCLI(args::Vector{String}; output::IO = stdout)
 	doi = nothing
 	source = "crossref"
-	toFormat::BibliographyFormat = bibTeXFormat()
+	toFormat::BibliographyFormat = BibtexFormat()
 	outputPath = nothing
 	mailto = nothing
 	plusToken = nothing
@@ -143,11 +149,15 @@ function _runDoiCLI(args::Vector{String}; output::IO = stdout)
 			source = lowercase(strip(args[i]))
 		elseif arg == "-o" || arg == "--output"
 			i += 1
-			i > length(args) && throw(err)
+			if i > length(args)
+				throw(err)
+			end
 			outputPath = args[i]
 		elseif arg == "-m" || arg == "--mailto"
 			i += 1
-			i > length(args) && throw(err)
+			if i > length(args)
+				throw(err)
+			end
 			mailto = args[i]
 		elseif arg == "--plus-token"
 			i += 1
@@ -156,27 +166,37 @@ function _runDoiCLI(args::Vector{String}; output::IO = stdout)
 		elseif startswith(arg, "-")
 			throw(ArgumentError("Unknown option in doi mode: $(arg)"))
 		else
-			isnothing(doi) || throw(ArgumentError("Unexpected argument in doi mode: $(arg)"))
+			if ! isnothing(doi)
+				throw(ArgumentError("Unexpected argument in doi mode: $(arg)"))
+			end
 			doi = arg
 		end
 		i += 1
 	end
 
-	isnothing(doi) && throw(ArgumentError("doi: expected a DOI value"))
-	source ∈ doiSources() || throw(ArgumentError("doi: unknown source '$(source)'. Supported: $(join(doiSources(), ", "))"))
+	if isnothing(doi)
+		throw(ArgumentError("doi: expected a DOI value"))
+	end
+	if source ∉ doiSources()
+		throw(ArgumentError("doi: unknown source '$(source)'. Supported: $(join(doiSources(), ", "))."))
+	end
 
 	if isnothing(mailto)
 		envMailto = get(ENV, "CROSSREF_MAILTO", "")
-		! isempty(strip(envMailto)) && (mailto = strip(envMailto))
+		if ! isempty(strip(envMailto))
+			mailto = strip(envMailto)
+		end
 	end
 	if isnothing(plusToken)
 		envToken = get(ENV, "CROSSREF_PLUS_API_TOKEN", "")
-		! isempty(strip(envToken)) && (plusToken = strip(envToken))
+		if ! isempty(strip(envToken))
+			plusToken = strip(envToken)
+		end
 	end
 
 	if source == "crossref" && isnothing(mailto)
-		println(stderr, "Warning: Crossref polite access recommends a contact email.")
-		println(stderr, "Warning: set --mailto <email> (or CROSSREF_MAILTO). Continuing without it.")
+		@warn "Crossref polite access recommends a contact email."
+		@warn "set --mailto <email> (or CROSSREF_MAILTO). Continuing without it."
 	end
 
 	entry = fetchFromDoiSource(doi; source = source, mailto = mailto, plusToken = plusToken)
@@ -202,7 +222,9 @@ Expect: `<input> <output>` plus `--to <fmt>` and optional `--from <fmt>`.
 Throws ArgumentError for malformed or missing options.
 """
 function _runConvertCLI(args::Vector{String})
-	length(args) < 2 && throw(ArgumentError("convert: expected <input> <output> --to <fmt> [--from <fmt>]"))
+	if length(args) < 2
+		throw(ArgumentError("convert: expected <input> <output> --to <fmt> [--from <fmt>]"))
+	end
 	inputPath  = args[1]
 	outputPath = args[2]
 	fromFormat = nothing
@@ -214,11 +236,15 @@ function _runConvertCLI(args::Vector{String})
 		err = ArgumentError("Missing value for $(arg).")
 		if arg == "-f" || arg == "--from"
 			i += 1
-			i > length(args) && throw(err)
+			if i > length(args)
+				throw(err)
+			end
 			fromFormat = parseBibliographyFormat(args[i])
 		elseif arg == "-t" || arg == "--to"
 			i += 1
-			i > length(args) && throw(err)
+			if i > length(args)
+				throw(err)
+			end
 			toFormat = parseBibliographyFormat(args[i])
 		elseif startswith(arg, "-")
 			throw(ArgumentError("Unknown option in convert mode: $(arg)"))
@@ -247,7 +273,6 @@ end
 
 Run the `paste` subcommand: read a BibTeX entry from `input` (stdin), optionally print it in the
 requested format to `output`, and optionally add it to a library.
-
 At least one of `--to` or `--library` must be given.
 """
 function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
@@ -264,7 +289,9 @@ function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdo
 			toFormat = parseBibliographyFormat(args[i])
 		elseif arg == "-l" || arg == "--library"
 			i += 1
-			i > length(args) && throw(err)
+			if i > length(args) 
+				throw(err)
+			end
 			libraryPath = args[i]
 		elseif startswith(arg, "-")
 			throw(ArgumentError("Unknown option in paste mode: $(arg)"))
@@ -274,25 +301,26 @@ function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdo
 		i += 1
 	end
 
-	isnothing(toFormat) && isnothing(libraryPath) &&
+	if isnothing(toFormat) && isnothing(libraryPath)
 		throw(ArgumentError("paste: provide --to <fmt> and/or --library <file>"))
+	end
 
-	bibTeXText = read(input, String)
-	isempty(strip(bibTeXText)) && throw(ArgumentError("paste: no BibTeX entry on stdin"))
+	bibtexText = read(input, String)
+	if isempty(strip(bibtexText))
+		throw(ArgumentError("paste: no BibTeX entry on stdin"))
+	end
 
-	# parse to structured per-key dict (Zettel-JSON format)
-	data = mktempdir() do dir
+	incoming = mktempdir() do dir
 		path = joinpath(dir, "pasted.bib")
-		write(path, bibTeXText)
-		return _bibTeXToStructuredData(path)
+		write(path, bibtexText)
+		return readBibtexLibrary(path)
 	end
 
 	if ! isnothing(toFormat)
-		print(output, _renderPastedEntry(data, toFormat))
+		print(output, _renderPastedEntry(incoming, toFormat))
 	end
 
 	if ! isnothing(libraryPath)
-		incoming = _libraryFromParsedData(data, "<stdin>", "BibTeX")
 		_addEntriesToLibrary(incoming, libraryPath)
 	end
 
@@ -305,8 +333,8 @@ end
 @doc """
 	_addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
 
-Add entries from `incoming` into the library file at `libraryPath`, creating the
-library if it does not exist. The resulting library is sorted and written back to disk.
+Add entries from `incoming` into the library file at `libraryPath`, creating the library if it does not exist. 
+The resulting library is sorted and written back to disc.
 """
 function _addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
 	lib = isfile(libraryPath) ? loadLibrary(libraryPath) : ZettelLibrary()
@@ -324,9 +352,10 @@ end
 @doc """
 	_runAuxCLI(args::Vector{String}; output::IO = stdout)
 
-Handle the auxiliary-file (`.aux`) mode. Parse options for library files, output
-`.bbl` path, and bibliography style, then generate the `.bbl` using the provided
-libraries (or inferred ones). Prints a warning to `output` if any citation keys are missing.
+Handle the auxiliary-file (`.aux`) mode. 
+Parse options for library files, output `.bbl` path, and bibliography style. 
+Then generate the `.bbl` using the provided libraries (or inferred ones). 
+Prints a warning to `output` if any citation keys are missing.
 """
 function _runAuxCLI(args::Vector{String}; output::IO = stdout)
 	auxPath   = nothing
@@ -353,13 +382,17 @@ function _runAuxCLI(args::Vector{String}; output::IO = stdout)
 		elseif startswith(arg, "-")
 			throw(ArgumentError("Unknown option: $(arg)"))
 		else
-			isnothing(auxPath) || throw(ArgumentError("Unexpected argument: $(arg)"))
+			if ! isnothing(auxPath)
+				throw(ArgumentError("Unexpected argument: $(arg)"))
+			end
 			auxPath = arg
 		end
 		i += 1
 	end
 
-	isnothing(auxPath) && throw(ArgumentError("No aux file provided."))
+	if isnothing(auxPath)
+		throw(ArgumentError("No aux file provided."))
+	end
 
 	libFiles = isempty(libraries) ? nothing : libraries
 	result   = writeBblFromAux(auxPath; libraryFiles = libFiles, outputPath = outputPath, style = style)
@@ -377,47 +410,29 @@ end
 @doc """
 	_renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
 
-Render a DOI-fetched entry in the same external representation style used by `paste`.
-For JSON/YAML this is the structured per-key format; for BibTeX it is a single BibTeX entry.
+Render a DOI-fetched entry in the same external representation style used by
+`entryToString`.
 """
 function _renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
-	if format isa BibTeXFormat
-		text = entryToString(entry, format)
-		endswith(text, "\n") || (text *= "\n")
-		return text
-	end
-
-	data = _structuredDataFromEntry(entry)
-	return _renderPastedEntry(data, format)
+	text = entryToString(entry, format)
+	endswith(text, "\n") || (text *= "\n")
+	return text
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_structuredDataFromEntry(entry::ZettelEntry)
+	_renderPastedEntry(lib::ZettelLibrary, ::JsonFormat)
 
-Convert one `ZettelEntry` into the structured per-key map used by JSON/YAML CLI output.
+Render pasted BibTeX entries as pretty JSON.
 """
-function _structuredDataFromEntry(entry::ZettelEntry)
-	return mktempdir() do dir
-		path = joinpath(dir, "entry.bib")
-		text = entryToString(entry, bibTeXFormat())
-		endswith(text, "\n") || (text *= "\n")
-		write(path, text)
-		_bibTeXToStructuredData(path)
+function _renderPastedEntry(lib::ZettelLibrary, ::JsonFormat)
+	data = if length(lib) == 1
+		entryToDict(first(values(lib)))
+	else
+		[entryToDict(entry) for entry ∈ values(lib)]
 	end
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_renderPastedEntry(data::AbstractDict, ::JsonFormat)
-
-Render structured pasted entry data as pretty JSON (Zettel-JSON interchange format).
-"""
-function _renderPastedEntry(data::AbstractDict, ::JsonFormat)
 	buf = IOBuffer()
 	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
 	text = String(take!(buf))
@@ -426,27 +441,30 @@ function _renderPastedEntry(data::AbstractDict, ::JsonFormat)
 end
 
 @doc """
-	_renderPastedEntry(data::AbstractDict, ::YamlFormat)
+	_renderPastedEntry(lib::ZettelLibrary, ::YamlFormat)
 
-Render structured pasted entry data as YAML.
+Render pasted BibTeX entries as YAML.
 """
-function _renderPastedEntry(data::AbstractDict, ::YamlFormat)
-	text = YAML.write(_toYamlData(data))
+function _renderPastedEntry(lib::ZettelLibrary, ::YamlFormat)
+	data = if length(lib) == 1
+		entryToDict(first(values(lib)))
+	else
+		[entryToDict(entry) for entry ∈ values(lib)]
+	end
+	text = YAML.write(normaliseYaml(data))
 	endswith(text, "\n") || (text *= "\n")
 	return text
 end
 
 @doc """
-	_renderPastedEntry(data::AbstractDict, ::BibTeXFormat)
+	_renderPastedEntry(lib::ZettelLibrary, ::BibtexFormat)
 
-Render structured pasted entry data back to BibTeX format. Returns the textual
-BibTeX entries as they would be written to stdout or a file.
+Render pasted entries as BibTeX text.
 """
-function _renderPastedEntry(data::AbstractDict, ::BibTeXFormat)
-	lib = _libraryFromParsedData(data, "<stdin>", "BibTeX")
+function _renderPastedEntry(lib::ZettelLibrary, ::BibtexFormat)
 	io  = IOBuffer()
 	for entry ∈ values(lib)
-		println(io, entryToString(entry, bibTeXFormat()))
+		println(io, entryToString(entry, BibtexFormat()))
 		println(io)
 	end
 	return String(take!(io))

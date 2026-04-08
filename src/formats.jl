@@ -1,11 +1,35 @@
+export
+	BibliographyFormat,
+	JsonFormat,
+	YamlFormat,
+	BibtexFormat,
+	bibliographyFormat,
+	identifyBibliographyFormat,
+	parseBibliographyFormat
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
 	BibliographyFormat
 
-Abstract supertype for bibliography serialization formats.
+Abstract supertype for bibliography serialisation formats.
+Use the concrete singletons [`JsonFormat`](@ref), [`YamlFormat`](@ref), and [`BibtexFormat`](@ref)
+to select the desired format for dispatch.
 """
 abstract type BibliographyFormat end
+
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	BibtexFormat
+
+Singleton type identifying the BibTeX bibliography serialisation format.
+"""
+struct BibtexFormat <: BibliographyFormat
+end
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -13,7 +37,7 @@ abstract type BibliographyFormat end
 @doc """
 	JsonFormat
 
-Singleton type identifying the JSON bibliography serialization format.
+Singleton type identifying the JSON bibliography serialisation format.
 """
 struct JsonFormat <: BibliographyFormat
 end
@@ -24,7 +48,7 @@ end
 @doc """
 	YamlFormat
 
-Singleton type identifying the YAML bibliography serialization format.
+Singleton type identifying the YAML bibliography serialisation format.
 """
 struct YamlFormat <: BibliographyFormat
 end
@@ -33,51 +57,22 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	BibTeXFormat
+	identifyBibliographyFormat(path)
 
-Singleton type identifying the BibTeX bibliography serialization format.
+Infer a bibliography format from a file extension.
 """
-struct BibTeXFormat <: BibliographyFormat
+function identifyBibliographyFormat(path::AbstractString)
+	ext = getFileExtension(path)
+	if ext == ".json"
+		return JsonFormat()
+	elseif ext ∈ (".yaml", ".yml")
+		return YamlFormat()
+	elseif ext ∈ (".bib", ".bibtex")
+		return BibtexFormat()
+	else
+		throw(ArgumentError("Cannot infer format from extension: $(path)."))
+	end
 end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	jsonFormat()
-
-Return the JSON format selector.
-
-# Output
-- A [`JsonFormat`](@ref) singleton.
-"""
-jsonFormat() = JsonFormat()
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	yamlFormat()
-
-Return the YAML format selector.
-
-# Output
-- A [`YamlFormat`](@ref) singleton.
-"""
-yamlFormat() = YamlFormat()
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	bibTeXFormat()
-
-Return the BibTeX format selector.
-
-# Output
-- A [`BibTeXFormat`](@ref) singleton.
-"""
-bibTeXFormat() = BibTeXFormat()
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -85,27 +80,31 @@ bibTeXFormat() = BibTeXFormat()
 @doc """
 	bibliographyFormat(path)
 
-Infer a bibliography format from a file extension.
-
-# Input
-- `path::AbstractString`: file path whose suffix identifies the format.
-
-# Output
-- A [`BibliographyFormat`](@ref) singleton inferred from the file extension.
+Alias of [`identifyBibliographyFormat`](@ref).
 """
-function bibliographyFormat(path::AbstractString)
-	ext = _getFileExtension(path)
-	if ext == ".json"
+bibliographyFormat(path::AbstractString) = identifyBibliographyFormat(path)
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	parseBibliographyFormat(name)
+
+Parse a format name (`json`, `yaml`/`yml`, `bib`/`bibtex`) into a
+[`BibliographyFormat`](@ref) singleton.
+"""
+function parseBibliographyFormat(name::AbstractString)
+	value = lowercase(strip(name))
+	if value == "json"
 		return JsonFormat()
-	elseif ext ∈ (".yaml", ".yml")
+	elseif value ∈ ("yaml", "yml")
 		return YamlFormat()
-	elseif ext ∈ (".bib", ".bibtex")
-		return BibTeXFormat()
+	elseif value ∈ ("bib", "bibtex")
+		return BibtexFormat()
 	else
-		throw(ArgumentError("Cannot infer format from extension: $(path). Use --from <json|yaml|bib>."))
+		throw(ArgumentError("Unsupported bibliography format: $(name)."))
 	end
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
-#

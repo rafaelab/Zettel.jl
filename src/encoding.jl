@@ -1,5 +1,11 @@
+export
+	decodeTex,
+	encodeTex
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
+# TeX character encoding/decoding TeX sequences to UTF-8.
 const tex2utf8 = Dict(
 	"\\ss{}" => "ß",
 	"\\i{}" => "ı",
@@ -137,17 +143,15 @@ const tex2utf8 = Dict(
 )
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 # Reverse mapping: UTF-8 characters to TeX sequences.
-# ASCII double quote (") is excluded as it has no unique TeX equivalent — "``" and "''" both
-# produce it when decoding, so round-tripping is context-dependent.
+# ASCII double quote (") is excluded as it has no unique TeX equivalent.
+# This is because "``" and "''" both produce it when decoding, so round-tripping is context-dependent.
 const utf8ToTex = begin
 	d = Dict{String, String}()
 	for (tex, utf) ∈ tex2utf8
 		d[utf] = tex
 	end
-	d
+	return d
 end
 
 
@@ -157,7 +161,6 @@ end
 	decodeTex(s)
 
 Convert TeX character commands in `s` to their UTF-8 equivalents using the `tex2utf8` table.
-
 Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c}` is tried before a hypothetical `\\v`).
 
 # Input
@@ -206,8 +209,9 @@ ASCII double quote (`"`) has no unique TeX equivalent and is left unchanged.
 """
 function encodeTex(s::AbstractString)
 	result = String(s)
-	for utf ∈ sort(collect(keys(utf8ToTex)); by = length, rev = true)
-		result = replace(result, utf => utf8ToTex[utf])
+	mapping = isdefined(@__MODULE__, :utf8ToTex) ? getfield(@__MODULE__, :utf8ToTex) : Dict{String, String}(utf => tex for (tex, utf) ∈ tex2utf8)
+	for utf ∈ sort(collect(keys(mapping)); by = length, rev = true)
+		result = replace(result, utf => mapping[utf])
 	end
 	return result
 end

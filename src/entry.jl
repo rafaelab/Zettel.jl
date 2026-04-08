@@ -1,3 +1,33 @@
+export
+	ZettelEntry,
+	entryToDict,
+	orderFields!,
+	fixJournalAbbreviations!,
+	fixMonth!,
+	hasField,
+	getKey,
+	getType,
+	getAllFields,
+	getField,
+	getAuthors,
+	getTitle,
+	getYear,
+	getJournal,
+	getDOI,
+	getDoi,
+	getURL,
+	getUrl,
+	getVolume,
+	getNumber,
+	getPages,
+	getAbstract,
+	getPublisher,
+	getISBN,
+	getIsbn,
+	entryToString,
+	entryFromString
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 const preferredFieldOrder = (
@@ -25,7 +55,10 @@ const preferredFieldOrder = (
 @doc """
 	ZettelEntry
 
-A single bibliographic entry stored as a key, an entry type (e.g. `"article"`), and an ordered dictionary of BibTeX-compatible field names to their string values.
+A single bibliographic entry stored as:
+* a key;
+* an entry type (e.g. `"article"`);
+* an ordered dictionary of BibTeX-compatible field names to their string values.
 
 # Fields
 - `key::String`: unique citation key (e.g. `"Einstein1905"`)
@@ -39,7 +72,8 @@ struct ZettelEntry
 
 	function ZettelEntry(key::String, entryType::String, fields::OrderedDict{String, String})
 		entry = new(key, entryType, OrderedDict{String, String}(fields))
-		_normaliseCommonFields!(entry.fields)
+		fixJournalAbbreviations!(entry)
+		fixMonth!(entry)
 		orderFields!(entry)
 		return entry
 	end
@@ -47,71 +81,99 @@ end
 
 ZettelEntry(key::String, entryType::String) = ZettelEntry(key, entryType, OrderedDict{String, String}())
 
-
-# ----------------------------------------------------------------------------------------------- #
-#
-function _normaliseCommonFields!(fields::OrderedDict{String, String})
-	if haskey(fields, "month")
-		rawMonth = lowercase(strip(fields["month"]))
-		fields["month"] = get(monthsDict, rawMonth, fields["month"])
+ZettelEntry(d::AbstractDict) = begin
+	hasKey = haskey(d, "key") || haskey(d, :key)
+	hasType = haskey(d, "type") || haskey(d, :type)
+	hasFields = haskey(d, "fields") || haskey(d, :fields)
+	if ! (hasKey && hasType && hasFields)
+		throw(ArgumentError("Invalid entry object: expected keys \"key\", \"type\", \"fields\"."))
 	end
 
-	if haskey(fields, "journal")
-		rawJournal = strip(fields["journal"])
-		fields["journal"] = get(journalAbbreviationsDict, rawJournal, fields["journal"])
+	keyRaw = haskey(d, "key") ? d["key"] : d[:key]
+	typeRaw = haskey(d, "type") ? d["type"] : d[:type]
+	fieldsRaw = haskey(d, "fields") ? d["fields"] : d[:fields]
+	if ! (fieldsRaw isa AbstractDict)
+		throw(ArgumentError("Invalid entry object: \"fields\" must be a dictionary."))
 	end
 
-	return fields
+	key = String(keyRaw)
+	entryType = String(typeRaw)
+	fields = OrderedDict{String, String}()
+
+	for (k, v) ∈ fieldsRaw
+		fields[String(k)] = String(v)
+	end
+
+	return ZettelEntry(key, entryType, fields)
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	intersect(left, right)
+	entryToDict(entry)
+
+Convert a [`ZettelEntry`](@ref) to an `OrderedDict` in library-record format:
+`{"key": ..., "type": ..., "fields": {...}}`.
+"""
+function entryToDict(entry::ZettelEntry)
+	d = OrderedDict{String, Any}()
+	d["key"] = entry.key
+	d["type"] = entry.entryType
+	d["fields"] = OrderedDict{String, String}(entry.fields)
+	return d
+end
+
+# constructors from BibTeX, JSON, YAML, etc. are defined in their respective modules
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	intersect(entry1, entry2)
 
 Return a `ZettelEntry` containing only the fields that appear in both entries.
 
 # Input
-- `left::ZettelEntry`: left-hand entry.
-- `right::ZettelEntry`: right-hand entry.
+- `entry1::ZettelEntry`: left-hand entry.
+- `entry2::ZettelEntry`: right-hand entry.
 
 # Output
-- A `ZettelEntry` whose `key` and `entryType` come from `left`, and whose fields are the common field names present in both entries. 
-When a field is shared, the value from `left` is preserved.
+- A `ZettelEntry` whose `key` and `entryType` come from `entry1`, and whose fields are the common field names present in both entries. 
+When a field is shared, the value from `entry1` is preserved.
 """
-function Base.intersect(left::ZettelEntry, right::ZettelEntry)
+function Base.intersect(entry1::ZettelEntry, entry2::ZettelEntry)
 	fields = OrderedDict{String, String}()
-	for (field, value) ∈ left.fields
-		if haskey(right.fields, field)
+	for (field, value) ∈ entry1.fields
+		if haskey(entry2.fields, field)
 			fields[field] = value
 		end
 	end
-	return ZettelEntry(left.key, left.entryType, fields)
+	return ZettelEntry(entry1.key, entry1.entryType, fields)
 end
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	union(left, right)
+	union(entry1, entry2)
 
 Return a `ZettelEntry` containing the fields from both entries.
 
 # Input
-- `left::ZettelEntry`: left-hand entry.
-- `right::ZettelEntry`: right-hand entry.
+- `entry1::ZettelEntry`: left-hand entry.
+- `entry2::ZettelEntry`: right-hand entry.
 
 # Output
-- A `ZettelEntry` whose `key` and `entryType` come from `left`, and whose fields contain the combination of fields from both entries. 
-When a field exists in both entries, the value from `right` overwrites the value from `left`.
+- A `ZettelEntry` whose `key` and `entryType` come from `entry1`, and whose fields contain the combination of fields from both entries. 
+When a field exists in both entries, the value from `entry2` overwrites the value from `entry1`.
 """
-function Base.union(left::ZettelEntry, right::ZettelEntry)
-	fields = OrderedDict{String, String}(left.fields)
-	for (field, value) ∈ right.fields
+function Base.union(entry1::ZettelEntry, entry2::ZettelEntry)
+	fields = OrderedDict{String, String}(entry1.fields)
+	for (field, value) ∈ entry2.fields
 		fields[field] = value
 	end
-	return ZettelEntry(left.key, left.entryType, fields)
+	return ZettelEntry(entry1.key, entry1.entryType, fields)
 end
 
 
@@ -134,6 +196,50 @@ function Base.show(io::IO, entry::ZettelEntry)
 		s *= @sprintf("  year: %s\n", entry.fields["year"])
 	end
 	print(io, s)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	fixJournalAbbreviations!(fields)
+
+Replace common journal names in `fields["journal"]` with their standard abbreviations.
+
+# Input
+- `fields::OrderedDict{String, String}`: mapping of field names to values.
+
+# Output
+- The input `fields` with common values normalised (journal names converted to abbreviations).
+"""
+function fixJournalAbbreviations!(entry::ZettelEntry)
+	if haskey(entry.fields, "journal")
+		journal = strip(entry.fields["journal"])
+		entry.fields["journal"] = get(journalAbbreviationsDict, journal, entry.fields["journal"])
+	end
+	return entry
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	fixMonth!(fields)
+
+Replace month information `fields["month"]` by its numerical representation.
+
+# Input
+- `fields::OrderedDict{String, String}`: mapping of field names to values.
+
+# Output
+- The input `fields` with common values normalised (month names converted to numbers).
+"""
+function fixMonth!(entry::ZettelEntry)
+	if haskey(entry.fields, "month")
+		month = lowercase(strip(entry.fields["month"]))
+		entry.fields["month"] = get(monthsDict, month, entry.fields["month"])
+	end
+	return entry
 end
 
 
@@ -254,6 +360,7 @@ getJournal(entry::ZettelEntry) = getField(entry, "journal")
 Return the DOI of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getDOI(entry::ZettelEntry) = getField(entry, "doi")
+getDoi(entry::ZettelEntry) = getDOI(entry)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -264,6 +371,7 @@ getDOI(entry::ZettelEntry) = getField(entry, "doi")
 Return the URL of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 getURL(entry::ZettelEntry) = getField(entry, "url")
+getUrl(entry::ZettelEntry) = getURL(entry)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -353,58 +461,51 @@ getAllFields(entry::ZettelEntry) = keys(entry.fields)
 
 Return the value of `field` in the entry, or `""` if the field is absent.
 """
-function getField(entry::ZettelEntry, field::AbstractString)
-	k = lowercase(field)
-	return get(entry.fields, k, "")
-end
+getField(entry::ZettelEntry, field::AbstractString) = get(entry.fields, lowercase(field), "")
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
+	dictionaryResemblesEntry(d)
+
+Return `true` if `d` looks like a dictionary representation of a [`ZettelEntry`](@ref).
+"""
+@inline dictionaryResemblesEntry(d::AbstractDict) = haskey(d, "key") && haskey(d, "type") && haskey(d, "fields")
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+const _errorMsgNotEntryLike = "Invalid entry record: expected object with keys \"key\", \"type\", and \"fields\". "
+
+# ----------------------------------------------------------------------------------------------- #
+
+#
+@doc """
 	entryToString(entry, format)
 
-Serialise a [`ZettelEntry`](@ref) to a string in the requested bibliography format.
-
-# Input
-- `entry::ZettelEntry`: entry to serialise.
-- `format::BibliographyFormat`: format selector; one of [`JsonFormat`](@ref), [`YamlFormat`](@ref), or [`BibTeXFormat`](@ref).
-
-# Output
-- A `String` containing the entry in the chosen format.
-
-# Examples
-```julia
-s = entryToString(entry, jsonFormat())
-s = entryToString(entry, yamlFormat())
-s = entryToString(entry, bibTeXFormat())
-```
+Serialise one [`ZettelEntry`](@ref) to `format`.
 """
 function entryToString(entry::ZettelEntry, ::JsonFormat)
-	d = _entryToOrderedDict(entry)
 	buf = IOBuffer()
-	JSON3.pretty(buf, d, JSON3.AlignmentContext(indent = 4))
-	return _indentJson(String(take!(buf)))
+	JSON3.pretty(buf, entryToDict(entry), JSON3.AlignmentContext(indent = 4))
+	return String(take!(buf))
 end
-
 
 function entryToString(entry::ZettelEntry, ::YamlFormat)
-	d = _entryToOrderedDict(entry)
-	result = try
-		YAML.write(_toYamlData(d))
-	catch
-		throw(ArgumentError("Failed to serialise entry $(entry.key) to YAML."))
-	end
-	return result
+	return YAML.write(normaliseYaml(entryToDict(entry)))
 end
 
-
-function entryToString(entry::ZettelEntry, ::BibTeXFormat)
+function entryToString(entry::ZettelEntry, ::BibtexFormat)
 	io = IOBuffer()
 	println(io, "@$(entry.entryType){$(entry.key),")
-	for (field, value) ∈ entry.fields
-		println(io, "\t$(field) = {$(encodeTex(value))},")
+
+	nonEmpty = [(field, strip(value)) for (field, value) ∈ entry.fields if ! isempty(strip(value))]
+	for (i, (field, value)) ∈ enumerate(nonEmpty)
+		comma = i < length(nonEmpty) ? "," : ""
+		println(io, "\t$(field) = {$(encodeTex(value))}$(comma)")
 	end
+
 	print(io, "}")
 	return String(take!(io))
 end
@@ -413,31 +514,13 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	entryFromString(s, format)
+	entryFromString(text, format)
 
-Parse a [`ZettelEntry`](@ref) from a string in the given format.
-
-The string must contain a single entry in the library format:
-- JSON: `{"key": "...", "type": "...", "fields": {...}}`
-- YAML: equivalent YAML mapping
-
-# Input
-- `s::AbstractString`: the serialised entry.
-- `format::BibliographyFormat`: format selector; one of [`JsonFormat`](@ref) or [`YamlFormat`](@ref).
-
-# Output
-- A [`ZettelEntry`](@ref) parsed from `s`.
+Parse one bibliography entry from a `text` string in `format`.
 """
-function entryFromString(s::AbstractString, ::JsonFormat)
-	data = _normaliseParsedData(JSON3.read(s))
-	return _entryFromDict(data)
-end
-
-
-function entryFromString(s::AbstractString, ::YamlFormat)
-	data = _normaliseParsedData(YAML.load(s))
-	return _entryFromDict(data)
-end
+entryFromString(text::AbstractString, ::JsonFormat) = readJsonEntry(readJsonString(text))
+entryFromString(text::AbstractString, ::YamlFormat) = readYamlEntry(readYamlString(text))
+entryFromString(text::AbstractString, ::BibtexFormat) = readBibtexEntry(readBibtexString(text))
 
 
 # ----------------------------------------------------------------------------------------------- #
