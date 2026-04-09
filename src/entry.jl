@@ -39,6 +39,7 @@ const preferredFieldOrder = (
 	"editor",
 	"publisher",
 	"year",
+	"month",
 	"volume",
 	"edition",
 	"number",
@@ -50,11 +51,13 @@ const preferredFieldOrder = (
 	"isbn",
 	"archivePrefix",
 	"primaryClass",
-	"note",
-	"abstract",
+	"eprint",
 	"keywords",
+	"type",
 	"file",
 	"groups",
+	"note",
+	"abstract",
 )
 
 const _personFieldNames = ("author", "editor", "translator", "collaboration")
