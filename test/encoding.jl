@@ -38,6 +38,7 @@
 		@test decodeTex("na\\\"ive") == "naïve"
 		@test decodeTex("Zur Elektrodynamik bewegter K{\\\"o}rper") == "Zur Elektrodynamik bewegter Körper"
 		@test decodeTex("S\\v{t}astn\\'y") == "Sťastný"
+		@test decodeTex("Sakall{\\i}, {\\.I}.") == "Sakallı, İ."
 	end
 
 	@testset "no-op on plain ASCII" begin

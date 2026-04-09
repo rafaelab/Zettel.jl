@@ -249,12 +249,17 @@ function decodeTex(s::AbstractString)
 	# normalise grouped accent macros (e.g. {\"o} -> \"o) first
 	result = replace(result, r"\{\\([\"'`^~=])([A-Za-z])\}" => s"\\\1\2")
 	result = replace(result, r"\{\\([\"'`^~=])\{([A-Za-z])\}\}" => s"\\\1\2")
+	result = replace(result, r"\{\\([ij])\}" => s"\\\1")
 	
 	# normalise accent macros written with a braced single letter (e.g. {\"o} -> \"o) so they are handled by the lookup table
 	result = replace(result, r"\\([\"'`^~=])\{([A-Za-z])\}" => s"\\\1\2")
 	for tex ∈ sort(collect(keys(tex2utf8)); by = length, rev = true)
 		result = replace(result, tex => tex2utf8[tex])
 	end
+
+	# dotless i/j when written as \i or \j (without trailing {})
+	result = replace(result, r"\\i(?![A-Za-z])" => "ı")
+	result = replace(result, r"\\j(?![A-Za-z])" => "ȷ")
 
 	# generic fallback for braced accent macros not explicitly present in `tex2utf8`
 	# e.g. \v{t} -> ť
@@ -269,9 +274,9 @@ function decodeTex(s::AbstractString)
 
 	# generic fallback for classic unbraced accent macros
 	result = replace(result, 
-		r"\\([\"'`^~=])([A-Za-z])" => (
+		r"\\([\"'`^~=\.])([A-Za-z])" => (
 			matched -> begin
-				m = match(r"^\\([\"'`^~=])([A-Za-z])$", String(matched))
+				m = match(r"^\\([\"'`^~=\.])([A-Za-z])$", String(matched))
 				if isnothing(m)
 					return String(matched)
 				end
