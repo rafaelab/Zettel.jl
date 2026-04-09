@@ -429,9 +429,9 @@ Render pasted BibTeX entries as pretty JSON.
 """
 function _renderPastedEntry(lib::ZettelLibrary, ::JsonFormat)
 	data = if length(lib) == 1
-		entryToDict(first(values(lib)))
+		entryToStructuredDict(first(values(lib)))
 	else
-		[entryToDict(entry) for entry ∈ values(lib)]
+		[entryToStructuredDict(entry) for entry ∈ values(lib)]
 	end
 	buf = IOBuffer()
 	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
@@ -447,9 +447,9 @@ Render pasted BibTeX entries as YAML.
 """
 function _renderPastedEntry(lib::ZettelLibrary, ::YamlFormat)
 	data = if length(lib) == 1
-		entryToDict(first(values(lib)))
+		entryToStructuredDict(first(values(lib)))
 	else
-		[entryToDict(entry) for entry ∈ values(lib)]
+		[entryToStructuredDict(entry) for entry ∈ values(lib)]
 	end
 	text = YAML.write(normaliseYaml(data))
 	endswith(text, "\n") || (text *= "\n")

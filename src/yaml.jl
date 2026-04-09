@@ -194,7 +194,7 @@ end
 Write a bibliography library to YAML as a list of entry objects.
 """
 function writeYamlLibrary(lib::ZettelLibrary, filename::AbstractString)
-	records = [entryToDict(entry) for entry ∈ values(lib)]
+	records = [entryToStructuredDict(entry) for entry ∈ values(lib)]
 	writeYamlFile(records, filename)
 	return nothing
 end

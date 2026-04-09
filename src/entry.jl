@@ -36,6 +36,7 @@ const preferredFieldOrder = (
 	"title",
 	"booktitle",
 	"journal",
+	"editor",
 	"publisher",
 	"year",
 	"volume",
@@ -49,6 +50,8 @@ const preferredFieldOrder = (
 	"note",
 	"abstract",
 )
+
+const _personFieldNames = ("author", "editor", "translator", "collaboration")
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -101,7 +104,19 @@ ZettelEntry(d::AbstractDict) = begin
 	fields = OrderedDict{String, String}()
 
 	for (k, v) ∈ fieldsRaw
-		fields[String(k)] = String(v)
+		field = String(k)
+		if (field ∈ _personFieldNames) && (v isa AbstractVector)
+			parts = String[]
+			for rawName ∈ v
+				name = strip(String(rawName))
+				if ! isempty(name)
+					push!(parts, name)
+				end
+			end
+			fields[field] = join(parts, " and ")
+		else
+			fields[field] = String(v)
+		end
 	end
 
 	return ZettelEntry(key, entryType, fields)
@@ -121,6 +136,30 @@ function entryToDict(entry::ZettelEntry)
 	d["key"] = entry.key
 	d["type"] = entry.entryType
 	d["fields"] = OrderedDict{String, String}(entry.fields)
+	return d
+end
+
+function entryToStructuredDict(entry::ZettelEntry)
+	d = OrderedDict{String, Any}()
+	d["key"] = entry.key
+	d["type"] = entry.entryType
+
+	fields = OrderedDict{String, Any}()
+	for (field, value) ∈ entry.fields
+		if field ∈ _personFieldNames
+			names = String[]
+			for rawName ∈ splitBibtexNames(value)
+				name = strip(stripOuterBraces(rawName))
+				if ! isempty(name)
+					push!(names, name)
+				end
+			end
+			fields[field] = names
+		else
+			fields[field] = value
+		end
+	end
+	d["fields"] = fields
 	return d
 end
 
@@ -488,12 +527,12 @@ Serialise one [`ZettelEntry`](@ref) to `format`.
 """
 function entryToString(entry::ZettelEntry, ::JsonFormat)
 	buf = IOBuffer()
-	JSON3.pretty(buf, entryToDict(entry), JSON3.AlignmentContext(indent = 4))
+	JSON3.pretty(buf, entryToStructuredDict(entry), JSON3.AlignmentContext(indent = 4))
 	return String(take!(buf))
 end
 
 function entryToString(entry::ZettelEntry, ::YamlFormat)
-	return YAML.write(normaliseYaml(entryToDict(entry)))
+	return YAML.write(normaliseYaml(entryToStructuredDict(entry)))
 end
 
 function entryToString(entry::ZettelEntry, ::BibtexFormat)

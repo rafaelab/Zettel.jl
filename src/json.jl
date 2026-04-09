@@ -213,7 +213,7 @@ end
 Write a bibliography library to JSON as a list of entry objects.
 """
 function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
-	records = [entryToDict(entry) for entry ∈ values(lib)]
+	records = [entryToStructuredDict(entry) for entry ∈ values(lib)]
 	writeJsonFile(records, filename)
 	return nothing
 end

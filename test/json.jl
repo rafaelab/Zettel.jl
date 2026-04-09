@@ -46,8 +46,8 @@ end
 		@test entry[:key] == "bertone1938"
 		@test entry[:type] == "article"
 		@test entry[:fields][:title] == "{A} Title"
-		@test entry[:fields][:author] == "Bertone, Gianfranco and Roe, Jane"
-		@test entry[:fields][:collaboration] == "ATLAS Collaboration"
+		@test entry[:fields][:author] == ["Bertone, Gianfranco", "Roe, Jane"]
+		@test entry[:fields][:collaboration] == ["ATLAS Collaboration"]
 	end
 end
 
@@ -92,7 +92,7 @@ end
 		entry = data[1][:fields]
 
 		@test entry[:title] == "Café and Schrödinger"
-		@test entry[:author] == "Müller, André"
+		@test entry[:author] == ["Müller, André"]
 		@test entry[:journal] == "The Astrophysical Journal"
 		@test entry[:month] == "01"
 	end

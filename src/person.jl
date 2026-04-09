@@ -53,7 +53,7 @@ function splitBibtexNames(nameLine::AbstractString)
 
 		if depth == 0 && startswith(SubString(line, i), " and ")
 			part = strip(String(take!(buffer)))
-			if isempty(part)
+			if ! isempty(part)
 				push!(parts, part)
 			end
 			i = nextind(line, i, 5)
