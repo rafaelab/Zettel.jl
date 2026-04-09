@@ -56,6 +56,32 @@ Remove outer braces from a string, if they are present.
 function stripOuterBraces(s::AbstractString)
 	t = strip(String(s))
 	while startswith(t, "{") && endswith(t, "}")
+		# Only strip one layer when the first "{" matches the final "}".
+		# This avoids corrupting strings like "{\v{S}}ar{\v{c}}evi{\'c}".
+		depth = 0
+		wrapsWholeString = true
+		i = firstindex(t)
+		while i ≤ lastindex(t)
+			c = t[i]
+			if c == '{'
+				depth += 1
+			elseif c == '}'
+				depth -= 1
+				if depth < 0
+					wrapsWholeString = false
+					break
+				end
+				if depth == 0 && i < lastindex(t)
+					wrapsWholeString = false
+					break
+				end
+			end
+			i = nextind(t, i)
+		end
+		if ! wrapsWholeString || depth ≠ 0
+			break
+		end
+
 		i = nextind(t, firstindex(t))
 		j = prevind(t, lastindex(t))
 		if i > j
@@ -177,3 +203,4 @@ function splitGivenName(given::AbstractString)
 	return parts[1], join(parts[2 : end], " ")
 end
 
+# ----------------------------------------------------------------------------------------------- #

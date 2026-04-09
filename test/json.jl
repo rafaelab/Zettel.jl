@@ -100,3 +100,28 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "BibTeX to JSON keeps surname brace groups intact" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		outputJson = joinpath(dir, "library.json")
+
+		write(inputBib, """
+			@article{sarcevic2021,
+				author = {{Sahl{\\'e}n}, M. and {{\\v{S}}ar{\\v{c}}evi{\\'c}}, N. and {Schmitz}, K.},
+				title = {Accent test},
+				year = {2021}
+			}
+			"""
+		)
+
+		bibtexToJson(inputBib, outputJson)
+		data = JSON3.read(read(outputJson, String))
+		authors = data[1][:fields][:author]
+
+		@test authors == ["Sahlén, M.", "Šarčević, N.", "Schmitz, K."]
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
