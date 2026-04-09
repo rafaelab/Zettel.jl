@@ -49,6 +49,6 @@ mktempdir() do dir
 	writeJsonLibrary(lib, jsonPath)
 	writeYamlLibrary(lib, yamlPath)
 	writeBibtexLibrary(lib, bibOutPath)
-	zettelCLI(args = [bibPath, jsonPath])
-	zettelCLI(args = ["convert", jsonPath, yamlPath, "--to", "yaml"])
+	zettelCLI(; args = [bibPath, jsonPath])
+	zettelCLI(; args = ["convert", jsonPath, yamlPath, "--to", "yaml"])
 end

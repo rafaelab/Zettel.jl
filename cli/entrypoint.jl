@@ -104,7 +104,7 @@ function runViaInterpreter(args::Vector{String})
 	juliaBin = get(ENV, "JULIA_BIN", "julia")
 	projectRoot = normpath(joinpath(@__DIR__, ".."))
 	snippet = "using Zettel; exit(Zettel.zettelCLI(; args = ARGS))"
-	cmd = `$juliaBin --project=$projectRoot -e $snippet -- $args`
+	cmd = `$juliaBin --project=$projectRoot --compile=min -O0 -e $snippet -- $args`
 	proc = run(Cmd(cmd; ignorestatus = true))
 	return proc.exitcode
 end
