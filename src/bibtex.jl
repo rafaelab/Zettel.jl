@@ -81,7 +81,7 @@ function readBibtexString(inputString::AbstractString)
 		fields = OrderedDict{String, String}()
 
 		for (field, value) ∈ pyconvert(Dict{String, Any}, pyEntry.fields)
-			text = strip(decodeTex(String(value)))
+			text = strip(decodeTex(stripOuterBraces(String(value))))
 			if ! isempty(text)
 				fields[String(field)] = text
 			end

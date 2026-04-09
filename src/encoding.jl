@@ -155,6 +155,80 @@ const utf8ToTex = begin
 end
 
 
+# Generic TeX accent fallback for cases not explicitly listed in `tex2utf8`.
+const texAccentCombining = Dict(
+	"'" => '\u0301',   # acute
+	"`" => '\u0300',   # grave
+	"^" => '\u0302',   # circumflex
+	"\"" => '\u0308',  # diaeresis
+	"~" => '\u0303',   # tilde
+	"=" => '\u0304',   # macron
+	"u" => '\u0306',   # breve
+	"." => '\u0307',   # dot above
+	"H" => '\u030B',   # double acute
+	"v" => '\u030C',   # caron
+	"c" => '\u0327',   # cedilla
+	"k" => '\u0328',   # ogonek
+	"r" => '\u030A',   # ring above
+	"d" => '\u0323',   # dot below
+	"b" => '\u0331',   # macron below
+)
+
+const combiningToTexAccent = Dict(v => k for (k, v) ∈ texAccentCombining)
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_decodeAccentMacro(accent, letter)
+
+Helper function for `decodeTex` that attempts to decode a TeX accent macro (e.g. `\v{t}`) by decomposing the resulting character and checking if it consists of the expected letter and a combining accent with a known TeX equivalent.
+"""
+function _decodeAccentMacro(accent::AbstractString, letter::AbstractString)
+	if ! haskey(texAccentCombining, accent)
+		return nothing
+	end
+	if length(letter)  ≠ 1
+		return nothing
+	end
+	combined = Base.Unicode.normalize(letter * string(texAccentCombining[accent]), :NFC)
+	return length(combined) == 1 ? combined : nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_encodeAccentFallback(ch)
+
+Fallback encoding for UTF-8 characters that are not explicitly listed in `utf8ToTex`.
+If `ch` can be decomposed into a single ASCII letter and a single combining accent that has a TeX equivalent in `texAccentCombining`. 
+Return the corresponding TeX macro (e.g. `\v{t}` for ť). 
+Otherwise, return `ch` unchanged.
+"""
+function _encodeAccentFallback(ch::Char)
+	decomposed = Base.Unicode.normalize(string(ch), :NFD)
+	parts = collect(decomposed)
+	if length(parts) ≠ 2 
+		return string(ch)
+	end
+	if ! isascii(parts[1])
+		return string(ch)
+	end
+	if ! haskey(combiningToTexAccent, parts[2])
+		return string(ch)
+	end
+
+	accent = combiningToTexAccent[parts[2]]
+	letter = string(parts[1])
+	if accent ∈ ("'", "`", "^", "\"", "~", "=")
+		return "\\$(accent)$(letter)"
+	end
+
+	return "\\$(accent){$(letter)}"
+end
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
@@ -181,6 +255,31 @@ function decodeTex(s::AbstractString)
 	for tex ∈ sort(collect(keys(tex2utf8)); by = length, rev = true)
 		result = replace(result, tex => tex2utf8[tex])
 	end
+
+	# generic fallback for braced accent macros not explicitly present in `tex2utf8`
+	# e.g. \v{t} -> ť
+	result = replace(result, r"\\([A-Za-z\"'`^~=\.])\{([A-Za-z])\}" => (matched -> begin
+		m = match(r"^\\([A-Za-z\"'`^~=\.])\{([A-Za-z])\}$", String(matched))
+		if isnothing(m)
+			return String(matched)
+		end
+		decoded = _decodeAccentMacro(m.captures[1], m.captures[2])
+		return isnothing(decoded) ? String(matched) : decoded
+	end))
+
+	# generic fallback for classic unbraced accent macros
+	result = replace(result, 
+		r"\\([\"'`^~=])([A-Za-z])" => (
+			matched -> begin
+				m = match(r"^\\([\"'`^~=])([A-Za-z])$", String(matched))
+				if isnothing(m)
+					return String(matched)
+				end
+				decoded = _decodeAccentMacro(m.captures[1], m.captures[2])
+				return isnothing(decoded) ? String(matched) : decoded
+			end
+		)
+	)
 
 	# some BibTeX parsers preserve grouping braces around already-decoded glyphs (e.g. M{ü}ller)
 	# drop those wrappers while keeping ASCII-protection braces
@@ -213,7 +312,18 @@ function encodeTex(s::AbstractString)
 	for utf ∈ sort(collect(keys(mapping)); by = length, rev = true)
 		result = replace(result, utf => mapping[utf])
 	end
-	return result
+
+	# fallback for composed characters that are not explicitly present in `utf8ToTex (e.g. ť -> \v{t})
+	io = IOBuffer()
+	for ch ∈ result
+		if isascii(ch)
+			print(io, ch)
+		else
+			print(io, _encodeAccentFallback(ch))
+		end
+	end
+
+	return String(take!(io))
 end
 
 

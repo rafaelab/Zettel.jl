@@ -36,6 +36,8 @@
 		@test decodeTex("Schr\\\"odinger") == "Schrödinger"
 		@test decodeTex("Caf\\'e au lait") == "Café au lait"
 		@test decodeTex("na\\\"ive") == "naïve"
+		@test decodeTex("Zur Elektrodynamik bewegter K{\\\"o}rper") == "Zur Elektrodynamik bewegter Körper"
+		@test decodeTex("S\\v{t}astn\\'y") == "Sťastný"
 	end
 
 	@testset "no-op on plain ASCII" begin
@@ -66,6 +68,7 @@ end
 		@test encodeTex("ñ") == "\\~n"
 		@test encodeTex("ç") == "\\c{c}"
 		@test encodeTex("š") == "\\v{s}"
+		@test encodeTex("ť") == "\\v{t}"
 		@test encodeTex("ā") == "\\=a"
 		@test encodeTex("ő") == "\\H{o}"
 	end
@@ -99,7 +102,7 @@ end
 #
 @testset "decodeTex/encodeTex round-trip" begin
 
-	samples = ["é", "ü", "ñ", "ç", "š", "ő", "ł", "ß", "æ", "ø", "å", "ā", "à", "ô", "—", "–"]
+	samples = ["é", "ü", "ñ", "ç", "š", "ť", "ő", "ł", "ß", "æ", "ø", "å", "ā", "à", "ô", "—", "–"]
 	for ch ∈ samples
 		@test decodeTex(encodeTex(ch)) == ch
 	end
