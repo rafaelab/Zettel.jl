@@ -45,10 +45,16 @@ const preferredFieldOrder = (
 	"pages",
 	"eid",
 	"doi",
+	"adsurl",
 	"url",
 	"isbn",
+	"archivePrefix",
+	"primaryClass",
 	"note",
 	"abstract",
+	"keywords",
+	"file",
+	"groups",
 )
 
 const _personFieldNames = ("author", "editor", "translator", "collaboration")
