@@ -3,30 +3,38 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+TMP_DIR="$SCRIPT_DIR/tmp"
 
-LIBRARY_PATH="${1:-$SCRIPT_DIR/tmp/references.yaml}"
+LIBRARY_PATH="$TMP_DIR/references.yml"
 SOURCE_LIBRARY="$SCRIPT_DIR/data/references.bib"
-BIN_ZETTEL="$PROJECT_ROOT/bin/zettel"
+ROUNDTRIP_FILE="$TMP_DIR/references_roundtrip.bib"
+JULIA_BIN="${JULIA_BIN:-julia}"
+ZETTEL_CMD=("$JULIA_BIN" --project="$PROJECT_ROOT" -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' --)
 
-if [ ! -x "$BIN_ZETTEL" ]; then
-	if command -v zettel >/dev/null 2>&1; then
-		BIN_ZETTEL="zettel"
-	else
-		echo "Error: could not find executable zettel CLI (tried $PROJECT_ROOT/bin/zettel and PATH)." >&2
-		exit 1
-	fi
+if [ $# -ge 1 ]; then
+	SOURCE_LIBRARY="$1"
 fi
 
+if [ ! -f "$SOURCE_LIBRARY" ]; then
+	echo "Error: source library not found: $SOURCE_LIBRARY" >&2
+	exit 1
+fi
+
+mkdir -p "$TMP_DIR"
 if [ ! -f "$LIBRARY_PATH" ]; then
-	mkdir -p "$(dirname "$LIBRARY_PATH")"
-	"$BIN_ZETTEL" "$SOURCE_LIBRARY" "$LIBRARY_PATH"
+	"${ZETTEL_CMD[@]}" "$SOURCE_LIBRARY" "$LIBRARY_PATH"
 fi
 
 echo "################################################################"
 echo "# zettelLibUpdateYaml                                          #"
-echo "# Library: $LIBRARY_PATH                                       #"
+echo "# Source:  $SOURCE_LIBRARY"
+echo "# Working: $LIBRARY_PATH"
 echo "# Paste one BibTeX entry below.                                #"
 echo "# End input with a line containing only ';;'.                  #"
 echo "################################################################"
 
-awk '/^;;$/ {exit} {print}' | "$BIN_ZETTEL" libupdate --library "$LIBRARY_PATH"
+awk '/^;;$/ {exit} {print}' | "${ZETTEL_CMD[@]}" libupdate --library "$LIBRARY_PATH"
+"${ZETTEL_CMD[@]}" convert "$LIBRARY_PATH" "$ROUNDTRIP_FILE" --to bib
+
+printf 'Backup and updated library written in %s\n' "$TMP_DIR"
+printf 'Roundtrip file: %s\n' "$ROUNDTRIP_FILE"
