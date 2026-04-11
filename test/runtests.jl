@@ -1,10 +1,9 @@
 using Test
 using Zettel
 using JSON3
-import Pybtex
 using OrderedCollections
 using PythonCall: pyconvert
-
+import Pybtex
 
 
 include("common.jl")
@@ -18,4 +17,7 @@ include("query.jl")
 include("roundtrip.jl")
 include("readout.jl")
 include("encoding.jl")
-include("cli.jl")
+include("cli_convert.jl")
+include("cli_paste.jl")
+include("cli_doi.jl")
+include("cli_libupdate.jl")
