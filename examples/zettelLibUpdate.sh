@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 
-LIBRARY_PATH="${1:-$SCRIPT_DIR/references.bib}"
+LIBRARY_PATH="${1:-$SCRIPT_DIR/data/references.bib}"
 BIN_ZETTEL="$PROJECT_ROOT/bin/zettel"
 
 if [ ! -x "$BIN_ZETTEL" ]; then
@@ -17,8 +18,8 @@ if [ ! -x "$BIN_ZETTEL" ]; then
 fi
 
 echo "################################################################"
-echo "# zettelLibUpdate                                               #"
-echo "# Library: $LIBRARY_PATH"
+echo "# zettelLibUpdate                                              #"
+echo "# Library: $LIBRARY_PATH                                       #"
 echo "# Paste one BibTeX entry below.                                #"
 echo "# End input with a line containing only ';;'.                  #"
 echo "################################################################"
