@@ -43,11 +43,11 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @testset "Sample YAML fixture" begin
-	sampleYaml = joinpath(@__DIR__, "..", "examples", "data", "sample.yaml")
+	sampleYaml = joinpath(@__DIR__, "..", "examples", "data", "references.yml")
 	lib = readYamlLibrary(sampleYaml)
-	@test haskey(lib, "Einstein1905")
-	@test haskey(lib, "Misner1973")
-	@test getJournal(lib["Einstein1905"]) == "Annalen der Physik"
+	@test haskey(lib, "einstein1905a")
+	@test haskey(lib, "friedmann1922a")
+	@test getJournal(lib["einstein1905a"]) == "Annalen der Physik"
 end
 
 
