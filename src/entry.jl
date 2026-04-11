@@ -32,6 +32,7 @@ export
 #
 const preferredFieldOrder = (
 	"collaboration",
+	"onbehalf",
 	"author",
 	"title",
 	"booktitle",
