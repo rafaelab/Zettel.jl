@@ -10,10 +10,11 @@ makedocs(
 		prettyurls = get(ENV, "CI", nothing) == "true",
 	),
 	pages = [
-		"Home"      => "index.md",
+		"Home" => "index.md",
 		"CLI Guide" => "cli.md",
+		"Examples" => "examples.md",
 		"CLI Build" => "juliac.md",
-		"API"       => "api.md",
+		"API" => "api.md",
 	],
 )
 

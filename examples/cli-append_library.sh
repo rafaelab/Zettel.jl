@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
+
 set -eu
+
+#-------------------------------------------------------------------------------
+# Example: paste a BibTeX entry and add it to a library
+#
+# This script pipes a small BibTeX entry into `bin/zettel paste`. 
+# It requests JSON output while also updating a temporary library file under `examples/tmp/`.
+#
+# Usage: run from the `examples/` directory. Requires `bin/zettel` to be executable.
+#-------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 BIN_ZETTEL="$SCRIPT_DIR/../bin/zettel"

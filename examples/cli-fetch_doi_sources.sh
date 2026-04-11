@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
+
 set -eu
+
+#-------------------------------------------------------------------------------
+# Example: fetch a DOI from different sources
+#
+# This script demonstrates `bin/zettel doi` with a configurable metadata source (default: crossref). 
+# It writes the fetched entry as YAML into `examples/tmp/`.
+#
+# Usage: run from the `examples/` directory. 
+# Pass the source and DOI as optional arguments. 
+# For Crossref, set `CROSSREF_MAILTO` or rely on the fallback.
+#-------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 BIN_ZETTEL="$SCRIPT_DIR/../bin/zettel"

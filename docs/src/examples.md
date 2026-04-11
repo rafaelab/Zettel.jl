@@ -1,505 +1,67 @@
-# Examples: Workflows and Patterns
+# Examples
 
-This guide shows common Zettel.jl workflows with both CLI and Julia API examples,
-complete with actual data transformations.
+The `examples/` directory contains small scripts that exercise the current CLI and Julia API.
+All generated files are written under `examples/tmp/`, while the source fixtures live under `examples/data/`.
 
-## Overview
+## Running examples
 
-The [`examples/`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/) folder contains:
-
-- **CLI Scripts** (`cli-*.sh`): Command-line usage patterns
-- **Julia Scripts** (`example-*.jl`): Julia REPL and script patterns
-- **Sample Data** (`data/*.{bib,json,yaml}`): Example bibliography files
-
-Each workflow below includes:
-1. Problem description
-2. CLI solution with explanation
-3. Julia API equivalent
-4. Before/after data example
-5. Link to example script
-
----
-
-## Workflow 1: BibTeX → JSON Conversion
-
-**Problem**: Convert a BibTeX file to Zettel's JSON format for better compatibility.
-
-### CLI Command
+From the repository root:
 
 ```bash
-bin/zettel references.bib references.json
+bash examples/cli-help.sh
+bash examples/cli-bib2json.sh
+bash examples/cli-tex_aux.sh
+julia --project=. examples/example-yaml.jl
 ```
 
-### Julia API
+General prerequisites:
 
-```julia
-using Zettel
+- a working Julia installation;
+- `pybtex` available through the Python environment used by `PythonCall.jl` for BibTeX operations;
+- `pdflatex` for the TeX/AUX examples;
+- network access for the DOI-fetching examples.
 
-bibTeXToJson("references.bib", "references.json")
-```
+## Conversion examples
 
-Or using the library functions:
+- `examples/cli-bib2json.sh`: simple two-argument conversion from `references.bib` to JSON.
+- `examples/cli-bib2yaml.sh`: simple two-argument conversion from `references.bib` to YAML.
+- `examples/cli-convert.sh`: explicit `convert` invocation from YAML to BibTeX.
+- `examples/cli-convert_simple.sh`: explicit `convert` invocation from BibTeX to YAML.
+- `examples/example-yaml.jl`: Julia-side read, write, and roundtrip examples.
+- `examples/example-json.jl`: conversion helpers and DOI JSON fetch example.
 
-```julia
-using Zettel
+## DOI examples
 
-lib = readBibTeX("references.bib")
-writeJsonLibrary(lib, "references.json")
-```
+- `examples/cli-fetch_doi.sh`: fetch one DOI from Crossref and write YAML.
+- `examples/cli-fetch_doi_sources.sh`: fetch one DOI from a selected source, currently Crossref or DataCite.
 
-### Data Example
+## Paste and library-update examples
 
-**Input** (`sample.bib`):
-```bibtex
-@ARTICLE{Einstein1905,
-    author = {{Einstein}, A.},
-    title = {Zur Elektrodynamik bewegter K{\"o}rper},
-    journal = {Annalen der Physik},
-    year = 1905,
-    volume = {322},
-    number = {10},
-    pages = {891-921},
-    doi = {10.1002/andp.19053221004}
-}
+- `examples/cli-paste_conversion.sh`: pipe one BibTeX entry to `paste --to yaml`.
+- `examples/cli-append_library.sh`: pipe one BibTeX entry to `paste --to json --library ...`.
+- `examples/zettelLibUpdate.sh`: update a BibTeX-backed working library under `examples/tmp/`, create a backup there, and write a roundtrip file there as well.
+- `examples/zettelLibUpdateYaml.sh`: same workflow, but targeting a YAML library.
 
-@BOOK{Misner1973,
-    author = {Misner, Charles W. and Thorne, Kip S. and Wheeler, John A.},
-    title = {Gravitation},
-    publisher = {W. H. Freeman},
-    year = {1973},
-    isbn = {978-0-7167-0344-0}
-}
-```
+Both `zettelLibUpdate` examples accept a pasted BibTeX entry on standard input and stop reading when they encounter a line containing only `;;`.
 
-**Output** (`sample.json`):
-```json
-{
-    "Einstein1905": {
-        "entryType": "article",
-        "title": "Zur Elektrodynamik bewegter K{\\\"o}rper",
-        "author": [
-            {
-                "first": "A.",
-                "last": "Einstein"
-            }
-        ],
-        "year": "1905",
-        "journal": "Annalen der Physik",
-        "volume": "322",
-        "number": "10",
-        "pages": "891-921",
-        "doi": "10.1002/andp.19053221004"
-    },
-    "Misner1973": {
-        "entryType": "book",
-        "title": "Gravitation",
-        "author": [
-            {
-                "first": "Charles",
-                "middle": "W.",
-                "last": "Misner"
-            },
-            {
-                "first": "Kip",
-                "middle": "S.",
-                "last": "Thorne"
-            },
-            {
-                "first": "John",
-                "middle": "A.",
-                "last": "Wheeler"
-            }
-        ],
-        "year": "1973",
-        "publisher": "W. H. Freeman",
-        "isbn": "978-0-7167-0344-0"
-    }
-}
-```
+## AUX and TeX examples
 
-**Key transformation**: Authors are parsed into structured `{ "first", "middle", "last" }` objects.
+- `examples/cli-tex_aux.sh`: full TeX workflow using small `.tex` fixtures, `pdflatex`, and multiple bibliography styles.
+- `examples/cli-tex_aux_opts.sh`: minimal `.aux` example with explicit `--library`, `--output`, and `--style` options.
 
-**Example script**: [`examples/cli-bib-to-json.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-bib-to-json.sh)
+## Help example
 
----
+- `examples/cli-help.sh`: capture the CLI help text into `examples/tmp/help.txt`.
 
-## Workflow 2: Format Conversion (JSON ↔ YAML ↔ BibTeX)
+## Notes on invocation style
 
-**Problem**: Convert between multiple bibliography formats.
+Some examples call `bin/zettel` directly, while others use:
 
-### CLI Commands
-
-Convert JSON to YAML:
 ```bash
-bin/zettel convert references.json references.yaml --to yaml
+julia --project=. -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- ...
 ```
 
-Convert YAML to BibTeX:
-```bash
-bin/zettel convert references.yaml references.bib --to bib
-```
+That split is intentional.
 
-Convert with explicit input type (when extension is ambiguous):
-```bash
-bin/zettel convert data.txt output.json --from yaml --to json
-```
-
-### Julia API
-
-```julia
-using Zettel
-
-# JSON → YAML
-jsonToYaml("references.json", "references.yaml")
-
-# YAML → BibTeX
-yamlToBibTeX("references.yaml", "references.bib")
-
-# JSON → BibTeX
-jsonToBibTeX("references.json", "references.bib")
-
-# Via library objects
-lib = readJsonLibrary("references.json")
-writeYamlLibrary(lib, "references.yaml")
-writeBibTeX(lib, "references.bib")
-```
-
-### Data Example
-
-**Input** (`sample.json`):
-```json
-{
-    "Einstein1905": {
-        "entryType": "article",
-        "author": [{"first": "A.", "last": "Einstein"}],
-        "title": "Zur Elektrodynamik bewegter Körper",
-        "year": "1905",
-        "journal": "Annalen der Physik"
-    }
-}
-```
-
-**Output** (`sample.yaml`):
-```yaml
-Einstein1905:
-    entryType: article
-    author:
-        - first: A.
-          last: Einstein
-    title: Zur Elektrodynamik bewegter Körper
-    year: "1905"
-    journal: Annalen der Physik
-```
-
-**Example scripts**:
-- [`examples/cli-convert-to.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-convert-to.sh) — Using `--to` flag
-- [`examples/cli-convert-from-to.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-convert-from-to.sh) — Using `-f`/`--from` and `-t`/`--to`
-- [`examples/example-yaml.jl`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/example-yaml.jl) — Julia YAML workflows
-
----
-
-## Workflow 3: Fetch DOI Metadata
-
-**Problem**: Retrieve bibliographic data from a DOI.
-
-### CLI Commands
-
-Fetch from Crossref (default):
-```bash
-bin/zettel doi 10.1002/andp.19053221004 --mailto you@example.org --to json
-```
-
-Fetch from DataCite explicitly:
-```bash
-bin/zettel doi <doi> --source datacite --to yaml
-```
-
-With Crossref Metadata Plus token for higher limits:
-```bash
-export CROSSREF_PLUS_API_TOKEN=your-token
-bin/zettel doi 10.1002/andp.19053221004 --mailto you@example.org --to json --output entry.json
-```
-
-### Julia API
-
-```julia
-using Zettel
-
-# Fetch from Crossref
-entry = fetchFromCrossref("10.1002/andp.19053221004"; mailto = "you@example.org")
-println(entry)
-
-# Fetch from DataCite
-entry2 = fetchFromDataCite("<doi>")
-
-# Fetch and save to JSON
-record = fetchCrossrefJson("10.1002/andp.19053221004")
-crossrefJsonToZettelJson(record, "entry.json")
-
-# Use in a library
-lib = ZettelLibrary([entry])
-writeJsonLibrary(lib, "bibliography.json")
-```
-
-### Expected Output
-
-After fetching `10.1002/andp.19053221004` (Einstein's 1905 paper):
-
-```julia
-ZettelEntry(
-    key = "Einstein1905",
-    entryType = "article",
-    fields = OrderedDict(
-        "author" => "Einstein, A.",
-        "title" => "Zur Elektrodynamik bewegter Körper",
-        "journal" => "Annalen der Physik",
-        "year" => "1905",
-        "volume" => "322",
-        "number" => "10",
-        "pages" => "891-921",
-        "doi" => "10.1002/andp.19053221004"
-    )
-)
-```
-
-**Limitations**: Requires internet connectivity. Crossref recommends polite access via `--mailto` parameter.
-
-**Example scripts**:
-- [`examples/cli-crossref-doi.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-crossref-doi.sh) — Basic Crossref fetch
-- [`examples/cli-doi-source.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-doi-source.sh) — Alternative sources
-
----
-
-## Workflow 4: Paste BibTeX from Clipboard
-
-**Problem**: Add a single BibTeX entry from clipboard without maintaining a library file.
-
-### CLI Commands
-
-Convert and display as JSON:
-```bash
-pbpaste | bin/zettel paste --to json
-```
-
-Convert and display as YAML:
-```bash
-pbpaste | bin/zettel paste --to yaml
-```
-
-Convert and add to existing library:
-```bash
-pbpaste | bin/zettel paste --to json --library references.json
-```
-
-### Julia API
-
-```julia
-using Zettel
-
-# Paste BibTeX entry (from stdin or programmatically)
-bib_entry = """
-@ARTICLE{NewEntry2024,
-    author = {Author, A. and Others, B.},
-    title = {Example Title},
-    journal = {Example Journal},
-    year = {2024},
-    volume = {1},
-    pages = {1-10}
-}
-"""
-
-# Convert to library and inspect
-lib = readBibTeX(IOBuffer(bib_entry))
-entry = first(values(lib))
-println(entry)
-
-# Write as JSON
-writeJsonLibrary(lib, "new_entry.json")
-```
-
-### Data Example
-
-**Clipboard input**:
-```bibtex
-@ARTICLE{Einstein1905,
-    author = {{Einstein}, A.},
-    title = {Zur Elektrodynamik bewegter Körper},
-    journal = {Annalen der Physik},
-    year = {1905}
-}
-```
-
-**Output** (with `--to json`):
-```json
-{
-    "Einstein1905": {
-        "entryType": "article",
-        "author": [{"first": "A.", "last": "Einstein"}],
-        "title": "Zur Elektrodynamik bewegter Körper",
-        "year": "1905",
-        "journal": "Annalen der Physik"
-    }
-}
-```
-
-**Example scripts**:
-- [`examples/cli-paste-to.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-paste-to.sh) — Paste to stdout
-- [`examples/cli-paste-to-library.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-paste-to-library.sh) — Paste to library
-
----
-
-## Workflow 5: LaTeX `.aux` → `.bbl` (BibTeX-Like Workflow)
-
-**Problem**: Generate a bibliography from a LaTeX document using a Zettel library instead of traditional bibtex.
-
-### CLI Commands
-
-Basic workflow:
-```bash
-pdflatex paper.tex              # Generates paper.aux
-bin/zettel paper.aux            # Generates paper.bbl from paper.json (auto-resolved)
-pdflatex paper.tex              # Includes bibliography in PDF
-```
-
-With explicit library and output:
-```bash
-bin/zettel paper.aux -l references.json -o paper.bbl
-```
-
-With custom bibliography style:
-```bash
-bin/zettel paper.aux --style=alpha -o paper.bbl
-```
-
-### Julia API
-
-```julia
-using Zettel
-
-# Parse the .aux file to understand what's needed
-aux = parseAuxFile("paper.aux")
-println("Citations: ", aux.citations)
-println("Bibliography sources: ", aux.bibdata)
-println("Style: ", aux.bibstyle)
-
-# Generate .bbl file
-result = writeBblFromAux(
-    "paper.aux";
-    libraryFiles = ["references.json"],
-    outputPath = "paper.bbl",
-    style = "alpha"
-)
-println("Used keys: ", result.usedKeys)
-println("Missing keys: ", result.absent)
-```
-
-### Data Example
-
-**Input** (`paper.aux` excerpt):
-```
-\citation{Einstein1905}
-\citation{Misner1973}
-\bibdata{references}
-\bibstyle{plain}
-```
-
-**Resolved library**: `references.json` (next to `.aux`)
-
-**Generated output** (`paper.bbl` excerpt):
-```
-\begin{thebibliography}{1}
-
-\bibitem{Einstein1905}
-A.~Einstein.
-\newblock Zur {E}lektrodynamik bewegter {K}orper.
-\newblock {\em Annalen der Physik}, 322(10):891--921, 1905.
-
-\bibitem{Misner1973}
-C.~W. Misner, K.~S. Thorne, and J.~A. Wheeler.
-\newblock {\em Gravitation}.
-\newblock W. H. Freeman, 1973.
-
-\end{thebibliography}
-```
-
-**Available bibliography styles**:
-`plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`, `full`, `abntex2-num`, `abntex2-alpha`
-
-**Example script**: [`examples/cli-tex_aux.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-tex_aux.sh)
-
----
-
-## Workflow 6: Reading and Querying Libraries
-
-**Problem**: Load a library and search for specific entries.
-
-### Julia API
-
-```julia
-using Zettel
-
-# Load a JSON library
-lib = readJsonLibrary("references.json")
-
-# Access an entry by key
-entry = lib["Einstein1905"]
-println("Title: ", getTitle(entry))
-println("Authors: ", getAuthors(entry))
-println("Year: ", getYear(entry))
-
-# Get all entries
-for (key, entry) in pairs(lib)
-    println("$(key): $(getTitle(entry))")
-end
-
-# Filter entries
-physics_entries = filterByField(lib, "journal", r"Annalen|Physics")
-for entry in physics_entries
-    println(entry.key)
-end
-
-# Search entries
-results = searchEntries(lib, r"Einstein|Misner")
-for entry in results
-    println("Found: $(entry.key)")
-end
-```
-
-### Data Example
-
-**Library structure** (as loaded):
-```julia
-lib = ZettelLibrary([
-    ZettelEntry("Einstein1905", "article", ...),
-    ZettelEntry("Misner1973", "book", ...)
-])
-```
-
-**Query examples**:
-- `findByKey(lib, "Einstein1905")` → Entry for Einstein1905
-- `filterByField(lib, "year", "1905")` → All entries from 1905
-- `searchEntries(lib, r"gravitation")` → Entries matching pattern (title, author, journal)
-
-**Example script**: [`examples/example-simple.jl`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/example-simple.jl)
-
----
-
-## Quick Reference: CLI vs Julia
-
-| Task | CLI | Julia |
-|------|-----|-------|
-| BibTeX → JSON | `bin/zettel in.bib out.json` | `bibTeXToJson(in, out)` |
-| JSON → YAML | `bin/zettel convert in.json out.yaml --to yaml` | `jsonToYaml(in, out)` |
-| Fetch DOI | `bin/zettel doi <doi> --to json` | `fetchFromCrossref(doi)` |
-| Parse `.aux` | (auto in `.aux` workflow) | `parseAuxFile(path)` |
-| Generate `.bbl` | `bin/zettel paper.aux` | `writeBblFromAux(auxPath)` |
-| Read library | (auto) | `readJsonLibrary(path)` |
-| Write library | (auto) | `writeJsonLibrary(lib, path)` |
-
----
-
-## See Also
-
-- [API Reference](api.md) — Complete function documentation
-- [CLI Guide](cli.md) — Detailed CLI documentation and troubleshooting
-- [`examples/` folder](https://github.com/rafaelab/Zettel.jl/tree/main/examples/) — Runnable scripts and sample data
+- The Julia form is the safest choice while developing inside the repository, because it always uses the current source tree.
+- The wrapper is fine once the executable has been rebuilt and you want to exercise the installed CLI path.

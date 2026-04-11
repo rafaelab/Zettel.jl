@@ -13,7 +13,6 @@ end
 
 function formatToken(token::AbstractString)
 	n = lowercase(strip(token))
-
 	if n ∈ ("bib", "bibtex")
 		return "bib"
 	elseif n == "json"
@@ -35,26 +34,35 @@ function formatToken(token::AbstractString)
 end
 
 function isBibRelated(args::Vector{String})
-	isempty(args) && return false
+	if isempty(args)
+		return false
+	end
 	cmd = args[1]
 
 	# legacy 2-arg mode: zettel input.bib output.json
-	if length(args) == 2 && !startswith(args[1], "-") && !startswith(args[2], "-")
+	if length(args) == 2 && ! startswith(args[1], "-") && ! startswith(args[2], "-")
 		return looksLikeBibPath(args[1]) || looksLikeBibPath(args[2])
 	end
 
+	# paste always parses BibTeX from stdin
 	if cmd == "paste"
-		# paste always parses BibTeX from stdin.
 		return true
 	end
 
+	# libupdate always parses BibTeX and updates a .bib library
+	if cmd == "libupdate"
+		return true
+	end
+
+	# DOI flows depend on runtime HTTP/Python behavior; keep them on interpreter path
 	if cmd == "doi" || (startswith(cmd, "10.") && occursin("/", cmd))
-		# DOI flows depend on runtime HTTP/Python behavior; keep them on interpreter path.
 		return true
 	end
 
 	if cmd == "convert"
-		length(args) < 3 && return false
+		if length(args) < 3
+			return false
+		end
 		inputPath = args[2]
 		outputPath = args[3]
 		fromType = nothing
@@ -65,10 +73,14 @@ function isBibRelated(args::Vector{String})
 			arg = args[i]
 			if arg == "-f" || arg == "--from"
 				i += 1
-				i <= length(args) && (fromType = formatToken(args[i]))
+				if i ≤ length(args) 
+					fromType = formatToken(args[i])
+				end
 			elseif arg == "-t" || arg == "--to"
 				i += 1
-				i ≤ length(args) && (toType = formatToken(args[i]))
+				if i ≤ length(args)
+					toType = formatToken(args[i])
+				end
 			end
 			i += 1
 		end
@@ -111,7 +123,7 @@ end
 
 
 ###################################################################################################
-#                                          Main CLI Entrypoint                                    #
+#                                      Main CLI Entrypoint                                        #
 ###################################################################################################
 
 function main(args::Vector{String})

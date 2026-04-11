@@ -2,9 +2,6 @@ using Zettel
 using OrderedCollections
 
 
-# ---------------------------------------------------------------------------
-# YAML round-trip example
-
 article = ZettelEntry(
 	"Einstein1905",
 	"article",
@@ -33,7 +30,7 @@ book = ZettelEntry(
 
 lib = ZettelLibrary([article, book])
 
-yamlFile = tempname() * ".yaml"
+yamlFile = tempname() * ".yml"
 bibFile = tempname() * ".bib"
 jsonFile = tempname() * ".json"
 
@@ -56,9 +53,6 @@ lib3 = readBibtexLibrary(bibFile)
 println("Reloaded from BibTeX: ", lib3)
 
 
-# ---------------------------------------------------------------------------
-# Load the sample YAML fixture shipped with the repository
-
-sampleYaml = joinpath(@__DIR__, "data", "sample.yaml")
+sampleYaml = joinpath(@__DIR__, "data", "references.yml")
 sampleLib = readYamlLibrary(sampleYaml)
 println("Loaded sample YAML library with ", length(sampleLib), " entries.")

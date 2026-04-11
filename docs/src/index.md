@@ -1,170 +1,178 @@
 # Zettel.jl
 
-**Zettel.jl** is a lightweight reference manager for Julia that stores bibliographic
-data as JSON/YAML while maintaining full BibTeX compatibility.
-
-BibTeX parsing is handled by [Pybtex.jl](https://github.com/rafaelab/pybtex.jl), which
-expects the Python package `pybtex` in the Python interpreter used by
-[PythonCall.jl](https://github.com/JuliaPy/PythonCall.jl). When using a system Python,
-set `JULIA_CONDAPKG_BACKEND=Null` and `JULIA_PYTHONCALL_EXE=python`, then install
-`pybtex` with `python -m pip install pybtex`.
+`Zettel.jl` is a lightweight bibliography manager for Julia. It reads and writes BibTeX, JSON, and YAML libraries, fetches DOI metadata, and can generate `.bbl` files directly from LaTeX `.aux` files.
 
 ## Features
 
-- Store references in JSON/YAML formats that mirror BibTeX fields.
-- Fetch metadata automatically from [CrossRef](https://www.crossref.org/) using a DOI.
-- Read and write BibTeX `.bib` files via
-  [Pybtex.jl](https://github.com/rafaelab/pybtex.jl).
-- Simple, consistent API following Julia conventions.
-- BibTeX-like `.aux` → `.bbl` workflow with style selection.
+- Read and write `.bib`, `.json`, `.yaml`, and `.yml` libraries.
+- Convert between formats with either the Julia API or the CLI.
+- Fetch one bibliographic entry from DOI metadata sources such as Crossref and DataCite.
+- Update an existing library from a pasted BibTeX entry with automatic key generation and backup creation.
+- Generate `.bbl` files from `.aux` files without calling BibTeX.
 
-## Quick start
+## Dependency note
+
+BibTeX parsing and writing rely on [Pybtex.jl](https://github.com/rafaelab/pybtex.jl), which in turn uses the Python package `pybtex` through `PythonCall.jl`.
+
+If you use a system Python, a typical setup is:
+
+```bash
+export JULIA_CONDAPKG_BACKEND=Null
+export JULIA_PYTHONCALL_EXE=python
+python -m pip install pybtex
+```
+
+## Quick Start
+
+### Julia API
 
 ```julia
-using Zettel, OrderedCollections
+using OrderedCollections
+using Zettel
 
-# Create an entry
 entry = ZettelEntry(
-    "Einstein1905",
-    "article",
-    OrderedDict(
-        "author"  => "Einstein, A.",
-        "title"   => "Zur Elektrodynamik bewegter Körper",
-        "journal" => "Annalen der Physik",
-        "year"    => "1905",
-        "doi"     => "10.1002/andp.19053221004",
-    ),
+	"einstein1905a",
+	"article",
+	OrderedDict(
+		"author" => "Einstein, A.",
+		"title" => "Zur Elektrodynamik bewegter Körper",
+		"journal" => "Annalen der Physik",
+		"year" => "1905",
+		"doi" => "10.1002/andp.19053221004",
+	),
 )
 
 lib = ZettelLibrary([entry])
 
-# save to JSON
-writeJsonLibrary(lib, "library.json")
+writeJsonLibrary(lib, "references.json")
+writeYamlLibrary(lib, "references.yml")
+writeBibtexLibrary(lib, "references.bib")
 
-# save to YAML
-writeYamlLibrary(lib, "library.yaml")
-
-# save Crossref JSON in Zettel format
-record = fetchCrossrefJson("10.1002/andp.19384240107")
-crossrefJsonToZettelJson(record, "crossref.json")
-
-# save to BibTeX
-writeBibTeX(lib, "library.bib")
-
-# fetch from CrossRef
-entry2 = fetchFromCrossref("10.1002/andp.19053221004")
+sameLib = loadLibrary("references.json")
 ```
 
-## CLI workflows
+### Format conversion
 
-### BibTeX → Zettel JSON
+```julia
+using Zettel
+
+bibtexToJson("references.bib", "references.json")
+jsonToYaml("references.json", "references.yml")
+yamlToBibtex("references.yml", "references_roundtrip.bib")
+```
+
+### Fetch one DOI entry
+
+```julia
+using Zettel
+
+entry = fetchFromDoiSource(
+	"10.1002/andp.19053221004";
+	source = "crossref",
+	mailto = "you@example.org",
+)
+
+println(entry)
+```
+
+### Generate a `.bbl` from a LaTeX `.aux`
+
+```julia
+using Zettel
+
+writeBblFromAux(
+	"paper.aux";
+	libraryFiles = ["references.json"],
+	outputPath = "paper.bbl",
+	style = "plain",
+)
+```
+
+## CLI Quick Start
+
+During development inside this repository, the most reliable entry point is the Julia command below, because it always uses the current source tree:
 
 ```bash
+julia --project=. -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- --help
+```
+
+If you have built the executable, you can also use:
+
+```bash
+bin/zettel --help
+```
+
+Common CLI tasks:
+
+```bash
+# simple two-file conversion
 bin/zettel references.bib references.json
+
+# explicit conversion mode
+bin/zettel convert references.json references.yml --to yaml
+
+# fetch one DOI entry
+bin/zettel doi 10.1038/nphys1170 --source crossref --mailto you@example.org --to yaml
+
+# paste one BibTeX entry from stdin
+pbpaste | bin/zettel paste --to json
+
+# update an existing library from one pasted BibTeX entry
+pbpaste | bin/zettel libupdate --library references.yml
+
+# generate a .bbl from an .aux file
+bin/zettel paper.aux --library references.json --output paper.bbl --style plain
 ```
 
-### Convert between JSON/YAML/BibTeX
+## JSON and YAML Library Shape
 
-```bash
-bin/zettel convert references.yaml references.json --to json
-bin/zettel convert references.json references.bib --to bib
-```
+`writeJsonLibrary` and `writeYamlLibrary` serialise a library as a list of entry objects with three top-level keys: `key`, `type`, and `fields`.
 
-### Paste BibTeX from stdin
-
-```bash
-pbpaste | bin/zettel paste --to yaml
-pbpaste | bin/zettel paste --to json --library references.json
-```
-
-### Aux → bbl
-
-```bash
-pdflatex test.tex
-bin/zettel test.aux
-pdflatex test.tex
-```
-
-`bin/zettel` reads `\bibstyle{...}` from the `.aux` file by default and supports:
-`plain`, `unsrt`, `alpha`, `ieeestr`, `revtex`, `jhep`, `full`, `abntex2-num`,
-`abntex2-alpha`.
-
-For faster startup, build the optional compiled CLI with Julia >= 1.12:
-
-```bash
-julia cli/buildExecutable.jl
-```
-
-`bin/zettel` will use `lib/zettel` automatically when present. You can also
-override it with `ZETTEL_EXECUTABLE=/path/to/compiled/zettel`.
-
-## Zettel JSON format
-
-`bibTeXToJson` and `crossrefJsonToZettelJson` emit a per-key JSON map with structured
-people lists, for example:
+### JSON
 
 ```json
-{
-    "Einstein1905": {
-        "entryType": "article",
-        "title": "Zur Elektrodynamik bewegter Körper",
-        "author": [
-            { "first": "A.", "last": "Einstein" }
-        ],
-        "year": "1905"
-    }
-}
+[
+	{
+		"key": "einstein1905a",
+		"type": "article",
+		"fields": {
+			"author": ["Einstein, A."],
+			"title": "Zur Elektrodynamik bewegter Körper",
+			"journal": "Annalen der Physik",
+			"year": "1905"
+		}
+	}
+]
 ```
 
-`readJsonLibrary` and `readYamlLibrary` accept both the per-key Zettel format and the
-list-based library format produced by `writeJsonLibrary`/`writeYamlLibrary`.
+### YAML
 
-## Examples
-
-### Before and After: BibTeX to JSON
-
-**Input** (`references.bib`):
-```bibtex
-@ARTICLE{Einstein1905,
-    author = {{Einstein}, A.},
-    title = {Zur Elektrodynamik bewegter Körper},
-    journal = {Annalen der Physik},
-    year = 1905,
-    volume = {322},
-    number = {10},
-    pages = {891-921},
-    doi = {10.1002/andp.19053221004}
-}
+```yaml
+- key: "einstein1905a"
+  type: "article"
+  fields:
+    author:
+      - "Einstein, A."
+    title: "Zur Elektrodynamik bewegter Körper"
+    journal: "Annalen der Physik"
+    year: "1905"
 ```
 
-**Output** (`references.json`):
-```json
-{
-    "Einstein1905": {
-        "entryType": "article",
-        "title": "Zur Elektrodynamik bewegter Körper",
-        "author": [
-            {
-                "first": "A.",
-                "last": "Einstein"
-            }
-        ],
-        "year": "1905",
-        "journal": "Annalen der Physik",
-        "volume": "322",
-        "number": "10",
-        "pages": "891-921",
-        "doi": "10.1002/andp.19053221004"
-    }
-}
-```
+Internally, a [`ZettelEntry`](@ref) still stores person-like fields such as `author` and `collaboration` as BibTeX-style strings joined by ` and `. The JSON and YAML writers expand those fields back to arrays for readability.
 
-This shows the key transformation: BibTeX's flat structure becomes a per-key map with structured author information.
+## Main Entry Points
 
-### Learn by Example
+- [`ZettelEntry`](@ref), [`ZettelLibrary`](@ref)
+- [`loadLibrary`](@ref), [`saveLibrary`](@ref)
+- [`readBibtexString`](@ref), [`readJsonString`](@ref), [`readYamlString`](@ref)
+- [`writeBibtexLibrary`](@ref), [`writeJsonLibrary`](@ref), [`writeYamlLibrary`](@ref)
+- [`fetchFromDoiSource`](@ref)
+- [`writeBblFromAux`](@ref)
+- [`zettelCLI`](@ref)
 
-For comprehensive workflow examples showing both CLI and Julia API usage, see:
+## Further Reading
 
-- **[Examples Guide](examples.md)** — Multiple workflows with before/after transformations
-- **[`examples/` folder](https://github.com/rafaelab/Zettel.jl/tree/main/examples/)** — Runnable scripts for CLI and Julia
-- **[Sample Data](https://github.com/rafaelab/Zettel.jl/tree/main/examples/data/)** — `sample.bib`, `sample.json`, `sample.yaml` for reference
+- [CLI Guide](cli.md)
+- [Examples](examples.md)
+- [CLI Build](juliac.md)
+- [API Reference](api.md)

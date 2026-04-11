@@ -203,4 +203,45 @@ function splitGivenName(given::AbstractString)
 	return parts[1], join(parts[2 : end], " ")
 end
 
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	levenshteinDistance(left, right)
+
+Compute a basic Levenshtein distance for two character sequences.
+For details on the algorithm, see:
+	https://ui.adsabs.harvard.edu/abs/1966SPhD...10..707L
+
+# Input
+- `left::AbstractVector`: first sequence.
+- `right::AbstractVector`: second sequence.
+"""
+function levenshteinDistance(s1::AbstractVector, s2::AbstractVector)
+	n = length(s1)
+	m = length(s2)
+
+	if n == 0
+		return m
+	end
+	if m == 0
+		return n
+	end
+
+	prev = collect(0 : m)
+	curr = similar(prev)
+	for i ∈ 1 : n
+		curr[1] = i
+		for j ∈ 1 : m
+			cost = s1[i] == s2[j] ? 0 : 1
+			curr[j + 1] = min(curr[j] + 1, prev[j + 1] + 1, prev[j] + cost)
+		end
+		prev, curr = curr, prev
+	end
+
+	return prev[end]
+end
+
+
 # ----------------------------------------------------------------------------------------------- #

@@ -57,6 +57,19 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
+	fileExtensionFromFormat(format)
+
+Get the canonical file extension for a bibliography format.
+"""
+fileExtensionFromFormat(::Type{BibtexFormat}) = "bib"
+fileExtensionFromFormat(::Type{JsonFormat}) = "json"
+fileExtensionFromFormat(::Type{YamlFormat}) = "yaml"
+fileExtensionFromFormat(format::BibliographyFormat) = getFileExtension(typeof(format))
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
 	identifyBibliographyFormat(path)
 
 Infer a bibliography format from a file extension.

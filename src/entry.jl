@@ -25,7 +25,10 @@ export
 	getISBN,
 	getIsbn,
 	entryToString,
-	entryFromString
+	entryFromString,
+	verySimilarEntry,
+	findVerySimilarEntry,
+	similarityReport
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -33,10 +36,11 @@ export
 const preferredFieldOrder = (
 	"collaboration",
 	"author",
+	"onbehalf",
+	"editor",
 	"title",
 	"booktitle",
 	"journal",
-	"editor",
 	"publisher",
 	"year",
 	"month",
@@ -172,7 +176,6 @@ function entryToStructuredDict(entry::ZettelEntry)
 	return d
 end
 
-# constructors from BibTeX, JSON, YAML, etc. are defined in their respective modules
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -569,6 +572,185 @@ Parse one bibliography entry from a `text` string in `format`.
 entryFromString(text::AbstractString, ::JsonFormat) = readJsonEntry(readJsonString(text))
 entryFromString(text::AbstractString, ::YamlFormat) = readYamlEntry(readYamlString(text))
 entryFromString(text::AbstractString, ::BibtexFormat) = readBibtexEntry(readBibtexString(text))
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	verySimilarEntry(candidate, existing; textThreshold = 0.9, authorThreshold = 0.9)
+
+Return `true` when two entries look like duplicates according to:
+- title/journal/booktitle similarity;
+- first-author surname similarity;
+- identical year;
+- identical volume when both entries define one.
+"""
+function verySimilarEntry(entry1::ZettelEntry, entry2::ZettelEntry; textThreshold::Real = 0.9, authorThreshold::Real = 0.9)
+	return ! isnothing(similarityReport(entry1, entry2; textThreshold = textThreshold, authorThreshold = authorThreshold))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	similarityReport(candidate, existing; textThreshold = 0.9, authorThreshold = 0.9)
+
+Return a named tuple describing why two entries are considered too similar.
+If they do not meet the similarity criteria, return `nothing`.
+"""
+function similarityReport(candidate::ZettelEntry, existing::ZettelEntry; textThreshold::Real = 0.9, authorThreshold::Real = 0.9)
+	textFields = ("title", "journal", "booktitle")
+	comparedFields = 0
+	matchedFields = 0
+	matchedFieldNames = String[]
+	fieldScores = OrderedDict{String, Float64}()
+
+	for field ∈ textFields
+		candidateValue = get(candidate.fields, field, "")
+		existingValue = get(existing.fields, field, "")
+		if isempty(strip(candidateValue)) || isempty(strip(existingValue))
+			continue
+		end
+		comparedFields += 1
+		score = stringSimilarityScore(candidateValue, existingValue)
+		fieldScores[field] = score
+		if score ≥ textThreshold
+			matchedFields += 1
+			push!(matchedFieldNames, field)
+		end
+	end
+
+	textRatio = comparedFields == 0 ? 0.0 : matchedFields / comparedFields
+	if textRatio ≤ textThreshold
+		return nothing
+	end
+
+	candidateAuthor = authorSurnameToken(candidate.fields)
+	existingAuthor = authorSurnameToken(existing.fields)
+	if isempty(candidateAuthor) || isempty(existingAuthor)
+		return nothing
+	end
+
+	authorScore = stringSimilarityScore(candidateAuthor, existingAuthor)
+	if authorScore < authorThreshold
+		return nothing
+	end
+
+	candidateYear = strip(get(candidate.fields, "year", ""))
+	existingYear = strip(get(existing.fields, "year", ""))
+	if isempty(candidateYear) || isempty(existingYear) || candidateYear ≠ existingYear
+		return nothing
+	end
+
+	candidateVolume = strip(get(candidate.fields, "volume", ""))
+	existingVolume = strip(get(existing.fields, "volume", ""))
+	volumeMatches = isempty(candidateVolume) || isempty(existingVolume) || candidateVolume == existingVolume
+	if ! volumeMatches
+		return nothing
+	end
+
+	return (
+		similar = true,
+		existingKey = existing.key,
+		matchedFieldNames = matchedFieldNames,
+		comparedFields = comparedFields,
+		textRatio = textRatio,
+		fieldScores = fieldScores,
+		authorScore = authorScore,
+		candidateAuthor = candidateAuthor,
+		existingAuthor = existingAuthor,
+		year = candidateYear,
+		volume = isempty(candidateVolume) ? existingVolume : candidateVolume,
+	)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	findVerySimilarEntry(lib, candidate; textThreshold = 0.9, authorThreshold = 0.9)
+
+Return the first existing entry in `lib` that looks like a duplicate of `candidate`.
+Returns `nothing` if no entry matches.
+"""
+function findVerySimilarEntry(lib, candidate::ZettelEntry; textThreshold::Real = 0.9, authorThreshold::Real = 0.9)
+	for existing ∈ values(lib)
+		report = similarityReport(candidate, existing; textThreshold = textThreshold, authorThreshold = authorThreshold)
+		if ! isnothing(report)
+			return report
+		end
+	end
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	stringSimilarityScore(left, right)
+
+Compute a normalised similarity score in `[0, 1]` from two strings using
+Levenshtein distance after light normalization.
+"""
+function stringSimilarityScore(left::AbstractString, right::AbstractString)
+	a = _normalisedSimilarityText(left)
+	b = _normalisedSimilarityText(right)
+	if isempty(a) && isempty(b)
+		return 1.
+	end
+	if isempty(a) || isempty(b)
+		return 0.
+	end
+
+	dist = levenshteinDistance(collect(a), collect(b))
+	scale = max(length(a), length(b))
+
+	return scale == 0 ? 1. : 1 - (dist / scale)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_normalisedSimilarityText(text)
+
+Normalise free text for similarity comparison.
+"""
+function _normalisedSimilarityText(text::AbstractString)
+	s = strip(decodeTex(stripOuterBraces(text)))
+	s = replace(Base.Unicode.normalize(s, :NFD), r"\p{M}" => "")
+	s = lowercase(s)
+	s = replace(s, r"[^a-z0-9]+" => " ")
+	s = replace(s, r"\s+" => " ")
+	return strip(s)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	authorSurnameToken(fields)
+
+Extract the first author surname in normalised token form for similarity comparison.
+"""
+function authorSurnameToken(fields::AbstractDict{String, String})
+	author = get(fields, "author", "")
+	if isempty(strip(author))
+		return ""
+	end
+
+	parts = splitBibtexNames(author)
+	firstPerson = isempty(parts) ? author : parts[1]
+	parsed = parseBibtexPerson(firstPerson)
+	last = strip(parsed.lastName)
+	if isempty(last)
+		last = strip(decodeTex(stripOuterBraces(firstPerson)))
+	end
+
+	return cleanKeyToken(last)
+end
+
+
 
 
 # ----------------------------------------------------------------------------------------------- #
