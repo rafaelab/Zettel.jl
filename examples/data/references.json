@@ -1,0 +1,83 @@
+[
+	{
+		"key": "einstein1905a",
+		"type": "article",
+		"fields": {
+			"author": [
+				"Einstein, A."
+			],
+			"title": "Zur Elektrodynamik bewegter Körper",
+			"journal": "Annalen der Physik",
+			"year": "1905",
+			"month": "January",
+			"volume": "322",
+			"number": "10",
+			"pages": "891–921",
+			"doi": "10.1002/andp.19053221004",
+			"adsurl": "https://ui.adsabs.harvard.edu/abs/1905AnP...322..891E",
+			"file": "einstein1905a.pdf"
+		}
+	},
+	{
+		"key": "friedmann1922a",
+		"type": "article",
+		"fields": {
+			"author": [
+				"Friedmann, A."
+			],
+			"title": "Über die Krümmung des Raumes",
+			"journal": "Zeitschrift fur Physik",
+			"year": "1922",
+			"volume": "10",
+			"pages": "377–386",
+			"doi": "10.1007/BF01332580",
+			"adsurl": "http://adsabs.harvard.edu/abs/1922ZPhy...10..377F"
+		}
+	},
+	{
+		"key": "levenshtein1966a",
+		"type": "article",
+		"fields": {
+			"author": [
+				"Levenshtein, V. I."
+			],
+			"title": "Binary Codes Capable of Correcting Deletions, Insertions and Reversals",
+			"journal": "Soviet Physics Doklady",
+			"year": "1966",
+			"month": "February",
+			"volume": "10",
+			"pages": "707",
+			"adsurl": "https://ui.adsabs.harvard.edu/abs/1966SPhD...10..707L",
+			"adsnote": "Provided by the SAO/NASA Astrophysics Data System"
+		}
+	},
+	{
+		"key": "ligo2017a",
+		"type": "article",
+		"fields": {
+			"collaboration": [
+				"LIGO Scientific Collaboration",
+				"Virgo Collaboration"
+			],
+			"author": [
+				"Abbott, B. P.",
+				"others"
+			],
+			"title": "GW170817: Observation of Gravitational Waves from a Binary Neutron Star Inspiral",
+			"journal": "Physical Review Letters",
+			"year": "2017",
+			"month": "10",
+			"volume": "119",
+			"number": "16",
+			"pages": "161101",
+			"eid": "161101",
+			"doi": "10.1103/PhysRevLett.119.161101",
+			"adsurl": "https://ui.adsabs.harvard.edu/abs/2017PhRvL.119p1101A",
+			"archiveprefix": "arXiv",
+			"primaryclass": "gr-qc",
+			"eprint": "1710.05832",
+			"keywords": "General Relativity and Quantum Cosmology, Astrophysics - High Energy Astrophysical Phenomena",
+			"file": "ligo2017a.pdf"
+		}
+	}
+]
