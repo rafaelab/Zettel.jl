@@ -1,273 +1,213 @@
-# Command-Line Interface (CLI) Tutorial
+# Command-Line Interface
 
-This guide shows how to use **Zettel.jl** from the command line to manage bibliographic data.
+The CLI entry point is [`zettelCLI`](@ref). You can run it either through the repository wrapper or directly through Julia.
 
-## Basic Usage
+## Recommended invocation during development
 
-The `bin/zettel` executable provides a command-line interface for common tasks:
+When you are editing the source tree, prefer the Julia entry point so you always run the current code:
 
 ```bash
-bin/zettel [options] <input_file> [output_file]
+julia --project=. -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- --help
 ```
 
-### Option Flags
-- `--no-compile`: Run via the Julia interpreter even if a compiled executable is available.
-- `--no-sysimage`: Backward-compatible alias for `--no-compile`.
-- `-l`, `--library <file>`: Path to a `.json`, `.yaml/.yml`, or `.bib` library (repeatable).
-- `-o`, `--output <path>`: Specify the output file (alternative to positional argument).
-- `-s`, `--style <name>`: Bibliography style name.
-- `-f`, `--from <type>`: Input type for `convert` (optional; inferred from extension).
-- `-t`, `--to <type>`: Output type for `convert` (required in `convert` mode).
-- `--source <name>`: DOI metadata source in `doi` mode (`crossref` default; also supports `datacite`).
-- `-m`, `--mailto <email>`: Contact email for Crossref polite requests (`doi` mode).
-- `--plus-token <token>`: Crossref Metadata Plus token (`doi` mode; optional).
-- `-h`, `--help`: Show usage information.
-
-## Common Workflows
-
-### 1. Convert BibTeX to JSON
-
-Convert a `.bib` file to Zettel's JSON format:
+If you have already built the executable, `bin/zettel` provides the same interface:
 
 ```bash
-bin/zettel references.bib references.json
+bin/zettel --help
 ```
 
-**Input:** `references.bib` (standard BibTeX file)  
-**Output:** `references.json` (Zettel JSON with structured author fields)
+## Commands
 
-### 2. Convert BibTeX to YAML
+The CLI supports five modes:
+
+- `zettel convert <input> <output> [--from <fmt>] --to <fmt>`
+- `zettel doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
+- `zettel paste [--to <fmt>] --library <file>`
+- `zettel paste --to <fmt>`
+- `zettel libupdate --library <file> [--key <key>] [--fileDir <dir>]`
+- `zettel <auxfile> [options]`
+
+Supported formats are `bib`, `json`, and `yaml`.
+
+## Convert
+
+Convert between bibliography formats.
 
 ```bash
-bin/zettel references.bib references.yaml
-```
-
-YAML is human-friendly and preserves the same structure as JSON.
-
-### 3. Convert Between Formats Explicitly
-
-Use the `convert` subcommand with `--from` and `--to` flags:
-
-```bash
-bin/zettel convert references.json references.yaml --to yaml
-bin/zettel convert references.yaml references.bib --to bib
 bin/zettel convert references.bib references.json --to json
+bin/zettel convert references.json references.yml --to yaml
+bin/zettel convert references.yml references.bib --from yaml --to bib
 ```
 
-**Supported formats:** `json`, `yaml`, `bib`
-
-If input or output format is ambiguous, specify it explicitly with `--from` and `--to`.
-
-### 4. Generate Bibliography from LaTeX `.aux` File
-
-When `pdflatex` processes a `.tex` file, it generates a `.aux` file that lists all citations:
+There is also a shorthand two-argument mode that infers formats from file extensions:
 
 ```bash
-pdflatex paper.tex
-bin/zettel paper.aux -o paper.bbl -l references.json
-pdflatex paper.tex  # Rerun to include the generated bibliography
-```
-
-**Process:**
-1. Run `pdflatex` to generate `paper.aux` with citation keys.
-2. Run `bin/zettel` with the `.aux` file and library files.
-3. Zettel generates `paper.bbl` (the formatted bibliography).
-4. Run `pdflatex` again to incorporate the `.bbl` into your PDF.
-
-**Style selection:**  
-By default, `bin/zettel` reads `\bibstyle{...}` from the `.aux` file (set by `bibtex` or `biblatex`). Supported styles:
-
-- `plain` — sorted alphabetically by author (~IEEE default)
-- `unsrt` — citation order (unsorted)
-- `alpha` — ~IEEE author-year-key label style
-- `ieeestr` — IEEE numeric labels
-- `revtex` — Physics (akin to `revtex4` BibTeX style)
-- `jhep` — High-energy physics (~JHEP style)
-- `full` — Expanded format with all fields
-- `abntex2-num` — Brazilian standard (numbered)
-- `abntex2-alpha` — Brazilian standard (author-date)
-
-Example with explicit style:
-
-```bash
-bin/zettel paper.aux -o paper.bbl -l refs.json --style=alpha
-```
-
-### 5. Batch Processing with Shell Loop
-
-Convert multiple files in a directory:
-
-```bash
-for bib in *.bib; do
-    json="${bib%.bib}.json"
-    bin/zettel "$bib" "$json"
-done
-```
-
-### 6. Fetch a DOI from a Source (`crossref` Default)
-
-Fetch one DOI from Crossref (default source) and print one `ZettelEntry`:
-
-```bash
-bin/zettel doi 10.1038/nphys1170 --mailto you@example.org --to yaml
-```
-
-Fetch from DataCite explicitly:
-
-```bash
-bin/zettel doi <doi-from-datacite> --source datacite --to yaml
-```
-
-Write Crossref output directly to a file:
-
-```bash
-bin/zettel doi 10.1038/nphys1170 --mailto you@example.org --to json --output entry.json
-```
-
-## Example: Complete LaTeX Workflow
-
-Suppose you have:
-- `paper.tex` — your LaTeX document
-- `references.bib` — your bibliography database
-
-1. **Convert references to Zettel JSON (for portability):**
-
-   ```bash
-   bin/zettel references.bib references.json
-   ```
-
-2. **Edit and organize in JSON (optional):**
-
-   Edit `references.json` if needed; the structure mirrors BibTeX but is more structured (author lists are parsed into first/last name pairs).
-
-3. **Generate bibliography from the `.aux` file:**
-
-   ```bash
-   pdflatex paper.tex
-   bin/zettel paper.aux -o paper.bbl -l references.json
-   pdflatex paper.tex
-   ```
-
-4. **Convert back to BibTeX if needed:**
-
-   ```bash
-   bin/zettel convert references.json references_updated.bib --to bib
-   ```
-
-## Running Without the Compiled Executable
-
-If the compiled executable is not present or you want to bypass it:
-
-```bash
-bin/zettel --no-compile references.bib references.json
-```
-
-Startup will be slower, but the result is identical.
-`--no-sysimage` is still accepted as a backward-compatible alias.
-
-## Environment Variables
-
-- `ZETTEL_EXECUTABLE`: Path to a custom compiled executable. If set, `bin/zettel` will use it instead of looking in `lib/`.
-- `ZETTEL_SYSIMAGE`: Deprecated alias for `ZETTEL_EXECUTABLE`.
-- `JULIA_BIN`: Path to the Julia executable (default: `julia`).
-- `CROSSREF_MAILTO`: Contact email used for Crossref polite access in `doi` mode.
-- `CROSSREF_PLUS_API_TOKEN`: Crossref Metadata Plus token (optional, for higher limits).
-- `CROSSREF_USER_AGENT`: Optional Crossref user-agent override.
-- `DATACITE_USER_AGENT`: Optional DataCite user-agent override.
-
-Example:
-
-```bash
-export ZETTEL_EXECUTABLE=/path/to/compiled/zettel
 bin/zettel references.bib references.json
+bin/zettel references.json references.yml
 ```
+
+Relevant example scripts:
+
+- [`examples/cli-bib2json.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-bib2json.sh)
+- [`examples/cli-bib2yaml.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-bib2yaml.sh)
+- [`examples/cli-convert.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-convert.sh)
+- [`examples/cli-convert_simple.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-convert_simple.sh)
+
+## DOI Lookup
+
+Fetch one entry from a DOI metadata source.
+
+```bash
+bin/zettel doi 10.1038/nphys1170 --source crossref --mailto you@example.org --to yaml
+bin/zettel doi 10.5281/zenodo.2553894 --source datacite --to json --output entry.json
+```
+
+Notes:
+
+- `crossref` is the default source.
+- `datacite` is also supported.
+- `--mailto` is strongly recommended for Crossref polite access.
+- `--plus-token` can be used with Crossref Metadata Plus.
+
+The CLI also accepts the DOI as the first positional argument without the explicit `doi` subcommand:
+
+```bash
+bin/zettel 10.1038/nphys1170 --source crossref --mailto you@example.org --to bib
+```
+
+Relevant example scripts:
+
+- [`examples/cli-fetch_doi.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-fetch_doi.sh)
+- [`examples/cli-fetch_doi_sources.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-fetch_doi_sources.sh)
+
+## Paste
+
+Read one BibTeX entry from standard input. You can print it in another format, add it to a library, or do both.
+
+Print converted output only:
+
+```bash
+pbpaste | bin/zettel paste --to yaml
+```
+
+Add the entry to a library while also printing JSON:
+
+```bash
+pbpaste | bin/zettel paste --to json --library references.json
+```
+
+Notes:
+
+- The input for `paste` is always BibTeX.
+- `--library` accepts `.bib`, `.json`, `.yaml`, and `.yml` files.
+- When the library does not exist yet, it is created.
+
+Relevant example scripts:
+
+- [`examples/cli-paste_conversion.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-paste_conversion.sh)
+- [`examples/cli-append_library.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-append_library.sh)
+
+## Library Update
+
+`libupdate` is the more opinionated library-maintenance command. It reads exactly one BibTeX entry from standard input, derives or validates its key, creates a timestamped backup of the target library, then inserts the entry in sorted order.
+
+```bash
+pbpaste | bin/zettel libupdate --library references.bib
+pbpaste | bin/zettel libupdate --library references.yml
+pbpaste | bin/zettel libupdate --library references.json --fileDir /path/to/files
+```
+
+Current behaviour:
+
+- Input is always BibTeX, even when the target library is JSON or YAML.
+- The target library may be `.bib`, `.json`, `.yaml`, or `.yml`.
+- A backup file is created next to the target library with a timestamp suffix.
+- Keys are generated from the first author surname by default.
+- If `collaboration` is present and `onbehalf` does not force author precedence, the collaboration token may be used for key generation.
+- If a `file` field already implies a key, that key is preferred.
+- Existing nearby files such as `<fileDir>/<key>.pdf` or `<fileDir>/<first-letter>/<key>.pdf` are detected and reported.
+- If a very similar entry is already present in the library, the insert is skipped and a warning is emitted instead of creating a duplicate.
+
+Relevant example scripts:
+
+- [`examples/zettelLibUpdate.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/zettelLibUpdate.sh)
+- [`examples/zettelLibUpdateYaml.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/zettelLibUpdateYaml.sh)
+
+## AUX to BBL
+
+Pass a LaTeX `.aux` file to generate a `.bbl` bibliography file.
+
+```bash
+bin/zettel paper.aux --library references.json --output paper.bbl --style plain
+bin/zettel paper.aux --library references.yml --style alpha
+```
+
+Options:
+
+- `-l`, `--library <file>`: one or more library files
+- `-o`, `--output <file>`: output `.bbl` path
+- `-s`, `--style <name>`: bibliography style
+
+When `--library` is omitted, the CLI tries to resolve libraries from `\bibdata{...}` in the `.aux` file.
+When `--style auto` is used, or when `--style` is omitted, the CLI tries to use `\bibstyle{...}` from the `.aux` file.
+
+Relevant example scripts:
+
+- [`examples/cli-tex_aux.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-tex_aux.sh)
+- [`examples/cli-tex_aux_opts.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-tex_aux_opts.sh)
+
+## Options Summary
+
+### `convert`
+
+- `-f`, `--from <fmt>`: input format, inferred from the input path when omitted
+- `-t`, `--to <fmt>`: output format, required
+
+### `doi`
+
+- `--source <name>`: DOI source, currently `crossref` or `datacite`
+- `-t`, `--to <fmt>`: output format, defaults to `bib`
+- `-o`, `--output <file>`: write to a file instead of stdout
+- `-m`, `--mailto <email>`: Crossref contact email
+- `--plus-token <token>`: Crossref Metadata Plus token
+
+### `paste`
+
+- `-t`, `--to <fmt>`: print the converted entry to stdout
+- `-l`, `--library <file>`: append the entry to a library file
+
+### `libupdate`
+
+- `-l`, `--library <file>`: target library file
+- `--key <key>`: force a specific key
+- `--fileDir <dir>`: attachment search directory, defaulting to `<libraryDir>/files`
+
+### AUX mode
+
+- `-l`, `--library <file>`: repeatable library argument
+- `-o`, `--output <file>`: output `.bbl` path
+- `-s`, `--style <name>`: bibliography style, defaults to `auto`
 
 ## Troubleshooting
 
-**No `.bbl` file generated:**
-- Ensure the `.aux` file exists and contains `\citation{...}` and `\bibdata{...}` entries.
-- Check that the library file (`-l` option) contains the cited keys.
-- Verify the format of the library file (must be `.json`, `.yaml`, or `.bib`).
+### The wrapper does not reflect recent source changes
 
-**Bibliography style not recognized:**
-- Check spelling and availability: `plain`, `unsrt`, `alpha`, etc.
-- The style name is case-insensitive but must match exactly.
-
-**Slow startup:**
-- Build the compiled CLI (see [CLI Compilation Guide](juliac.md)).
-- Or use `--no-compile` to confirm the code logic is correct (then optimize with the compiled executable).
-
-## Julia API (from Julia REPL)
-
-Though this is a CLI guide, these functions are also available in Julia:
-
-```julia
-using Zettel
-
-# Convert BibTeX to JSON
-readBibTeX("references.bib")
-
-# Convert to YAML
-readYamlLibrary("references.yaml")
-
-# Generate BBL from AUX
-writeBblFromAux("paper.aux"; libraryFiles = ["references.json"], outputPath = "paper.bbl")
-
-# Use the CLI directly from Julia
-zettelCLI(args = ["references.bib", "references.json"])
-```
-
-See the [API Reference](api.md) for full details.
-
-## Example Scripts Reference
-
-The [`examples/`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/) folder contains runnable scripts demonstrating key patterns:
-
-### CLI Scripts (`.sh`)
-
-| Script | Purpose | Demonstrates |
-|--------|---------|--------------|
-| `cli-bib-to-json.sh` | Convert `.bib` to JSON | Basic format conversion |
-| `cli-convert-to.sh` | Convert with `--to` flag | Explicit output type specification |
-| `cli-convert-from-to.sh` | Convert with `-f`/`--from` and `-t`/`--to` | Ambiguous format handling |
-| `cli-aux-with-options.sh` | `.aux` workflow with library/output/style options | `.aux` → `.bbl` generation with custom settings |
-| `cli-paste-to.sh` | Paste BibTeX from stdin to JSON/YAML | Stdin input handling without library update |
-| `cli-paste-to-library.sh` | Paste entry and add to library | Library update workflow with key sorting |
-| `cli-crossref-doi.sh` | Fetch DOI from Crossref (default source) | Basic DOI metadata fetching |
-| `cli-doi-source.sh` | Fetch DOI with `--source` option | Alternative DOI sources (e.g., DataCite) |
-| `cli-tex_aux.sh` | Compile TeX, generate `.aux`, run zettel, recompile | Complete LaTeX bibliography workflow |
-| `cli-help.sh` | Display CLI help | Available options and subcommands |
-
-### Julia Scripts (`.jl`)
-
-| Script | Purpose | Pattern |
-|--------|---------|---------|
-| `example-simple.jl` | Basic end-to-end workflow | ZettelEntry creation, library I/O, JSON/BibTeX conversion |
-| `example-yaml.jl` | YAML-specific workflows | JSON ↔ YAML conversions, library manipulation |
-| `example-json.jl` | JSON library operations | Reading/writing JSON libraries |
-
-### Sample Data
-
-| File | Format | Content |
-|------|--------|---------|
-| `data/sample.bib` | BibTeX | 2 entries (Einstein1905 article, Misner1973 book) |
-| `data/sample.json` | Zettel JSON | Per-key map format with structured author fields |
-| `data/sample.yaml` | Zettel YAML | YAML equivalent of sample.json |
-
-### Running Example Scripts
+Rebuild the executable if you rely on `bin/zettel` as a compiled binary:
 
 ```bash
-# Make executable
-chmod +x examples/cli-*.sh
-
-# Run a conversion example
-bash examples/cli-bib-to-json.sh
-
-# Run a LaTeX workflow example (requires pdflatex)
-bash examples/cli-tex_aux.sh
-
-# Run a Julia example
-julia examples/example-simple.jl
+julia --project=cli cli/buildExecutable.jl
 ```
 
-For complete workflow examples with before/after data, see [Examples Guide](examples.md).
+During active development, use the Julia entry point shown at the top of this page.
+
+### BibTeX commands are slower than JSON or YAML commands
+
+That is expected. BibTeX parsing and writing go through `Pybtex.jl` and Python, whereas pure JSON and YAML flows stay within Julia.
+
+### `.bbl` generation reports missing keys
+
+Check that:
+
+- the cited keys in the `.aux` file actually exist in the provided libraries;
+- the library paths passed with `--library` are correct;
+- the library files use a supported extension.
