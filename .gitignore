@@ -2,6 +2,7 @@ Manifest.toml
 docs/build/
 docs/site/
 docs/_build*
+docs/build
 docs/Manifest.toml
 bin/zettel
 lib/
