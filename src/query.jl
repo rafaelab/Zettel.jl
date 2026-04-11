@@ -33,7 +33,7 @@ function searchEntries(lib::ZettelLibrary; field::Maybe{AbstractString} = nothin
 	matches = ZettelEntry[]
 
 	for entry ∈ values(lib)
-		if _entryMatches(entry, field, queryCmp, caseSensitive)
+		if entryMatches(entry, field, queryCmp, caseSensitive)
 			push!(matches, entry)
 		end
 	end
@@ -70,19 +70,29 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
-function _entryMatches(entry::ZettelEntry, ::Nothing, queryCmp::AbstractString, caseSensitive::Bool)
+@doc """
+	entryMatches(entry, field, queryCmp, caseSensitive)
+
+Helper function to check if an entry matches a query.
+If `field` is `nothing`, the key and all fields are checked; otherwise only the specified field is checked.
+"""
+function entryMatches(entry::ZettelEntry, ::Nothing, queryCmp::AbstractString, caseSensitive::Bool)
 	keyCmp = caseSensitive ? entry.key : lowercase(entry.key)
-	occursin(queryCmp, keyCmp) && return true
+	if occursin(queryCmp, keyCmp)
+		return true
+	end
+
 	for val ∈ values(entry.fields)
 		valCmp = caseSensitive ? val : lowercase(val)
 		if occursin(queryCmp, valCmp)
 			return true
 		end
 	end
+
 	return false
 end
 
-function _entryMatches(entry::ZettelEntry, field::AbstractString, queryCmp::AbstractString, caseSensitive::Bool)
+function entryMatches(entry::ZettelEntry, field::AbstractString, queryCmp::AbstractString, caseSensitive::Bool)
 	val = getField(entry, field)
 	valCmp = caseSensitive ? val : lowercase(val)
 	return occursin(queryCmp, valCmp)
