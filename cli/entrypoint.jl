@@ -12,7 +12,7 @@ function looksLikeBibPath(path::AbstractString)
 end
 
 function formatToken(token::AbstractString)
-	return getFileExtension(token)
+	return fileExtensionFromFormat(token)
 end
 
 function isBibRelated(args::Vector{String})
