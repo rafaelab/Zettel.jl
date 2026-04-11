@@ -5,40 +5,47 @@ export
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_cliUsage(; io::IO = stdout)
+	usageCLI(; io::IO = stdout)
 
 Print the command-line usage/help text to `io` (defaults to stdout). 
 Used by the CLI when `-h`/`--help` is requested or when no arguments are provided.
 """
-function _cliUsage(; io::IO = stdout)
-	println(io, "Usage:")
+function usageCLI(; io::IO = stdout)
+	println(io, "# Usage")
 	println(io, "  zettel convert <input> <output> [--from <fmt>] --to <fmt>")
 	println(io, "  zettel doi     <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]")
 	println(io, "  zettel paste   [--to <fmt>] --library <file>")
 	println(io, "  zettel paste   --to <fmt>")
+	println(io, "  zettel libupdate --library <file> [--key <key>] [--fileDir <dir>]")
 	println(io, "  zettel <auxfile> [options]")
 	println(io, "")
-	println(io, "Commands:")
+	println(io, "# Commands")
 	println(io, "  convert        Convert a bibliography file between formats (bib, json, yaml).")
 	println(io, "  doi            Fetch a DOI from a metadata source and emit one ZettelEntry (bib, json, yaml).")
 	println(io, "  paste          Read a BibTeX entry from stdin; print it and/or add it to a library.")
+	println(io, "  libupdate      Read one BibTeX entry from stdin, generate/update key, backup library, and insert it.")
 	println(io, "")
-	println(io, "Options (convert):")
+	println(io, "# Options (convert)")
 	println(io, "  -f, --from <fmt>       Input format (inferred from extension when omitted)")
 	println(io, "  -t, --to   <fmt>       Output format (required)")
 	println(io, "")
-	println(io, "Options (doi):")
+	println(io, "# Options (doi)")
 	println(io, "      --source <name>    Metadata source (default: crossref; supported: $(join(doiSources(), ", ")))")
 	println(io, "  -t, --to <fmt>         Output format for the fetched entry (bib, json, yaml; default: bib)")
 	println(io, "  -o, --output <file>    Write output to file instead of stdout")
 	println(io, "  -m, --mailto <email>   Contact email for Crossref polite access (crossref source)")
 	println(io, "      --plus-token <tok> Crossref Metadata Plus API token (crossref source, optional)")
 	println(io, "")
-	println(io, "Options (paste):")
+	println(io, "# Options (paste)")
 	println(io, "  -t, --to   <fmt>       Print the entry in this format to stdout (bib, json, yaml)")
 	println(io, "  -l, --library <file>   Add the entry to this library and rewrite it")
 	println(io, "")
-	println(io, "Options (aux mode):")
+	println(io, "# Options (libupdate)")
+	println(io, "  -l, --library <file>   Target library to update (.bib, .json, .yaml/.yml)")
+	println(io, "      --key <key>        Force key instead of generated suggestion")
+	println(io, "      --fileDir <dir>    File lookup directory (default: <libraryDir>/files)")
+	println(io, "")
+	println(io, "# Options (aux mode)")
 	println(io, "  -l, --library <file>   Library file (repeatable; inferred from \\bibdata when omitted)")
 	println(io, "  -o, --output <file>    Output .bbl path (default: <auxfile>.bbl)")
 	println(io, "  -s, --style <name>     Bibliography style (default: auto)")
@@ -61,23 +68,23 @@ Command-line entry point for `zettel`.
 """
 function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 	if isempty(args) || ("-h" ∈ args) || ("--help" ∈ args)
-		_cliUsage(io = output)
+		usageCLI(io = output)
 		return 0
 	end
 
 	if args[1] == "convert"
-		_runConvertCLI(args[2 : end])
+		runConvertCLI(args[2 : end])
 		return 0
 	end
 
 	if args[1] == "doi"
-		_runDoiCLI(args[2 : end]; output = output)
+		runDoiCLI(args[2 : end]; output = output)
 		return 0
 	end
 
 	# shorthand DOI mode: zettel <doi> [doi-options]
-	if _looksLikeDoiInvocation(args)
-		_runDoiCLI(args; output = output)
+	if isPossibleDoiInvocation(args)
+		runDoiCLI(args; output = output)
 		return 0
 	end
 
@@ -88,12 +95,18 @@ function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 	end
 
 	if args[1] == "paste"
-		_runPasteCLI(args[2 : end]; input = input, output = output)
+		runPasteCLI(args[2 : end]; input = input, output = output)
+		return 0
+	end
+
+	if args[1] == "libupdate"
+		runLibUpdateCLI(args[2 : end]; input = input, output = output)
 		return 0
 	end
 
 	# aux mode
-	_runAuxCLI(args; output = output)
+	runAuxCLI(args; output = output)
+	
 	return 0
 end
 
@@ -101,33 +114,14 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_looksLikeDoiInvocation(args)
-
-Return `true` when CLI args appear to be the DOI shorthand form:
-`zettel <doi> [--source ... --to ...]`.
-"""
-function _looksLikeDoiInvocation(args::Vector{String})
-	if isempty(args)
-		return false
-	end
-	token = strip(args[1])
-	return startswith(token, "10.") && occursin("/", token)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_runDoiCLI(args::Vector{String}; output::IO = stdout)
+	runDoiCLI(args::Vector{String}; output::IO = stdout)
 
 Handle the `doi` subcommand and fetch one entry from a DOI metadata source.
-
 Expected form:
 - `doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
-
 For source `crossref`, polite access requires a contact email via `--mailto` or `CROSSREF_MAILTO`.
 """
-function _runDoiCLI(args::Vector{String}; output::IO = stdout)
+function runDoiCLI(args::Vector{String}; output::IO = stdout)
 	doi = nothing
 	source = "crossref"
 	toFormat::BibliographyFormat = BibtexFormat()
@@ -164,10 +158,10 @@ function _runDoiCLI(args::Vector{String}; output::IO = stdout)
 			i > length(args) && throw(err)
 			plusToken = args[i]
 		elseif startswith(arg, "-")
-			throw(ArgumentError("Unknown option in doi mode: $(arg)"))
+			throw(ArgumentError("Unknown option in doi mode: $(arg)."))
 		else
 			if ! isnothing(doi)
-				throw(ArgumentError("Unexpected argument in doi mode: $(arg)"))
+				throw(ArgumentError("Unexpected argument in doi mode: $(arg)."))
 			end
 			doi = arg
 		end
@@ -175,7 +169,7 @@ function _runDoiCLI(args::Vector{String}; output::IO = stdout)
 	end
 
 	if isnothing(doi)
-		throw(ArgumentError("doi: expected a DOI value"))
+		throw(ArgumentError("doi: expected a DOI value."))
 	end
 	if source ∉ doiSources()
 		throw(ArgumentError("doi: unknown source '$(source)'. Supported: $(join(doiSources(), ", "))."))
@@ -200,7 +194,7 @@ function _runDoiCLI(args::Vector{String}; output::IO = stdout)
 	end
 
 	entry = fetchFromDoiSource(doi; source = source, mailto = mailto, plusToken = plusToken)
-	text = _renderDoiEntry(entry, toFormat)
+	text = renderDoiEntry(entry, toFormat)
 
 	if isnothing(outputPath)
 		print(output, text)
@@ -215,13 +209,13 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_runConvertCLI(args::Vector{String})
+	runConvertCLI(args::Vector{String})
 
 Handle the `convert` subcommand arguments and perform bibliography conversion.
 Expect: `<input> <output>` plus `--to <fmt>` and optional `--from <fmt>`.
 Throws ArgumentError for malformed or missing options.
 """
-function _runConvertCLI(args::Vector{String})
+function runConvertCLI(args::Vector{String})
 	if length(args) < 2
 		throw(ArgumentError("convert: expected <input> <output> --to <fmt> [--from <fmt>]"))
 	end
@@ -247,9 +241,9 @@ function _runConvertCLI(args::Vector{String})
 			end
 			toFormat = parseBibliographyFormat(args[i])
 		elseif startswith(arg, "-")
-			throw(ArgumentError("Unknown option in convert mode: $(arg)"))
+			throw(ArgumentError("Unknown option in convert mode: $(arg)."))
 		else
-			throw(ArgumentError("Unexpected argument in convert mode: $(arg)"))
+			throw(ArgumentError("Unexpected argument in convert mode: $(arg)."))
 		end
 		i += 1
 	end
@@ -269,13 +263,13 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_runPasteCLI(args; input, output)
+	runPasteCLI(args; input, output)
 
-Run the `paste` subcommand: read a BibTeX entry from `input` (stdin), optionally print it in the
-requested format to `output`, and optionally add it to a library.
+Run the `paste` subcommand: read a BibTeX entry from `input` (stdin). 
+Optionally print it in the requested format to `output`, and optionally add it to a library.
 At least one of `--to` or `--library` must be given.
 """
-function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
+function runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
 	toFormat    = nothing
 	libraryPath = nothing
 
@@ -294,9 +288,9 @@ function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdo
 			end
 			libraryPath = args[i]
 		elseif startswith(arg, "-")
-			throw(ArgumentError("Unknown option in paste mode: $(arg)"))
+			throw(ArgumentError("Unknown option in paste mode: $(arg)."))
 		else
-			throw(ArgumentError("Unexpected argument in paste mode: $(arg)"))
+			throw(ArgumentError("Unexpected argument in paste mode: $(arg)."))
 		end
 		i += 1
 	end
@@ -317,11 +311,11 @@ function _runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdo
 	end
 
 	if ! isnothing(toFormat)
-		print(output, _renderPastedEntry(incoming, toFormat))
+		print(output, renderPastedEntry(incoming, toFormat))
 	end
 
 	if ! isnothing(libraryPath)
-		_addEntriesToLibrary(incoming, libraryPath)
+		addEntriesToLibrary(incoming, libraryPath)
 	end
 
 	return nothing
@@ -331,18 +325,149 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
+	runLibUpdateCLI(args; input, output)
 
-Add entries from `incoming` into the library file at `libraryPath`, creating the library if it does not exist. 
-The resulting library is sorted and written back to disc.
+Handle `libupdate` mode.
+It reads one BibTeX entry from `input` and generate/adjust the key (`surnameYYYYx` or collaboration-based token).
+A back up `.bib` library with a timestamp suffix is created to preserve the pre-update state.
+
+- insert/update the entry and save sorted.
 """
-function _addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
-	lib = isfile(libraryPath) ? loadLibrary(libraryPath) : ZettelLibrary()
-	for entry ∈ values(incoming)
-		push!(lib, entry)
+function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
+	libraryPath = nothing
+	keyOverride = nothing
+	fileDir = nothing
+
+	i = 1
+	while i ≤ length(args)
+		arg = args[i]
+		err = ArgumentError("Missing value for $(arg).")
+		if arg == "-l" || arg == "--library"
+			i += 1
+			i > length(args) && throw(err)
+			libraryPath = args[i]
+		elseif arg == "--key"
+			i += 1
+			i > length(args) && throw(err)
+			keyOverride = strip(args[i])
+		elseif arg == "--fileDir"
+			i += 1
+			i > length(args) && throw(err)
+			fileDir = strip(args[i])
+		elseif startswith(arg, "-")
+			throw(ArgumentError("Unknown option in libupdate mode: $(arg)"))
+		else
+			throw(ArgumentError("Unexpected argument in libupdate mode: $(arg)"))
+		end
+		i += 1
 	end
+
+	if isnothing(libraryPath)
+		throw(ArgumentError("libupdate: missing --library <file>"))
+	end
+	if ! isfile(libraryPath)
+		throw(ArgumentError("libupdate: library file not found: $(libraryPath)"))
+	end
+
+	if input isa Base.TTY
+		println(output, "Paste one BibTeX entry, then end input with Ctrl-D.")
+	end
+
+	bibtexText = read(input, String)
+	if isempty(strip(bibtexText))
+		throw(ArgumentError("libupdate: no BibTeX entry provided on stdin"))
+	end
+
+	incoming = mktempdir() do dir
+		pastedPath = joinpath(dir, "pasted.bib")
+		write(pastedPath, bibtexText)
+		return readBibtexLibrary(pastedPath)
+	end
+	if length(incoming) ≠ 1
+		throw(ArgumentError("libupdate: expected exactly one pasted BibTeX entry."))
+	end
+		entry = first(values(incoming))
+
+		lib = loadLibrary(libraryPath)
+	existing = Set(String.(collect(keys(lib.entries))))
+
+	fileKey = keyFromFileField(entry.fields)
+
+	collabToken, collabName = collaborationTokenForGeneratedKey(entry.fields)
+	useCollaboration = ! isnothing(collabToken) && shouldUseCollaborationForGeneratedKey(entry.fields)
+	if ! isnothing(collabToken) && ! useCollaboration
+		@warn "onbehalf=true detected; author surname takes precedence over collaboration token" collaboration = collabName
+	end
+	baseToken = useCollaboration ? collabToken : authorTokenForGeneratedKey(entry.fields)
+	yearToken = yearTokenForGeneratedKey(entry.fields)
+	suggestedKey = nextAvailableGeneratedKey(baseToken, yearToken, existing)
+
+	currentKey = entry.key
+	currentPatternOk = validGeneratedKeyPattern(currentKey)
+	currentExists = currentKey ∈ existing
+
+	finalKey = suggestedKey
+	allowExistingKey = false
+	if ! isnothing(keyOverride)
+		if ! validGeneratedKeyPattern(keyOverride)
+			throw(ArgumentError("libupdate: invalid --key value '$(keyOverride)'; expected lowercase(authorSurname)YearX"))
+		end
+		if keyOverride ∈ existing
+			throw(ArgumentError("libupdate: key '$(keyOverride)' already exists in library"))
+		end
+		finalKey = keyOverride
+	elseif ! isnothing(fileKey)
+		if validGeneratedKeyPattern(fileKey)
+			finalKey = fileKey
+			allowExistingKey = true
+		else
+			@warn "file field key does not match expected pattern" file_key = fileKey
+			if acceptFileKeyFromTty(fileKey; output = output)
+				finalKey = fileKey
+				allowExistingKey = true
+			end
+		end
+	elseif useCollaboration
+		@warn "collaboration field detected; using collaboration token for key generation" collaboration = collabName suggested_key = suggestedKey
+		println(output, "Current key:   $(currentKey)")
+		println(output, "Suggested key: $(suggestedKey)")
+		println(output, "")
+		finalKey = chooseKeyFromTty(suggestedKey, existing; output = output)
+	elseif currentKey ≠ suggestedKey || ! currentPatternOk || currentExists
+		println(output, "Using key '$(suggestedKey)' (original key was '$(currentKey)').")
+	end
+
+	candidateEntry = ZettelEntry(finalKey, entry.entryType, entry.fields)
+	similarEntry = findVerySimilarEntry(lib, candidateEntry)
+	if ! isnothing(similarEntry)
+		@warn "similar entry detected; skipping insert" existingKey = similarEntry.existingKey matchedFieldNames = similarEntry.matchedFieldNames textRatio = similarEntry.textRatio authorScore = similarEntry.authorScore year = similarEntry.year volume = similarEntry.volume
+		return nothing
+	end
+
+	if finalKey ∈ existing && ! allowExistingKey
+		throw(ArgumentError("libupdate: chosen key '$(finalKey)' already exists in library."))
+	end
+	if finalKey ∈ existing && allowExistingKey
+		@warn "chosen key already exists in library; existing entry will be overwritten" key = finalKey
+	end
+
+	matches = matchingKeyFiles(finalKey, libraryPath; fileDir = fileDir)
+	if ! isempty(matches)
+		@warn "file(s) found matching key" key = finalKey files = matches
+	end
+
+	updated = ZettelEntry(finalKey, entry.entryType, entry.fields)
+	timestamp = Libc.strftime("%Y%m%d-%H%M%S", time())
+	backupPath = "$(libraryPath).$(timestamp).bak"
+	cp(libraryPath, backupPath; force = true)
+
+	push!(lib, updated)
 	saveLibrary(sort(lib), libraryPath)
-	
+
+	println(output, "Backup created: $(backupPath)")
+	println(output, "Library updated: $(libraryPath)")
+	println(output, "Inserted key:    $(finalKey)")
+
 	return nothing
 end
 
@@ -350,14 +475,14 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_runAuxCLI(args::Vector{String}; output::IO = stdout)
+	runAuxCLI(args::Vector{String}; output::IO = stdout)
 
 Handle the auxiliary-file (`.aux`) mode. 
 Parse options for library files, output `.bbl` path, and bibliography style. 
 Then generate the `.bbl` using the provided libraries (or inferred ones). 
 Prints a warning to `output` if any citation keys are missing.
 """
-function _runAuxCLI(args::Vector{String}; output::IO = stdout)
+function runAuxCLI(args::Vector{String}; output::IO = stdout)
 	auxPath   = nothing
 	libraries = String[]
 	outputPath = nothing
@@ -395,7 +520,7 @@ function _runAuxCLI(args::Vector{String}; output::IO = stdout)
 	end
 
 	libFiles = isempty(libraries) ? nothing : libraries
-	result   = writeBblFromAux(auxPath; libraryFiles = libFiles, outputPath = outputPath, style = style)
+	result = writeBblFromAux(auxPath; libraryFiles = libFiles, outputPath = outputPath, style = style)
 
 	if ! isempty(result.absent)
 		println(output, "Warning: missing keys: ", join(result.absent, ", "))
@@ -408,14 +533,32 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
+	isPossibleDoiInvocation(args)
 
-Render a DOI-fetched entry in the same external representation style used by
-`entryToString`.
+Return `true` when CLI args appear to be the DOI shorthand form:
+`zettel <doi> [--source ... --to ...]`.
 """
-function _renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
+function isPossibleDoiInvocation(args::Vector{String})
+	if isempty(args)
+		return false
+	end
+	token = strip(args[1])
+	return startswith(token, "10.") && occursin("/", token)
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
+
+Render a DOI-fetched entry in the same external representation style used by `entryToString`.
+"""
+function renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
 	text = entryToString(entry, format)
-	endswith(text, "\n") || (text *= "\n")
+	if ! endswith(text, "\n")
+		text *= "\n"
+	end
 	return text
 end
 
@@ -423,45 +566,123 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_renderPastedEntry(lib::ZettelLibrary, ::JsonFormat)
+	addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
 
-Render pasted BibTeX entries as pretty JSON.
+Add entries from `incoming` into the library file at `libraryPath`, creating the library if it does not exist. 
+The resulting library is sorted and written back to disc.
 """
-function _renderPastedEntry(lib::ZettelLibrary, ::JsonFormat)
-	data = if length(lib) == 1
-		entryToStructuredDict(first(values(lib)))
-	else
-		[entryToStructuredDict(entry) for entry ∈ values(lib)]
+function addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractString)
+	lib = isfile(libraryPath) ? loadLibrary(libraryPath) : ZettelLibrary()
+	for entry ∈ values(incoming)
+		push!(lib, entry)
 	end
-	buf = IOBuffer()
-	JSON3.pretty(buf, data, JSON3.AlignmentContext(indent = 4))
-	text = String(take!(buf))
-	endswith(text, "\n") || (text *= "\n")
-	return text
+
+	saveLibrary(sort(lib), libraryPath)
+	
+	return nothing
 end
 
-@doc """
-	_renderPastedEntry(lib::ZettelLibrary, ::YamlFormat)
 
-Render pasted BibTeX entries as YAML.
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	chooseKeyFromTty(suggested, existing; output)
+
+Interactively choose a citation key from the terminal.
+If no interactive terminal is detected, return the suggested key.
+Otherwise, prompt the user to accept the suggested key or enter a custom key.
+Validate the custom key against the expected pattern and check for conflicts with existing keys.
+Return the final chosen key.
+
+# Input
+- `suggested::AbstractString`: the suggested citation key to accept or override.
+- `existing::Set{String}`: set of existing keys in the library to check for conflicts.
+- `output::IO`: the IO stream to use for prompts and messages (default: stdout).
+
+# Output
+- The chosen citation key as a string.
 """
-function _renderPastedEntry(lib::ZettelLibrary, ::YamlFormat)
-	data = if length(lib) == 1
-		entryToStructuredDict(first(values(lib)))
-	else
-		[entryToStructuredDict(entry) for entry ∈ values(lib)]
+function chooseKeyFromTty(suggested::AbstractString, existing::Set{String}; output::IO = stdout)
+	if ! (stdin isa Base.TTY) || ! ispath("/dev/tty")
+		println(output, "No interactive terminal detected; accepting suggested key '$(suggested)'.")
+		return String(suggested)
 	end
-	text = YAML.write(normaliseYaml(data))
-	endswith(text, "\n") || (text *= "\n")
-	return text
+
+	open("/dev/tty", "r+") do tty
+		println(tty, "Press Enter to accept the suggested key, or type a custom key.")
+		while true
+			print(tty, "Key [", suggested, "]: ")
+			flush(tty)
+
+			reply = try
+				readline(tty)
+			catch
+				""
+			end
+
+			key = strip(reply)
+			if isempty(key)
+				return String(suggested)
+			end
+			if ! validGeneratedKeyPattern(key)
+				println(tty, "Invalid key format. Expected lowercase(authorSurname)YearX, e.g. einstein1905a.")
+				continue
+			end
+
+			if key ∈ existing
+				println(tty, "Key '", key, "' already exists in the library.")
+				continue
+			end
+
+			return key
+		end
+	end
 end
 
-@doc """
-	_renderPastedEntry(lib::ZettelLibrary, ::BibtexFormat)
 
-Render pasted entries as BibTeX text.
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	acceptFileKeyFromTty(fileKey; output)
+
+Prompt on TTY to accept/reject a file-derived key that does not match the expected pattern.
+Returns `true` when accepted, `false` otherwise.
 """
-function _renderPastedEntry(lib::ZettelLibrary, ::BibtexFormat)
+function acceptFileKeyFromTty(fileKey::AbstractString; output::IO = stdout)
+	if ! (stdin isa Base.TTY) || ! ispath("/dev/tty")
+		println(output, "No interactive terminal detected; rejecting key inferred from file: '$(fileKey)'.")
+		return false
+	end
+
+	open("/dev/tty", "r+") do tty
+		while true
+			print(tty, "Use file-derived key '", fileKey, "' anyway? [y/N]: ")
+			flush(tty)
+
+			reply = try
+				readline(tty)
+			catch
+				""
+			end
+			answer = lowercase(strip(reply))
+			if isempty(answer) || answer ∈ ("n", "no")
+				return false
+			elseif answer ∈ ("y", "yes")
+				return true
+			end
+		end
+	end
+end
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	renderPastedEntry(lib::ZettelLibrary, format::BibliographyFormat)
+	renderPastedEntry(lib::ZettelLibrary, ::Type{<: BibliographyFormat})
+
+Render pasted BibTeX entries as BibTeX / JSON / YAML.
+"""
+function renderPastedEntry(lib::ZettelLibrary, ::Type{BibtexFormat})
 	io  = IOBuffer()
 	for entry ∈ values(lib)
 		println(io, entryToString(entry, BibtexFormat()))
@@ -469,6 +690,44 @@ function _renderPastedEntry(lib::ZettelLibrary, ::BibtexFormat)
 	end
 	return String(take!(io))
 end
+
+function renderPastedEntry(lib::ZettelLibrary, ::Type{JsonFormat})
+	data = if length(lib) == 1
+		entryToStructuredDict(first(values(lib)))
+	else
+		[entryToStructuredDict(entry) for entry ∈ values(lib)]
+	end
+
+	io = IOBuffer()
+	JSON3.pretty(io, data, JSON3.AlignmentContext(; indent = 4))
+	text = String(take!(io))
+	if ! endswith(text, "\n")
+		text *= "\n"
+	end
+
+	return text
+end
+
+function renderPastedEntry(lib::ZettelLibrary, ::Type{YamlFormat})
+	data = if length(lib) == 1
+		entryToStructuredDict(first(values(lib)))
+	else
+		[entryToStructuredDict(entry) for entry ∈ values(lib)]
+	end
+	
+	text = YAML.write(normaliseYaml(data))
+	if ! endswith(text, "\n")
+		text *= "\n"
+	end
+
+	return text
+end
+
+function renderPastedEntry(lib::ZettelLibrary, format::BibliographyFormat) 
+	return renderPastedEntry(lib, typeof(format))
+end
+
+
 
 
 # ----------------------------------------------------------------------------------------------- #
