@@ -26,6 +26,7 @@ include("dataSources.jl")
 include("query.jl")
 include("texAux.jl")
 include("styles.jl")
+include("keys.jl")
 include("cli.jl")
 
 
