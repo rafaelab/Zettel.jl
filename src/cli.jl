@@ -396,7 +396,7 @@ function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = s
 	collabToken, collabName = collaborationTokenForGeneratedKey(entry.fields)
 	useCollaboration = ! isnothing(collabToken) && shouldUseCollaborationForGeneratedKey(entry.fields)
 	if ! isnothing(collabToken) && ! useCollaboration
-		@warn "onbehalf=true detected; author surname takes precedence over collaboration token" collaboration = collabName
+		@warn "Detected `onbehalf=true`. Author surname takes precedence over collaboration token: $(collabName)."
 	end
 	baseToken = useCollaboration ? collabToken : authorTokenForGeneratedKey(entry.fields)
 	yearToken = yearTokenForGeneratedKey(entry.fields)
@@ -421,14 +421,18 @@ function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = s
 			finalKey = fileKey
 			allowExistingKey = true
 		else
-			@warn "file field key does not match expected pattern" file_key = fileKey
+			@warn "File field key does not match expected pattern $(fileKey)." 
 			if acceptFileKeyFromTty(fileKey; output = output)
 				finalKey = fileKey
 				allowExistingKey = true
 			end
 		end
 	elseif useCollaboration
-		@warn "collaboration field detected; using collaboration token for key generation" collaboration = collabName suggested_key = suggestedKey
+		@warn string(
+			"`collaboration`` field detected; using collaboration token for key generation:\n", 
+			". collaboration = $(collabName)\n",
+			". suggested_key = $(suggestedKey)"
+		)
 		println(output, "Current key:   $(currentKey)")
 		println(output, "Suggested key: $(suggestedKey)")
 		println(output, "")
@@ -448,7 +452,7 @@ function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = s
 		throw(ArgumentError("libupdate: chosen key '$(finalKey)' already exists in library."))
 	end
 	if finalKey ∈ existing && allowExistingKey
-		@warn "chosen key already exists in library; existing entry will be overwritten" key = finalKey
+		@warn "Chosen key already exists in library; existing entry will be overwritten: $(finalKey)."
 	end
 
 	matches = matchingKeyFiles(finalKey, libraryPath; fileDir = fileDir)
