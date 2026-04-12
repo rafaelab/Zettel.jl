@@ -191,29 +191,19 @@ end
 Write a [`ZettelLibrary`](@ref) as a BibTeX `.bib` file.
 """
 function writeBibtexLibrary(lib::ZettelLibrary, outputPath::AbstractString)
-	pydb = pyimport("pybtex.database")
-	pywriter = pyimport("pybtex.database.output.bibtex").Writer()
-	bibData = pydb.BibliographyData()
-
-	for entry ∈ values(lib)
-		fields = Dict{String, Any}()
-		for (field, value) ∈ entry.fields
-			text = strip(value)
-			if isempty(text)
-				continue
+	open(outputPath, "w") do io
+		total = length(lib)
+		index = 0
+		for entry ∈ values(lib)
+			index += 1
+			write(io, entryToString(entry, BibtexFormat()))
+			if index < total
+				write(io, "\n\n")
+			else
+				write(io, "\n")
 			end
-			fields[field] = encodeTex(text)
 		end
-
-		pyEntry = pydb.Entry(entry.entryType, fields = pydict(fields))
-		bibData.entries[entry.key] = pyEntry
 	end
-
-	text = pyconvert(String, pywriter.to_string(bibData))
-	if ! isempty(text) && text[end] ≠ '\n'
-		text *= "\n"
-	end
-	write(outputPath, text)
 	return nothing
 end
 

@@ -26,6 +26,9 @@
 			@article{badkey2024z,
 				author = {Smith, Jane},
 				title = {New author entry},
+				journal = {Journal of Testing},
+				volume = {10},
+				pages = {100-110},
 				year = {2024}
 			}
 			"""
@@ -39,6 +42,9 @@
 			@article{another2024z,
 				author = {Smith, Jane},
 				title = {New author entry},
+				journal = {Journal of Testing},
+				volume = {10},
+				pages = {100--110},
 				year = {2024}
 			}
 			"""
@@ -119,4 +125,3 @@
 		@test ! isempty(backups)
 	end
 end
-

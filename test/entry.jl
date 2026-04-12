@@ -205,3 +205,59 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "similarityReport contingent checks" begin
+	existing = ZettelEntry(
+		"einstein1905a",
+		"article",
+		OrderedDict{String, String}(
+			"author" => "Einstein, A.",
+			"title" => "Zur Elektrodynamik bewegter Körper",
+			"year" => "1905",
+			"journal" => "Annalen der Physik",
+			"booktitle" => "Collected Works in Physics",
+			"volume" => "322",
+			"pages" => "891-921",
+			"keywords" => "relativity",
+		),
+	)
+
+	candidateBooktitleMismatch = ZettelEntry(
+		"einstein1905b",
+		"article",
+		OrderedDict{String, String}(
+			"author" => "Einstein, A.",
+			"title" => "Zur Elektrodynamik bewegter Körper",
+			"year" => "1905",
+			"journal" => "Annalen der Physik",
+			"booktitle" => "Completely Different Proceedings",
+			"volume" => "322",
+			"pages" => "891-921",
+			"keywords" => "relativity",
+		),
+	)
+
+	@test ! isnothing(similarityReport(candidateBooktitleMismatch, existing; totalThreshold = 0.95))
+	@test isnothing(similarityReport(candidateBooktitleMismatch, existing; contingent = true, totalThreshold = 0.95))
+
+	candidateOtherMismatch = ZettelEntry(
+		"einstein1905c",
+		"article",
+		OrderedDict{String, String}(
+			"author" => "Einstein, A.",
+			"title" => "Zur Elektrodynamik bewegter Körper",
+			"year" => "1905",
+			"journal" => "Annalen der Physik",
+			"booktitle" => "Collected Works in Physics",
+			"volume" => "322",
+			"pages" => "891-921",
+			"keywords" => "thermodynamics",
+		),
+	)
+
+	@test ! isnothing(similarityReport(candidateOtherMismatch, existing; fields = ("title", "journal", "booktitle", "keywords"), totalThreshold = 0.95))
+	@test isnothing(similarityReport(candidateOtherMismatch, existing; contingent = true, fields = ("title", "journal", "booktitle", "keywords"), otherThreshold = 0.95, totalThreshold = 0.95))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
