@@ -440,7 +440,7 @@ function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = s
 	candidateEntry = ZettelEntry(finalKey, entry.entryType, entry.fields)
 	similarEntry = findVerySimilarEntry(lib, candidateEntry)
 	if ! isnothing(similarEntry)
-		@warn "similar entry detected; skipping insert" existingKey = similarEntry.existingKey matchedFieldNames = similarEntry.matchedFieldNames textRatio = similarEntry.textRatio authorScore = similarEntry.authorScore year = similarEntry.year volume = similarEntry.volume
+		@warn "similar entry detected; skipping insert" existingKey = similarEntry.existingKey matchedFieldNames = similarEntry.matchedFieldNames textRatio = similarEntry.textRatio authorScore = similarEntry.authorScore totalScore = similarEntry.totalScore totalThreshold = similarEntry.totalThreshold year = similarEntry.year volume = similarEntry.volume
 		return nothing
 	end
 
