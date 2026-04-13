@@ -19,6 +19,10 @@ const tex2utf8 = Dict(
 	"\\~o" => "õ",
 	"\\~O" => "Õ",
 
+	# ASCII tilde macro (common in some BibTeX exports)
+	"\\textasciitilde" => "~",
+	"\\textasciitilde{}" => "~",
+
 	# cedilla
 	"\\c{c}" => "ç",
 	"\\c{C}" => "Ç",
