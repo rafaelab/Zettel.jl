@@ -18,10 +18,11 @@ bin/zettel --help
 
 ## Commands
 
-The CLI supports five modes:
+The CLI supports six modes:
 
 - `zettel convert <input> <output> [--from <fmt>] --to <fmt>`
 - `zettel doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
+- `zettel --query <bibkey> --library <file>`
 - `zettel paste [--to <fmt>] --library <file>`
 - `zettel paste --to <fmt>`
 - `zettel libupdate --library <file> [--key <key>] [--fileDir <dir>]`
@@ -79,6 +80,34 @@ Relevant example scripts:
 
 - [`examples/cli-fetch_doi.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-fetch_doi.sh)
 - [`examples/cli-fetch_doi_sources.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-fetch_doi_sources.sh)
+
+## Bibkey Query
+
+Query one key from a bibliography library and print a compact human-readable summary:
+
+```bash
+bin/zettel --query einstein1905a --library references.bib
+```
+
+Output format:
+
+```text
+"The title"
+F. Author, S. Author, ...
+Journal, year, volume, number
+arXiv:XXXXXXXX
+doi: XXXXXXX
+bibkey: author20XXa
+```
+
+Collaboration behaviour:
+
+- if `collaboration` is set, the collaboration name is printed instead of the author list;
+- if `onbehalf` is truthy, the author line becomes `F. Author et al. for XXX Collaboration`.
+
+Relevant example scripts:
+
+- [`examples/cli-query_bibkey.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-query_bibkey.sh)
 
 ## Paste
 
@@ -187,6 +216,11 @@ Relevant example scripts:
 - `-l`, `--library <file>`: repeatable library argument
 - `-o`, `--output <file>`: output `.bbl` path
 - `-s`, `--style <name>`: bibliography style, defaults to `auto`
+
+### `--query`
+
+- `--query <bibkey>`: citation key to query
+- `-l`, `--library <file>`: source library (`.bib`, `.json`, `.yaml`, `.yml`)
 
 ## Troubleshooting
 

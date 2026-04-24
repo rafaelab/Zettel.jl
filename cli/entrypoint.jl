@@ -59,6 +59,22 @@ function isBibRelated(args::Vector{String})
 		return true
 	end
 
+	# query can require BibTeX parsing when library is .bib
+	if cmd == "--query"
+		i = 2
+		while i ≤ length(args)
+			arg = args[i]
+			if arg == "-l" || arg == "--library"
+				i += 1
+				if i ≤ length(args) && looksLikeBibPath(args[i])
+					return true
+				end
+			end
+			i += 1
+		end
+		return false
+	end
+
 	if cmd == "convert"
 		if length(args) < 3
 			return false
