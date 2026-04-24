@@ -19,6 +19,7 @@ small demonstrations or templates for integrating `zettel` into your workflows.
 - `cli-fetch_doi.sh`: Fetch a DOI (default `10.1038/nphys1170`) from Crossref and write YAML.
 - `cli-fetch_doi_sources.sh`: Fetch a DOI from a configurable metadata source (default: crossref).
 - `cli-help.sh`: Capture the CLI `-h`/`--help` output to `examples/tmp/help.txt`.
+- `cli-query_bibkey.sh`: Query one bibkey in a library and print a compact summary.
 - `cli-append_library.sh`: Append an entry to a library file (example helper script).
 - `cli-paste_conversion.sh`: Pipe a BibTeX entry into `zettel paste` and print converted output.
 - `cli-tex_aux.sh`: Full TeX AUX -> BBL workflow; compiles small TeX fixtures and generates `.bbl` files for several bibliography styles (requires `pdflatex`).
