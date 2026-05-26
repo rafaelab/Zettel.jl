@@ -305,7 +305,6 @@ end
 
 Convert UTF-8 characters in `s` to their TeX equivalents using the `utf8ToTex` table.
 
-Replacements are applied longest-key-first.
 Note: left/right curly quotes (`\u201C`/`\u201D`) are encoded as ` `` ` and `''` respectively.
 ASCII double quote (`"`) has no unique TeX equivalent and is left unchanged.
 
@@ -316,16 +315,16 @@ ASCII double quote (`"`) has no unique TeX equivalent and is left unchanged.
 - A new `String` with UTF-8 characters replaced by TeX sequences.
 """
 function encodeTex(s::AbstractString)
-	result = String(s)
 	mapping = isdefined(@__MODULE__, :utf8ToTex) ? getfield(@__MODULE__, :utf8ToTex) : Dict{String, String}(utf => tex for (tex, utf) ∈ tex2utf8)
-	for utf ∈ sort(collect(keys(mapping)); by = length, rev = true)
-		result = replace(result, utf => mapping[utf])
-	end
 
-	# fallback for composed characters that are not explicitly present in `utf8ToTex (e.g. ť -> \v{t})
+	# Encode one source character at a time to avoid remapping inside generated TeX snippets.
+	# Example: ñ -> \~n should not then rewrite ~ as \textasciitilde{}.
 	io = IOBuffer()
-	for ch ∈ result
-		if isascii(ch)
+	for ch ∈ String(s)
+		chs = string(ch)
+		if haskey(mapping, chs)
+			print(io, mapping[chs])
+		elseif isascii(ch)
 			print(io, ch)
 		else
 			print(io, _encodeAccentFallback(ch))
