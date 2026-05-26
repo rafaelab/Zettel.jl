@@ -163,6 +163,11 @@ Options:
     --plus-token <t>   Crossref Metadata Plus token (doi mode, optional)
 ```
 
+***Note***
+You must necessarily run `cli/buildExecutable.jl` to ensure the CLI runs.
+Otherwise the system will throw errors.
+
+
 ---
 
 ## Quick start
