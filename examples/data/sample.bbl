@@ -1,0 +1,19 @@
+\begin{thebibliography}{3}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Einstein(1905)}]{einstein1905a}
+Einstein, A. (1905).
+\newblock Zur Elektrodynamik bewegter K\"orper.
+\newblock \emph{Annalen der Physik} 322, 891--921.
+
+\bibitem[{Friedmann(1922)}]{friedmann1922a}
+Friedmann, A. (1922).
+\newblock \"Uber die Kr\"ummung des Raumes.
+\newblock \emph{Zeitschrift f\"ur Physik} 10, 377--386.
+
+\bibitem[{LIGO Scientific Collaboration and Virgo Collaboration(2017)}]{ligo2017a}
+LIGO Scientific Collaboration and Virgo Collaboration (2017).
+\newblock GW170817: Observation of gravitational waves from a binary neutron star inspiral.
+\newblock \emph{Physical Review Letters} 119, 161101.
+
+\end{thebibliography}
