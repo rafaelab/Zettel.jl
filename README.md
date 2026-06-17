@@ -106,6 +106,27 @@ Fetch from DataCite explicitly:
 bin/zettel doi <doi-from-datacite> --source datacite --to yaml
 ```
 
+### Extract used references from a `.bbl` (bbl → bib)
+
+Given a compiled `.bbl` file, Zettel can pull from a master library only the entries that
+are actually cited and write them to a new file containing just the used keys (in citation
+order). The output format is inferred from the extension (`.bib`, `.json`, `.yaml`/`.yml`):
+
+```bash
+bin/zettel bbl paper.bbl references.bib used.bib
+```
+
+In Julia:
+
+```julia
+using Zettel
+
+keys = parseBblKeys("paper.bbl")                       # cited keys, in order
+result = writeBibFromBbl("paper.bbl", "references.bib", "used.bib")
+println(result.present)                                # keys found and written
+println(result.absent)                                 # keys missing from the library
+```
+
 ### BibTeX-like workflow (aux → bbl)
 
 Zettel can replace `bibtex` for a simple BibTeX-style workflow that reads citation keys
