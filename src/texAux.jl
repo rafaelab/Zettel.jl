@@ -1,7 +1,9 @@
 export
 	AuxData,
 	parseAuxFile,
-	writeBblFromAux
+	writeBblFromAux,
+	parseBblKeys,
+	writeBibFromBbl
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -876,8 +878,96 @@ function _formatGeneric(entry::ZettelEntry)
 	if isempty(parts)
 		return "Unformatted entry."
 	end
-	
+
 	return join(parts, " ")
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	parseBblKeys(path)
+
+Parse a LaTeX `.bbl` file and return the citation keys it uses, in first-seen order.
+
+Keys are read from `\\bibitem[...]{key}` commands (the optional `[...]` label is ignored).
+Duplicate keys are returned only once.
+
+# Input
+- `path::AbstractString`: path to the `.bbl` file to parse.
+
+# Output
+- A `Vector{String}` of citation keys in order of appearance.
+
+# Example
+
+```julia
+keys = parseBblKeys("paper.bbl")
+# keys == ["einstein1905a", "misner1973a", ...]
+```
+"""
+function parseBblKeys(path::AbstractString)
+	if ! isfile(path)
+		throw(ArgumentError("File not found: $(path)"))
+	end
+
+	keys = String[]
+	seen = Set{String}()
+	text = read(path, String)
+
+	for m ∈ eachmatch(r"\\bibitem\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}"s, text)
+		key = strip(m.captures[1])
+		if ! isempty(key) && ! (key ∈ seen)
+			push!(keys, String(key))
+			push!(seen, String(key))
+		end
+	end
+
+	return keys
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	writeBibFromBbl(bblPath, inputLibrary, outputPath)
+
+Extract the entries cited in a `.bbl` file from a master library and write them to a new
+BibTeX file containing only the used keys.
+
+Citation keys are read from `bblPath` with [`parseBblKeys`](@ref), looked up in the library
+loaded from `inputLibrary` (any supported format: `.bib`, `.json`, `.yaml`/`.yml`), and the
+matching entries are written to `outputPath` (format inferred from its extension) in citation
+order.
+
+# Input
+- `bblPath::AbstractString`: path to the `.bbl` file providing the citation keys.
+- `inputLibrary::AbstractString`: path to the master library to pull entries from.
+- `outputPath::AbstractString`: destination path for the extracted subset.
+
+# Output
+- A named tuple `(present, absent)` listing keys found and keys missing from the library.
+"""
+function writeBibFromBbl(bblPath::AbstractString, inputLibrary::AbstractString, outputPath::AbstractString)
+	keys = parseBblKeys(bblPath)
+	lib = loadLibrary(inputLibrary)
+
+	subset = ZettelLibrary()
+	present = String[]
+	absent = String[]
+	for key ∈ keys
+		entry = findByKey(lib, key)
+		if isnothing(entry)
+			push!(absent, key)
+		else
+			push!(subset, entry)
+			push!(present, key)
+		end
+	end
+
+	saveLibrary(subset, outputPath)
+
+	return (present = present, absent = absent)
 end
 
 

@@ -15,6 +15,7 @@ function usageCLI(; io::IO = stdout)
 	println(io, "  zettel convert <input> <output> [--from <fmt>] --to <fmt>")
 	println(io, "  zettel doi     <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]")
 	println(io, "  zettel --query <bibkey> --library <file>")
+	println(io, "  zettel bbl     <bblfile> <input.bib> <output.bib>")
 	println(io, "  zettel paste   [--to <fmt>] --library <file>")
 	println(io, "  zettel paste   --to <fmt>")
 	println(io, "  zettel libupdate --library <file> [--key <key>] [--fileDir <dir>]")
@@ -24,6 +25,7 @@ function usageCLI(; io::IO = stdout)
 	println(io, "  convert        Convert a bibliography file between formats (bib, json, yaml).")
 	println(io, "  doi            Fetch a DOI from a metadata source and emit one ZettelEntry (bib, json, yaml).")
 	println(io, "  --query        Query one bibkey in a library and print a compact human-readable summary.")
+	println(io, "  bbl            Extract the entries cited in a .bbl from a library into a new .bib (used keys only).")
 	println(io, "  paste          Read a BibTeX entry from stdin; print it and/or add it to a library.")
 	println(io, "  libupdate      Read one BibTeX entry from stdin, generate/update key, backup library, and insert it.")
 	println(io, "")
@@ -41,6 +43,11 @@ function usageCLI(; io::IO = stdout)
 	println(io, "# Options (--query)")
 	println(io, "      --query <bibkey>   Citation key to query in the target library")
 	println(io, "  -l, --library <file>   Source library (.bib, .json, .yaml/.yml)")
+	println(io, "")
+	println(io, "# Options (bbl)")
+	println(io, "  <bblfile>              LaTeX .bbl file providing the cited keys")
+	println(io, "  <input.bib>            Master library to pull entries from (.bib, .json, .yaml/.yml)")
+	println(io, "  <output.bib>           Destination for the extracted subset (format from extension)")
 	println(io, "")
 	println(io, "# Options (paste)")
 	println(io, "  -t, --to   <fmt>       Print the entry in this format to stdout (bib, json, yaml)")
@@ -90,6 +97,11 @@ function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 
 	if args[1] == "--query"
 		runQueryCLI(args[2 : end]; output = output)
+		return 0
+	end
+
+	if args[1] == "bbl"
+		runBblCLI(args[2 : end]; output = output)
 		return 0
 	end
 
@@ -269,6 +281,50 @@ function runQueryCLI(args::Vector{String}; output::IO = stdout)
 	end
 
 	print(output, renderQueriedEntry(entry))
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	runBblCLI(args::Vector{String}; output::IO = stdout)
+
+Handle `bbl` mode:
+- `bbl <bblfile> <input.bib> <output.bib>`
+
+Read the cited keys from the `.bbl` file, extract the matching entries from the input
+library, and write a new file containing only the used keys.
+Prints a warning for any keys present in the `.bbl` but missing from the library.
+"""
+function runBblCLI(args::Vector{String}; output::IO = stdout)
+	positional = String[]
+	for arg ∈ args
+		if startswith(arg, "-")
+			throw(ArgumentError("Unknown option in bbl mode: $(arg)."))
+		end
+		push!(positional, arg)
+	end
+
+	if length(positional) ≠ 3
+		throw(ArgumentError("bbl: expected <bblfile> <input.bib> <output.bib>"))
+	end
+	bblPath, inputLibrary, outputPath = positional
+
+	if ! isfile(bblPath)
+		throw(ArgumentError("bbl: .bbl file not found: $(bblPath)"))
+	end
+	if ! isfile(inputLibrary)
+		throw(ArgumentError("bbl: input library not found: $(inputLibrary)"))
+	end
+
+	result = writeBibFromBbl(bblPath, inputLibrary, outputPath)
+
+	println(output, "Extracted $(length(result.present)) entries to $(outputPath).")
+	if ! isempty(result.absent)
+		println(output, "Warning: missing keys: ", join(result.absent, ", "))
+	end
+
 	return nothing
 end
 
