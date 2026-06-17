@@ -54,6 +54,11 @@ function isBibRelated(args::Vector{String})
 		return true
 	end
 
+	# bbl can read a BibTeX library and must avoid the compiled Python path
+	if cmd == "bbl"
+		return true
+	end
+
 	# DOI flows depend on runtime HTTP/Python behavior; keep them on interpreter path
 	if cmd == "doi" || (startswith(cmd, "10.") && occursin("/", cmd))
 		return true
