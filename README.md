@@ -10,13 +10,12 @@ It provides a Julia API and a command-line interface for converting libraries, f
 
 ## Features
 
-- Read and write bibliography libraries in BibTeX, JSON, YAML, and YML.
+- Read and write bibliography libraries in BibTeX, JSON, YAML.
 - Convert between supported formats from the Julia API or the CLI.
 - Fetch metadata from DOI providers, with Crossref and DataCite support.
 - Query one entry from a library by citation key.
 - Read one BibTeX entry from standard input and print or store it in another format.
 - Maintain working libraries with backup creation and citation-key handling.
-- Generate `.bbl` files directly from LaTeX `.aux` files.
 - Extract cited entries from an existing `.bbl` into a smaller output library.
 
 ## Installation
