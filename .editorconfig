@@ -1,0 +1,25 @@
+root = true
+
+[*]
+trim_trailing_whitespace = true
+charset = utf-8
+
+[*.{py,jl}]
+indent_style = tab
+indent_size = 4
+
+[*.bib]
+indent_style = tab
+indent_size = 4
+
+[*.json]
+indent_style = tab
+indent_size = 4
+insert_final_newline = true
+
+[*.{yml,yaml}]
+indent_size = 2
+indent_style = space
+
+[*.md]
+trim_trailing_whitespace = false
