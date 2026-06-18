@@ -48,7 +48,6 @@ jobs:
         run: |
           julia --project=. -e '
             using Pkg
-            Pkg.develop(PackageSpec(; url = "https://github.com/rafaelab/pybtex.jl"))
             Pkg.instantiate()
           '
 
