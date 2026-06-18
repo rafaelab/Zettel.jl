@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["1.10"]
+        version: ["1.12"]
         os: [ubuntu-latest, macos-latest]
     env:
       JULIA_CONDAPKG_BACKEND: Null
