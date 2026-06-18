@@ -6,7 +6,7 @@
 ### Changed
 
 - Add tool to convert a .bbl file to .bib.
-
+- Improve documentation.
 
 
 
