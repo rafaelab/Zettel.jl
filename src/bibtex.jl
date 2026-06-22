@@ -10,57 +10,6 @@ export
 #
 const _extensionsBibtex = ("bib", "bibtex")
 
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_normalisePybtexNamePart(parts)
-
-Convert one pybtex name-part sequence to plain text.
-"""
-function _normalisePybtexNamePart(parts)
-	textParts = String[]
-	for value ∈ pyconvert(Vector{String}, pylist(parts))
-		text = strip(decodeTex(stripOuterBraces(String(value))))
-		if ! isempty(text)
-			push!(textParts, text)
-		end
-	end
-	return join(textParts, " ")
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_bibtexNamesFromPersons(personsIterable)
-
-Convert a pybtex persons iterable to one BibTeX-style name line.
-"""
-function _bibtexNamesFromPersons(personsIterable)
-	parts = String[]
-
-	for person ∈ personsIterable
-		first = _normalisePybtexNamePart(person.first_names)
-		middle = _normalisePybtexNamePart(person.middle_names)
-		prelast = _normalisePybtexNamePart(person.prelast_names)
-		last = _normalisePybtexNamePart(person.last_names)
-		lineage = _normalisePybtexNamePart(person.lineage_names)
-
-		familyParts = String[]
-		! isempty(prelast) && push!(familyParts, prelast)
-		! isempty(last) && push!(familyParts, last)
-		! isempty(lineage) && push!(familyParts, lineage)
-		family = join(familyParts, " ")
-
-		formatted = formatBibtexPerson(PersonName(first, middle, family, ""))
-		if ! isempty(formatted)
-			push!(parts, formatted)
-		end
-	end
-
-	return join(parts, " and ")
-end
-
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -106,6 +55,54 @@ function readBibtexString(inputString::AbstractString)
 	end
 
 	return records
+end
+
+
+@doc """
+	_normalisePybtexNamePart(parts)
+
+Convert one pybtex name-part sequence to plain text.
+"""
+function _normalisePybtexNamePart(parts)
+	textParts = String[]
+	for value ∈ pyconvert(Vector{String}, pylist(parts))
+		text = strip(decodeTex(stripOuterBraces(String(value))))
+		if ! isempty(text)
+			push!(textParts, text)
+		end
+	end
+	return join(textParts, " ")
+end
+
+
+@doc """
+	_bibtexNamesFromPersons(personsIterable)
+
+Convert a pybtex persons iterable to one BibTeX-style name line.
+"""
+function _bibtexNamesFromPersons(personsIterable)
+	parts = String[]
+
+	for person ∈ personsIterable
+		first = _normalisePybtexNamePart(person.first_names)
+		middle = _normalisePybtexNamePart(person.middle_names)
+		prelast = _normalisePybtexNamePart(person.prelast_names)
+		last = _normalisePybtexNamePart(person.last_names)
+		lineage = _normalisePybtexNamePart(person.lineage_names)
+
+		familyParts = String[]
+		! isempty(prelast) && push!(familyParts, prelast)
+		! isempty(last) && push!(familyParts, last)
+		! isempty(lineage) && push!(familyParts, lineage)
+		family = join(familyParts, " ")
+
+		formatted = formatBibtexPerson(PersonName(first, middle, family, ""))
+		if ! isempty(formatted)
+			push!(parts, formatted)
+		end
+	end
+
+	return join(parts, " and ")
 end
 
 
@@ -189,6 +186,10 @@ end
 	writeBibtexLibrary(lib, outputPath)
 
 Write a [`ZettelLibrary`](@ref) as a BibTeX `.bib` file.
+
+# Input
+- `lib` [`ZettelLibrary`]: the library
+- `outputPath` [`AbstractString`]: destination file path.
 """
 function writeBibtexLibrary(lib::ZettelLibrary, outputPath::AbstractString)
 	open(outputPath, "w") do io
@@ -197,15 +198,66 @@ function writeBibtexLibrary(lib::ZettelLibrary, outputPath::AbstractString)
 		for entry ∈ values(lib)
 			index += 1
 			write(io, entryToString(entry, BibtexFormat()))
+			write(io, "\n")
 			if index < total
-				write(io, "\n\n")
-			else
 				write(io, "\n")
 			end
 		end
 	end
+
 	return nothing
 end
 
+
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_normalisePybtexNamePart(parts)
+
+Convert one pybtex name-part sequence to plain text.
+"""
+function _normalisePybtexNamePart(parts)
+	textParts = String[]
+	for value ∈ pyconvert(Vector{String}, pylist(parts))
+		text = strip(decodeTex(stripOuterBraces(String(value))))
+		if ! isempty(text)
+			push!(textParts, text)
+		end
+	end
+	return join(textParts, " ")
+end
+
+
+@doc """
+	_bibtexNamesFromPersons(personsIterable)
+
+Convert a pybtex persons iterable to one BibTeX-style name line.
+"""
+function _bibtexNamesFromPersons(personsIterable)
+	parts = String[]
+
+	for person ∈ personsIterable
+		first = _normalisePybtexNamePart(person.first_names)
+		middle = _normalisePybtexNamePart(person.middle_names)
+		prelast = _normalisePybtexNamePart(person.prelast_names)
+		last = _normalisePybtexNamePart(person.last_names)
+		lineage = _normalisePybtexNamePart(person.lineage_names)
+
+		familyParts = String[]
+		! isempty(prelast) && push!(familyParts, prelast)
+		! isempty(last) && push!(familyParts, last)
+		! isempty(lineage) && push!(familyParts, lineage)
+		family = join(familyParts, " ")
+
+		formatted = formatBibtexPerson(PersonName(first, middle, family, ""))
+		if ! isempty(formatted)
+			push!(parts, formatted)
+		end
+	end
+
+	return join(parts, " and ")
+end
 
 # ----------------------------------------------------------------------------------------------- #

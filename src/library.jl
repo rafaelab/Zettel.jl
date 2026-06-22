@@ -12,7 +12,7 @@ export
 A collection of [`ZettelEntry`](@ref) objects, indexed by their citation keys.
 
 # Fields
-- `entries::OrderedDict{String,ZettelEntry}`: ordered mapping of citation keys to entries
+- `entries` [`OrderedDict{String, ZettelEntry}`]: ordered mapping of citation keys to entries
 """
 struct ZettelLibrary
 	entries::OrderedDict{String, ZettelEntry}
@@ -37,47 +37,39 @@ end
 
 Return the number of entries in a `ZettelLibrary`.
 """
-Base.length(lib::ZettelLibrary) = length(lib.entries)
+@inline Base.length(lib::ZettelLibrary) = length(lib.entries)
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	keys(lib)
 
 Return the citation keys stored in a `ZettelLibrary`.
 """
-Base.keys(lib::ZettelLibrary) = keys(lib.entries)
+@inline Base.keys(lib::ZettelLibrary) = keys(lib.entries)
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	values(lib)
 
 Return all [`ZettelEntry`](@ref) objects stored in a `ZettelLibrary`.
 """
-Base.values(lib::ZettelLibrary) = values(lib.entries)
+@inline Base.values(lib::ZettelLibrary) = values(lib.entries)
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getindex(lib, key)
 
 Return the [`ZettelEntry`](@ref) with the given citation key.
 """
-Base.getindex(lib::ZettelLibrary, key::AbstractString) = lib.entries[key]
+@inline Base.getindex(lib::ZettelLibrary, key::AbstractString) = lib.entries[key]
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	haskey(lib, key)
 
 Return `true` if the library contains an entry with the given citation key.
 """
-Base.haskey(lib::ZettelLibrary, key::AbstractString) = haskey(lib.entries, key)
+@inline Base.haskey(lib::ZettelLibrary, key::AbstractString) = haskey(lib.entries, key)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -94,8 +86,6 @@ function Base.push!(lib::ZettelLibrary, entry::ZettelEntry)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	pop!(lib, key)
 
@@ -104,8 +94,7 @@ Remove and return the [`ZettelEntry`](@ref) with the given citation key.
 Base.pop!(lib::ZettelLibrary, key::AbstractString) = pop!(lib.entries, key)
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+
 @doc """
 	iterate(lib[, state])
 
@@ -122,9 +111,8 @@ Base.iterate(lib::ZettelLibrary, state) = iterate(values(lib.entries), state)
 
 Print a brief summary of a `ZettelLibrary`.
 """
-function Base.show(io::IO, lib::ZettelLibrary)
-	n = length(lib)
-	print(io, @sprintf("ZettelLibrary containing %d entries.\n", n))
+Base.show(io::IO, lib::ZettelLibrary) = begin
+	print(io, @sprintf("ZettelLibrary containing %d entries.\n", length(lib)))
 end
 
 
@@ -136,7 +124,7 @@ end
 Return a new [`ZettelLibrary`](@ref) with entries sorted alphabetically by citation key.
 
 # Input
-- `lib::ZettelLibrary`: library to sort.
+- `lib` [`ZettelLibrary`]: the library
 
 # Output
 - A new [`ZettelLibrary`](@ref) with entries in ascending key order.
@@ -158,7 +146,7 @@ end
 Sort a [`ZettelLibrary`](@ref) in-place by citation key in ascending order.
 
 # Input
-- `lib::ZettelLibrary`: library to sort.
+- `lib` [`ZettelLibrary`]: the library
 
 # Output
 - The input `lib` with entries reordered alphabetically by key.
@@ -166,10 +154,12 @@ Sort a [`ZettelLibrary`](@ref) in-place by citation key in ascending order.
 function Base.sort!(lib::ZettelLibrary)
 	sortedKeys = sort(collect(keys(lib.entries)))
 	entriesBackup = copy(lib.entries)
+	
 	empty!(lib.entries)
 	for k ∈ sortedKeys
 		lib.entries[k] = entriesBackup[k]
 	end
+
 	return lib
 end
 
@@ -183,7 +173,7 @@ Load a [`ZettelLibrary`](@ref) from `filename`, inferring the format from the fi
 Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
 
 # Input
-- `filename::AbstractString`: path to the bibliography file.
+- `filename` [`AbstractString`]: path to the bibliography file.
 
 # Output
 - A [`ZettelLibrary`](@ref) parsed from `filename`.
@@ -205,8 +195,8 @@ Save a [`ZettelLibrary`](@ref) to `filename`, inferring the format from the file
 Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
 
 # Input
-- `lib::ZettelLibrary`: library to save.
-- `filename::AbstractString`: destination file path.
+- `lib` [`ZettelLibrary`]: the library to save
+- `filename` [`AbstractString`]: destination file path.
 
 # Output
 - `nothing`.

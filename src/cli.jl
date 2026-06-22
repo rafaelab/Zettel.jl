@@ -273,8 +273,7 @@ function runQueryCLI(args::Vector{String}; output::IO = stdout)
 		throw(ArgumentError("query: library file not found: $(libraryPath)"))
 	end
 
-	lib = loadLibrary(libraryPath)
-	entry = findByKey(lib, queryKey)
+	entry = findEntryByKey(libraryPath, queryKey)
 	if isnothing(entry)
 		@warn "query: bibkey not found in library" bibkey = queryKey library = libraryPath
 		return nothing
@@ -293,8 +292,7 @@ end
 Handle `bbl` mode:
 - `bbl <bblfile> <input.bib> <output.bib>`
 
-Read the cited keys from the `.bbl` file, extract the matching entries from the input
-library, and write a new file containing only the used keys.
+Read the cited keys from the `.bbl` file, extract the matching entries from the input [`ZettelLibrary`](@ref), and write a new file containing only the used keys.
 Prints a warning for any keys present in the `.bbl` but missing from the library.
 """
 function runBblCLI(args::Vector{String}; output::IO = stdout)
@@ -393,7 +391,7 @@ Optionally print it in the requested format to `output`, and optionally add it t
 At least one of `--to` or `--library` must be given.
 """
 function runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
-	toFormat    = nothing
+	toFormat = nothing
 	libraryPath = nothing
 
 	i = 1
@@ -453,8 +451,6 @@ end
 Handle `libupdate` mode.
 It reads one BibTeX entry from `input` and generate/adjust the key (`surnameYYYYx` or collaboration-based token).
 A back up `.bib` library with a timestamp suffix is created to preserve the pre-update state.
-
-- insert/update the entry and save sorted.
 """
 function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
 	libraryPath = nothing
@@ -589,9 +585,9 @@ function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = s
 	cp(libraryPath, backupPath; force = true)
 
 	push!(lib, updated)
-	saveLibrary(sort(lib), libraryPath)
+	saveLibrary(sort!(lib), libraryPath)
 
-	println(output, "Backup created: $(backupPath)")
+	println(output, "Backup created:  $(backupPath)")
 	println(output, "Library updated: $(libraryPath)")
 	println(output, "Inserted key:    $(finalKey)")
 
@@ -610,10 +606,10 @@ Then generate the `.bbl` using the provided libraries (or inferred ones).
 Prints a warning to `output` if any citation keys are missing.
 """
 function runAuxCLI(args::Vector{String}; output::IO = stdout)
-	auxPath   = nothing
+	auxPath = nothing
 	libraries = String[]
 	outputPath = nothing
-	style     = "auto"
+	style = "auto"
 
 	i = 1
 	while i ≤ length(args)
@@ -690,8 +686,6 @@ function renderDoiEntry(entry::ZettelEntry, format::BibliographyFormat)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	renderQueriedEntry(entry::ZettelEntry)
 
@@ -739,8 +733,6 @@ function renderQueriedEntry(entry::ZettelEntry)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	renderQueryAuthors(entry::ZettelEntry)
 
@@ -775,8 +767,7 @@ function renderQueryAuthors(entry::ZettelEntry)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+
 @doc """
 	renderQueryVenue(entry::ZettelEntry)
 
@@ -830,8 +821,6 @@ function queryArxivId(entry::ZettelEntry)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	_queryFirstAuthor(entry::ZettelEntry)
 
@@ -846,8 +835,6 @@ function _queryFirstAuthor(entry::ZettelEntry)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	_queryPersonSummary(rawName)
 
@@ -882,8 +869,6 @@ function _queryPersonSummary(rawName::AbstractString)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	_queryFieldText(text)
 
@@ -908,7 +893,7 @@ function addEntriesToLibrary(incoming::ZettelLibrary, libraryPath::AbstractStrin
 		push!(lib, entry)
 	end
 
-	saveLibrary(sort(lib), libraryPath)
+	saveLibrary(sort!(lib), libraryPath)
 	
 	return nothing
 end
@@ -926,9 +911,9 @@ Validate the custom key against the expected pattern and check for conflicts wit
 Return the final chosen key.
 
 # Input
-- `suggested::AbstractString`: the suggested citation key to accept or override.
-- `existing::Set{String}`: set of existing keys in the library to check for conflicts.
-- `output::IO`: the IO stream to use for prompts and messages (default: stdout).
+- `suggested` [`AbstractString`]: the suggested citation key to accept or override.
+- `existing` [`Set{String}`]: set of existing keys in the library to check for conflicts.
+- `output` [`IO`]: the IO stream to use for prompts and messages (default: stdout).
 
 # Output
 - The chosen citation key as a string.
@@ -995,6 +980,7 @@ function acceptFileKeyFromTty(fileKey::AbstractString; output::IO = stdout)
 			catch
 				""
 			end
+			
 			answer = lowercase(strip(reply))
 			if isempty(answer) || answer ∈ ("n", "no")
 				return false

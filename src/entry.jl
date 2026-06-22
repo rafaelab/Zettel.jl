@@ -87,9 +87,9 @@ A single bibliographic entry stored as:
 * an ordered dictionary of BibTeX-compatible field names to their string values.
 
 # Fields
-- `key::String`: unique citation key (e.g. `"Einstein1905"`)
-- `entryType::String`: BibTeX entry type in lower case (e.g. `"article"`, `"book"`)
-- `fields::OrderedDict{String,String}`: ordered mapping of field names to values
+- `key` [`AbstractString`]: unique citation key (e.g. `"Einstein1905"`)
+- `entryType` [`AbstractString`]: BibTeX entry type in lower case (e.g. `"article"`, `"book"`)
+- `fields` [`OrderedDict{String,String}`]: ordered mapping of field names to values
 """
 struct ZettelEntry
 	key::String
@@ -105,7 +105,9 @@ struct ZettelEntry
 	end
 end
 
-ZettelEntry(key::String, entryType::String) = ZettelEntry(key, entryType, OrderedDict{String, String}())
+ZettelEntry(key::String, entryType::String) = begin
+	return ZettelEntry(key, entryType, OrderedDict{String, String}())
+end
 
 ZettelEntry(d::AbstractDict) = begin
 	hasKey = haskey(d, "key") || haskey(d, :key)
@@ -196,8 +198,8 @@ end
 Return a `ZettelEntry` containing only the fields that appear in both entries.
 
 # Input
-- `entry1::ZettelEntry`: left-hand entry.
-- `entry2::ZettelEntry`: right-hand entry.
+- `entry1` [`ZettelEntry`]: left-hand entry
+- `entry2` [`ZettelEntry`]: right-hand entry
 
 # Output
 - A `ZettelEntry` whose `key` and `entryType` come from `entry1`, and whose fields are the common field names present in both entries. 
@@ -222,8 +224,8 @@ end
 Return a `ZettelEntry` containing the fields from both entries.
 
 # Input
-- `entry1::ZettelEntry`: left-hand entry.
-- `entry2::ZettelEntry`: right-hand entry.
+- `entry1` [`ZettelEntry`]: left-hand entry
+- `entry2` [`ZettelEntry`]: right-hand entry
 
 # Output
 - A `ZettelEntry` whose `key` and `entryType` come from `entry1`, and whose fields contain the combination of fields from both entries. 
@@ -268,10 +270,10 @@ end
 Replace common journal names in `fields["journal"]` with their standard abbreviations.
 
 # Input
-- `fields::OrderedDict{String, String}`: mapping of field names to values.
+- `entry` [`ZettelEntry`]: the entry whose journal field is to be fixed.
 
 # Output
-- The input `fields` with common values normalised (journal names converted to abbreviations).
+- The input `entry` with its journal field normalized (journal names converted to abbreviations).
 """
 function fixJournalAbbreviations!(entry::ZettelEntry)
 	if haskey(entry.fields, "journal")
@@ -290,10 +292,10 @@ end
 Replace month information `fields["month"]` by its numerical representation.
 
 # Input
-- `fields::OrderedDict{String, String}`: mapping of field names to values.
+- `entry` [`ZettelEntry`]: the entry whose month field is to be fixed.
 
 # Output
-- The input `fields` with common values normalised (month names converted to numbers).
+- The input `entry` with its month field normalised (month names converted to numbers).
 """
 function fixMonth!(entry::ZettelEntry)
 	if haskey(entry.fields, "month")
@@ -314,8 +316,8 @@ Matching is case-insensitive and any remaining fields are appended in their orig
 Returns the mutated entry for convenience.
 
 # Input
-- `entry::ZettelEntry`: the entry to reorder.
-- `preferredOrder::AbstractVector{<:AbstractString}`: the preferred field order (e.g. `["author", "title", "year"]`).
+- `entry` [`ZettelEntry`]: the entry to reorder.
+- `preferredOrder` [`AbstractVector{<: AbstractString}`]: the preferred field order (e.g. `["author", "title", "year"]`).
 
 # Output
 - The input `entry` with its `fields` reordered according to the specified preferences.
@@ -360,7 +362,7 @@ end
 
 Return the citation key of a [`ZettelEntry`](@ref).
 """
-getKey(entry::ZettelEntry) = entry.key
+@inline getKey(entry::ZettelEntry) = entry.key
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -370,7 +372,7 @@ getKey(entry::ZettelEntry) = entry.key
 
 Return the BibTeX entry type string (e.g. `"article"`) of a [`ZettelEntry`](@ref).
 """
-getType(entry::ZettelEntry) = entry.entryType
+@inline getType(entry::ZettelEntry) = entry.entryType
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -380,7 +382,7 @@ getType(entry::ZettelEntry) = entry.entryType
 
 Return the title of a [`ZettelEntry`](@ref), or `""` if the `title` field is absent.
 """
-getTitle(entry::ZettelEntry) = getField(entry, "title")
+@inline getTitle(entry::ZettelEntry) = getField(entry, "title")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -390,7 +392,7 @@ getTitle(entry::ZettelEntry) = getField(entry, "title")
 
 Return the author string of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getAuthors(entry::ZettelEntry) = getField(entry, "author")
+@inline getAuthors(entry::ZettelEntry) = getField(entry, "author")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -400,7 +402,7 @@ getAuthors(entry::ZettelEntry) = getField(entry, "author")
 
 Return the year string of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getYear(entry::ZettelEntry) = getField(entry, "year")
+@inline getYear(entry::ZettelEntry) = getField(entry, "year")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -410,7 +412,7 @@ getYear(entry::ZettelEntry) = getField(entry, "year")
 
 Return the journal name of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getJournal(entry::ZettelEntry) = getField(entry, "journal")
+@inline getJournal(entry::ZettelEntry) = getField(entry, "journal")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -420,8 +422,8 @@ getJournal(entry::ZettelEntry) = getField(entry, "journal")
 
 Return the DOI of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getDOI(entry::ZettelEntry) = getField(entry, "doi")
-getDoi(entry::ZettelEntry) = getDOI(entry)
+@inline getDOI(entry::ZettelEntry) = getField(entry, "doi")
+@inline getDoi(entry::ZettelEntry) = getDOI(entry)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -431,8 +433,8 @@ getDoi(entry::ZettelEntry) = getDOI(entry)
 
 Return the URL of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getURL(entry::ZettelEntry) = getField(entry, "url")
-getUrl(entry::ZettelEntry) = getURL(entry)
+@inline getURL(entry::ZettelEntry) = getField(entry, "url")
+@inline getUrl(entry::ZettelEntry) = getURL(entry)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -442,7 +444,7 @@ getUrl(entry::ZettelEntry) = getURL(entry)
 
 Return the volume of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getVolume(entry::ZettelEntry) = getField(entry, "volume")
+@inline getVolume(entry::ZettelEntry) = getField(entry, "volume")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -452,7 +454,7 @@ getVolume(entry::ZettelEntry) = getField(entry, "volume")
 
 Return the issue/number of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getNumber(entry::ZettelEntry) = getField(entry, "number")
+@inline getNumber(entry::ZettelEntry) = getField(entry, "number")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -462,7 +464,7 @@ getNumber(entry::ZettelEntry) = getField(entry, "number")
 
 Return the pages of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getPages(entry::ZettelEntry) = getField(entry, "pages")
+@inline getPages(entry::ZettelEntry) = getField(entry, "pages")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -472,7 +474,7 @@ getPages(entry::ZettelEntry) = getField(entry, "pages")
 
 Return the abstract of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getAbstract(entry::ZettelEntry) = getField(entry, "abstract")
+@inline getAbstract(entry::ZettelEntry) = getField(entry, "abstract")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -482,7 +484,7 @@ getAbstract(entry::ZettelEntry) = getField(entry, "abstract")
 
 Return the publisher of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getPublisher(entry::ZettelEntry) = getField(entry, "publisher")
+@inline getPublisher(entry::ZettelEntry) = getField(entry, "publisher")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -492,8 +494,8 @@ getPublisher(entry::ZettelEntry) = getField(entry, "publisher")
 
 Return the ISBN of a [`ZettelEntry`](@ref), or `""` if absent.
 """
-getISBN(entry::ZettelEntry) = getField(entry, "isbn")
-
+@inline getISBN(entry::ZettelEntry) = getField(entry, "isbn")
+@inline getIsbn(entry::ZettelEntry) = getISBN(entry)
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -502,7 +504,7 @@ getISBN(entry::ZettelEntry) = getField(entry, "isbn")
 
 Return `true` if `field` (case-insensitive) is present in the entry's fields.
 """
-hasField(entry::ZettelEntry, field::AbstractString) = haskey(entry.fields, lowercase(field))
+@inline hasField(entry::ZettelEntry, field::AbstractString) = haskey(entry.fields, lowercase(field))
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -512,7 +514,7 @@ hasField(entry::ZettelEntry, field::AbstractString) = haskey(entry.fields, lower
 
 Return the collection of field names present in the entry.
 """
-getAllFields(entry::ZettelEntry) = keys(entry.fields)
+@inline getAllFields(entry::ZettelEntry) = keys(entry.fields)
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -522,7 +524,7 @@ getAllFields(entry::ZettelEntry) = keys(entry.fields)
 
 Return the value of `field` in the entry, or `""` if the field is absent.
 """
-getField(entry::ZettelEntry, field::AbstractString) = get(entry.fields, lowercase(field), "")
+@inline getField(entry::ZettelEntry, field::AbstractString) = get(entry.fields, lowercase(field), "")
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -699,8 +701,7 @@ end
 Return a named tuple describing why two entries are considered too similar.
 If they do not meet the total-score criterion, return `nothing`.
 
-When `contingent = true`, the decision is made in a strict ordered chain:
-`author → title → year → booktitle → journal → volume → pages → others`.
+When `contingent = true`, the decision is made in a strict ordered chain: `author → title → year → booktitle → journal → volume → pages → others`.
 At each step, if the compared score is below its threshold, `nothing` is returned immediately.
 """
 function similarityReport(candidate::ZettelEntry, existing::ZettelEntry; authorThreshold::Real = 0.95, keyThreshold::Real = 0.95, titleThreshold::Real = 0.95, venueThreshold::Real = 0.95, volumePagesThreshold::Real = 0.95, totalThreshold::Real = 0.95, contingent::Bool = false, otherThreshold::Real = titleThreshold, fields = _defaultSimilarityFields, fieldScorers = Dict{String, Function}(), scoreWeights = _similarityWeights)
@@ -744,6 +745,7 @@ function similarityReport(candidate::ZettelEntry, existing::ZettelEntry; authorT
 		if hasComparablePages && scores.pagesScore < volumePagesThreshold
 			return nothing
 		end
+
 		for (field, score) ∈ pairs(scores.fieldScores)
 			name = lowercase(field)
 			if name ∈ ("title", "booktitle", "journal", "volume", "pages")
@@ -773,6 +775,7 @@ function similarityReport(candidate::ZettelEntry, existing::ZettelEntry; authorT
 			return nothing
 		end
 	end
+
 	if scores.totalScore < totalThreshold
 		return nothing
 	end
@@ -810,14 +813,28 @@ end
 
 Return the first existing entry in `lib` that looks like a duplicate of `candidate`.
 Returns `nothing` if no entry matches.
+
+A positive decision from [`similarityReport`](@ref) always requires an exact, non-empty year match (`yearScore == 1.0`) in both the contingent and the
+non-contingent branch. 
+The library is therefore pre-filtered on the candidate year before the expensive per-field similarity work (notably the title Levenshtein distance) is performed. 
+This is behaviour-preserving: entries that fail the year check could never have been reported as similar, so skipping them cannot change which entry (if any) is returned.
 """
 function findVerySimilarEntry(lib, candidate::ZettelEntry; args...)
+	candidateYear = strip(get(candidate.fields, "year", ""))
+	if isempty(candidateYear)
+		return nothing
+	end
+
 	for existing ∈ values(lib)
+		if strip(get(existing.fields, "year", "")) ≠ candidateYear
+			continue
+		end
 		report = similarityReport(candidate, existing; args...)
 		if ! isnothing(report)
 			return report
 		end
 	end
+	
 	return nothing
 end
 

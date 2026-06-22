@@ -54,9 +54,12 @@ function isBibRelated(args::Vector{String})
 		return true
 	end
 
-	# bbl can read a BibTeX library and must avoid the compiled Python path
+	# bbl needs the Python/BibTeX parser only when a .bib file is involved
+	# (reading a .bib input library). When neither the input library nor the
+	# output is .bib (e.g. json -> yaml), every step is pure Julia and can run
+	# on the fast compiled path. Args: bbl <bblfile> <inputlib> <outputlib>.
 	if cmd == "bbl"
-		return true
+		return any(looksLikeBibPath, args[2 : end])
 	end
 
 	# DOI flows depend on runtime HTTP/Python behavior; keep them on interpreter path
