@@ -54,3 +54,36 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@testset "findEntryByKey" begin
+	mktempdir() do dir
+		jsonPath = joinpath(dir, "lib.json")
+		yamlPath = joinpath(dir, "lib.yaml")
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
+		writeJsonLibrary(lib, jsonPath)
+		writeYamlLibrary(lib, yamlPath)
+
+		# JSON fast path: the returned entry is byte-identical to a full load + findByKey
+		fast = findEntryByKey(jsonPath, "Misner1973")
+		@test ! isnothing(fast)
+		@test fast.key == "Misner1973"
+		@test getTitle(fast) == "Gravitation"
+		full = findByKey(loadLibrary(jsonPath), "Misner1973")
+		@test entryToString(fast, JsonFormat()) == entryToString(full, JsonFormat())
+
+		# absent key returns nothing (not an error)
+		@test isnothing(findEntryByKey(jsonPath, "absent2000a"))
+
+		# generic (YAML) path returns the same result as findByKey
+		yamlEntry = findEntryByKey(yamlPath, "Einstein1905")
+		@test ! isnothing(yamlEntry)
+		@test yamlEntry.key == "Einstein1905"
+		@test isnothing(findEntryByKey(yamlPath, "absent2000a"))
+
+		# missing file is rejected
+		@test_throws ArgumentError findEntryByKey(joinpath(dir, "nope.json"), "x")
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#

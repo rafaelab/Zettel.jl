@@ -261,3 +261,67 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "findVerySimilarEntry year pre-filter" begin
+	existing = ZettelEntry("smith2024a", "article", OrderedDict{String, String}(
+		"author" => "Smith, Jane",
+		"title" => "A study of something",
+		"journal" => "Journal of Testing",
+		"year" => "2024",
+		"volume" => "10",
+		"pages" => "100-110",
+	))
+	other = ZettelEntry("doe2010a", "article", OrderedDict{String, String}(
+		"author" => "Doe, John",
+		"title" => "Unrelated work",
+		"year" => "2010",
+	))
+	lib = ZettelLibrary([other, existing])
+
+	# same year + matching fields -> duplicate detected
+	dup = ZettelEntry("smith2024z", "article", OrderedDict{String, String}(
+		"author" => "Smith, Jane",
+		"title" => "A study of something",
+		"journal" => "Journal of Testing",
+		"year" => "2024",
+		"volume" => "10",
+		"pages" => "100--110",
+	))
+	report = findVerySimilarEntry(lib, dup)
+	@test ! isnothing(report)
+	@test report.existingKey == "smith2024a"
+
+	# the year pre-filter must agree with a brute-force scan of similarityReport
+	bruteforce = nothing
+	for e ∈ values(lib)
+		r = similarityReport(dup, e)
+		if ! isnothing(r)
+			bruteforce = r
+			break
+		end
+	end
+	@test ! isnothing(bruteforce)
+	@test bruteforce.existingKey == report.existingKey
+
+	# otherwise-identical candidate with a different year is never a duplicate
+	diffYear = ZettelEntry("smith2023z", "article", OrderedDict{String, String}(
+		"author" => "Smith, Jane",
+		"title" => "A study of something",
+		"journal" => "Journal of Testing",
+		"year" => "2023",
+		"volume" => "10",
+		"pages" => "100-110",
+	))
+	@test isnothing(findVerySimilarEntry(lib, diffYear))
+
+	# a candidate without a year can never match (non-empty exact year required)
+	noYear = ZettelEntry("smith9999z", "article", OrderedDict{String, String}(
+		"author" => "Smith, Jane",
+		"title" => "A study of something",
+		"journal" => "Journal of Testing",
+	))
+	@test isnothing(findVerySimilarEntry(lib, noYear))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
