@@ -221,8 +221,7 @@ end
 @doc """
 	keyFromFileField(fields)
 
-Extract a key candidate from the `file` field (if present), using the basename
-of the first `.pdf` or `.djvu` attachment path.
+Extract a key candidate from the `file` field (if present), using the basename of the first `.pdf` or `.djvu` attachment path.
 Returns `nothing` when no suitable attachment is found.
 """
 function keyFromFileField(fields::AbstractDict{String, String})

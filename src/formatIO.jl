@@ -46,8 +46,7 @@ readBibliography(::BibtexFormat, filename::AbstractString) = readBibtexLibrary(f
 @doc """
 	writeBibliography(format, lib, filename)
 
-Write a [`ZettelLibrary`](@ref) to `filename`, selecting the writer with
-`format`.
+Write a [`ZettelLibrary`](@ref) to `filename`, selecting the writer with `format`.
 """
 writeBibliography(::JsonFormat, lib::ZettelLibrary, filename::AbstractString) = writeJsonLibrary(lib, filename)
 writeBibliography(::YamlFormat, lib::ZettelLibrary, filename::AbstractString) = writeYamlLibrary(lib, filename)

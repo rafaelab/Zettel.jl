@@ -19,8 +19,22 @@ export
 Abstract supertype for DOI metadata source selectors used by [`fetchFromDoiSource`](@ref).
 """
 abstract type DoiSource end
+
+@doc """
+	CrossRefSource
+
+Singleton type for the CrossRef DOI metadata source used by [`fetchFromDoiSource`](@ref).
+"""
 struct CrossRefSource <: DoiSource end
+
+
+@doc """
+	DataCiteSource
+
+Singleton type for the DataCite DOI metadata source used by [`fetchFromDoiSource`](@ref).
+"""
 struct DataCiteSource <: DoiSource end
+
 
 
 const doiSourcesList = (
@@ -54,12 +68,15 @@ The `source` argument may be a [`DoiSource`](@ref) singleton, or a string such a
 """
 function fetchFromDoiSource(doi::AbstractString, source::AbstractString; kwargs...)
 	s = lowercase(strip(source))
-	if s == "crossref"
-		return fetchFromDoiSource(doi, CrossRefSource(); kwargs...)
+	args = if s == "crossref"
+		CrossRefSource()
 	elseif s == "datacite"
-		return fetchFromDoiSource(doi, DataCiteSource(); kwargs...)
+		DataCiteSource()
+	else
+		throw(ArgumentError("Unsupported DOI source: $(source). Supported: $(join(doiSources(), ", "))"))
 	end
-	throw(ArgumentError("Unsupported DOI source: $(source). Supported: $(join(doiSources(), ", "))"))
+
+	return fetchFromDoiSource(doi, args; kwargs...)
 end
 
 function fetchFromDoiSource(doi::AbstractString; source::AbstractString = "crossref", kwargs...)

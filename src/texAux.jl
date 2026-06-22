@@ -75,7 +75,7 @@ Parse a LaTeX `.aux` file and return an `AuxData`.
 This follows `\\@input{...}` references recursively and preserves citation order.
 
 # Input
-- `path::AbstractString`: path to the `.aux` file to parse.
+- `path` [`AbstractString`]: path to the `.aux` file to parse.
 
 # Output
 - An `AuxData` struct containing parsed citations, bibliography data sources, and style information.
@@ -182,10 +182,10 @@ If `libraryFiles` is not provided, the function uses `\\bibdata{...}` entries fr
 If `style` is `"auto"`, the function uses `\\bibstyle{...}` from the `.aux` when present, falling back to `"plain"` otherwise.
 
 # Input
-- `auxPath::AbstractString`: path to the `.aux` file to process.
-- `libraryFiles::Maybe{Vector{String}}`: optional explicit list of library files to use instead of those referenced from the `.aux`.
-- `outputPath::Maybe{AbstractString}`: optional path to write the `.bbl` output to (defaults to same name as `.aux` with `.bbl` extension).
-- `style::AbstractString`: bibliography style name to use for formatting (e.g. `"plain"`, `"alpha"`, or `"ieeetr"`).
+- `auxPath` [`AbstractString`]: path to the `.aux` file to process.
+- `libraryFiles` [`Maybe{Vector{String}}`]: optional explicit list of library files to use instead of those referenced from the `.aux`.
+- `outputPath` [`Maybe{AbstractString}`]: optional path to write the `.bbl` output to (defaults to same name as `.aux` with `.bbl` extension).
+- `style` [`AbstractString`]: bibliography style name to use for formatting (e.g. `"plain"`, `"alpha"`, or `"ieeetr"`).
 
 # Output
 - Returns a named tuple with `outputPath`, `absent`, and `usedKeys`.
@@ -244,16 +244,18 @@ function writeBblFromAux(auxPath::AbstractString; libraryFiles = nothing, output
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+@doc """
+	_defaultBblPath(auxPath)
+
+Given a path to an `.aux` file, return the default path for the corresponding `.bbl` file (same name, `.bbl` extension).
+"""
 function _defaultBblPath(auxPath::AbstractString)
 	base = splitext(auxPath)[1]
 	return string(base, ".bbl")
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+
 @doc """
 	_resolveLibraryFiles(auxPath, bibdata, libraryFiles)
 
@@ -261,8 +263,8 @@ Helper that resolves bibliography source file paths referenced from an `.aux` fi
 If `libraryFiles` is provided it is normalised; otherwise the function locates `name.json`, `name.yaml`, `name.yml` or `name.bib` next to the `.aux` file.
 
 # Input
-- `auxPath::AbstractString`: path to the `.aux` file (used for resolving relative paths).
-- `bibdata::Vector{String}`: bibliography source names from the `.aux` file.
+- `auxPath` [`AbstractString`]: path to the `.aux` file (used for resolving relative paths).
+- `bibdata` [`Vector{String}`]: bibliography source names from the `.aux` file.
 - `libraryFiles`: optional explicit list of library files to use instead of those referenced from the `.aux`.
 
 # Output
@@ -313,8 +315,6 @@ function _resolveLibraryFiles(auxPath::AbstractString, bibdata::Vector{String}, 
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	_normaliseLibraryFiles(libraryFiles)
 
@@ -339,8 +339,7 @@ function _normaliseLibraryFiles(libraryFiles)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+
 @doc """
 	_loadLibraries(files)
 
@@ -364,8 +363,7 @@ function _loadLibraries(files::Vector{String})
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+
 @doc """
 	_readLibraryFile(path)
 
@@ -382,8 +380,7 @@ function _readLibraryFile(path::AbstractString)
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+
 @doc """
 	_uniquePreserve(items)
 
@@ -402,17 +399,15 @@ function _uniquePreserve(items::Vector{String})
 end
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	_renderBbl(keys, entries; style = "plain")
 
 Render the `.bbl` document text for the given keys and corresponding entries using the provided style specification.
 
 # Input
-- `keys::Vector{String}`: citation keys in the order they should appear in the `.bbl`.
-- `entries::Vector{Maybe{ZettelEntry}}`: corresponding entries for the keys (may contain `nothing` for missing entries).
-- `style::AbstractString`: bibliography style name to use for formatting (e.g. `"plain"`, `"alpha"`, or `"ieeetr"`).
+- `keys` [`Vector{String}`]: citation keys in the order they should appear in the `.bbl`.
+- `entries` [`Vector{Maybe{ZettelEntry}}`]: corresponding entries for the keys (may contain `nothing` for missing entries).
+- `style` [`AbstractString`]: bibliography style name to use for formatting (e.g. `"plain"`, `"alpha"`, or `"ieeetr"`).
 
 # Output
 - A string containing the full contents of the `.bbl` file to be written.
@@ -448,7 +443,7 @@ end
 Lookup the `StyleSpec` for `style` or throw an informative error with available style names.
 
 # Input
-- `style::AbstractString`: style name to look up.
+- `style` [`AbstractString`]: style name to look up.
 
 # Output
 - The `StyleSpec` corresponding to the requested style name.
@@ -472,8 +467,8 @@ end
 Resolve the effective style name. If `style == "auto"`, prefer `bibstyle` when present, otherwise fall back to `"plain"`.
 
 # Input
-- `style::AbstractString`: requested style name (e.g. `"plain"`, `"alpha"`, `"auto"`).
-- `bibstyle::Maybe{String}`: style name from `\\bibstyle{...}` in the `.aux` file, if present.
+- `style` [`AbstractString`]: requested style name (e.g. `"plain"`, `"alpha"`, `"auto"`).
+- `bibstyle` [`Maybe{String}`]: style name from `\\bibstyle{...}` in the `.aux` file, if present.
 
 # Output
 - The effective style name to use.
@@ -499,9 +494,9 @@ Order entries according to the `StyleSpec`.
 Returns `(keys, entries)` in the requested ordering (citation order or sorted by author/year/title).
 
 # Input
-- `keys::Vector{String}`: citation keys in the order they were cited.
-- `entries::Vector{Maybe{ZettelEntry}}`: corresponding entries for the keys (may contain `nothing` for missing entries).
-- `spec::StyleSpec`: style specification that determines the ordering.
+- `keys` [`Vector{String}`]: citation keys in the order they were cited.
+- `entries` [`Vector{Maybe{ZettelEntry}}`]: corresponding entries for the keys (may contain `nothing` for missing entries).
+- `spec` [`StyleSpec`]: style specification that determines the ordering.
 
 # Output
 - A tuple `(orderedKeys, orderedEntries)` where the keys and entries are ordered according to the style specification.
@@ -527,8 +522,8 @@ Compute a sorting key for an entry used when ordering entries by author/year/tit
 Missing entries get a sentinel key that places them last.
 
 # Input
-- `entry::Maybe{ZettelEntry}`: the entry to compute the sort key for (may be `nothing`).
-- `key::AbstractString`: the citation key for the entry (used as a tiebreaker).
+- `entry` [`Maybe{ZettelEntry}`]: the entry to compute the sort key for (may be `nothing`).
+- `key` [`AbstractString`]: the citation key for the entry (used as a tiebreaker).
 
 # Output
 - A tuple that can be used as a sorting key, typically `(author, year, title, key)`, with appropriate handling for missing entries.
@@ -552,9 +547,9 @@ end
 Format the `\\bibitem` line for a single bibliography entry according to `spec`.
 
 # Input
-- `key::AbstractString`: the citation key for the entry.
-- `entry::Maybe{ZettelEntry}`: the entry corresponding to the key (may be `nothing` if the key was cited but not found in the library).
-- `spec::StyleSpec`: the style specification that determines how to format the `\\bibitem` line.
+- `key` [`AbstractString`]: the citation key for the entry.
+- `entry` [`Maybe{ZettelEntry}`]: the entry corresponding to the key (may be `nothing` if the key was cited but not found in the library).
+- `spec` [`StyleSpec`]: the style specification that determines how to format the `\\bibitem` line.
 
 # Output
 - A string containing the formatted `\\bibitem` line for the entry.
@@ -576,8 +571,8 @@ end
 Construct an alpha-style label (e.g. first three letters of last name + year) for `\\bibitem` when the style requires alphabetic labels.
 
 # Input
-- `entry::Maybe{ZettelEntry}`: the entry to construct the label for (may be `nothing` if the entry was not found).
-- `key::AbstractString`: the citation key for the entry (used as a fallback if the entry is missing or lacks author/year information).
+- `entry` [`Maybe{ZettelEntry}`]: the entry to construct the label for (may be `nothing` if the entry was not found).
+- `key` [`AbstractString`]: the citation key for the entry (used as a fallback if the entry is missing or lacks author/year information).
 
 # Output
 - A string containing the alpha-style label for the entry, or the citation key if the entry is missing or lacks sufficient information for constructing a label.
@@ -611,7 +606,7 @@ end
 Return the last name of the first author from an `authors` string in `BibTeX`-style format (e.g. "Surname, Given" or "Given Surname").
 
 # Input
-- `authors::AbstractString`: the raw authors string from a bibliography entry, typically in `BibTeX` format.
+- `authors` [`AbstractString`]: the raw authors string from a bibliography entry, typically in `BibTeX` format.
 
 # Output
 - The last name of the first author, or an empty string if it cannot be determined.
@@ -637,8 +632,8 @@ end
 Choose an appropriate textual formatting for an entry according to its type and the requested `variant` (`:plain` or `:full`).
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format.
-- `variant::Symbol`: the formatting variant to use, either `:plain` for compact formatting suitable for `.bbl` output, or `:full` for a verbose key:value style rendering of all available fields.
+- `entry` [`ZettelEntry`]: the bibliography entry to format.
+- `variant` [`Symbol`]: the formatting variant to use, either `:plain` for compact formatting suitable for `.bbl` output, or `:full` for a verbose key:value style rendering of all available fields.
 
 # Output
 - A string containing the formatted representation of the entry according to the specified variant.
@@ -659,7 +654,7 @@ end
 Produce a compact, plain-text representation for common entry types (article, book, inproceedings) suitable for `.bbl` output.
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format.
+- `entry` [`ZettelEntry`]: the bibliography entry to format.
 
 # Output
 - A string containing the formatted representation of the entry according to its type, or a generic fallback format if the type is not recognised.
@@ -686,7 +681,7 @@ end
 Produce a verbose key:value style rendering of all available fields of `entry`.
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format.
+- `entry` [`ZettelEntry`]: the bibliography entry to format.
 
 # Output
 - A string containing all non-empty fields of the entry in a key:value format, ordered by a preferred field order followed by any additional fields in arbitrary order.
@@ -724,7 +719,7 @@ end
 Format an `article` entry for `.bbl` output (authors, title, journal, etc.).
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format (expected to be of type `article`).
+- `entry` [`ZettelEntry`]: the bibliography entry to format (expected to be of type `article`).
 
 # Output
 - A string containing the formatted representation of the article entry, including authors, title, journal, volume, number, pages, and year as available.
@@ -774,7 +769,7 @@ end
 Format a `book` entry for `.bbl` output (authors, title, publisher, year).
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format (expected to be of type `book`).
+- `entry` [`ZettelEntry`]: the bibliography entry to format (expected to be of type `book`).
 
 # Output
 - A string containing the formatted representation of the book entry, including authors, title, publisher, and year as available.
@@ -808,7 +803,7 @@ end
 Format an `inproceedings`/`incollection` entry for `.bbl` output.
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format (expected to be of type `inproceedings` or `incollection`).
+- `entry` [`ZettelEntry`]: the bibliography entry to format (expected to be of type `inproceedings` or `incollection`).
 
 # Output
 - A string containing the formatted representation of the inproceedings/incollection entry, including authors, title, booktitle, pages, and year as available.
@@ -850,7 +845,7 @@ end
 Fallback generic formatter for entry types not handled explicitly.
 
 # Input
-- `entry::ZettelEntry`: the bibliography entry to format.
+- `entry` [`ZettelEntry`]: the bibliography entry to format.
 
 # Output
 - A string containing a simple concatenation of the authors, title, year, and note fields if present, or a placeholder message if none of these fields are available.
@@ -894,7 +889,7 @@ Keys are read from `\\bibitem[...]{key}` commands (the optional `[...]` label is
 Duplicate keys are returned only once.
 
 # Input
-- `path::AbstractString`: path to the `.bbl` file to parse.
+- `path` [`AbstractString`]: path to the `.bbl` file to parse.
 
 # Output
 - A `Vector{String}` of citation keys in order of appearance.
@@ -941,9 +936,9 @@ matching entries are written to `outputPath` (format inferred from its extension
 order.
 
 # Input
-- `bblPath::AbstractString`: path to the `.bbl` file providing the citation keys.
-- `inputLibrary::AbstractString`: path to the master library to pull entries from.
-- `outputPath::AbstractString`: destination path for the extracted subset.
+- `bblPath` [`AbstractString`]: path to the `.bbl` file providing the citation keys.
+- `inputLibrary` [`AbstractString`]: path to the master library to pull entries from.
+- `outputPath` [`AbstractString`]: destination path for the extracted subset.
 
 # Output
 - A named tuple `(present, absent)` listing keys found and keys missing from the library.

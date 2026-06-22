@@ -92,37 +92,47 @@ function readJsonString(inputString::AbstractString)
 	end
 
 	data = normaliseJson(parsed)
-	records = OrderedDict{String, Any}()
-
-	if data isa AbstractDict
-		if ! dictionaryResemblesEntry(data)
-			throw(ArgumentError("Invalid JSON string: expected entry object or list of entry objects."))
-		end
-		key = strip(String(data["key"]))
-		isempty(key) && throw(ArgumentError("Invalid JSON string: entry key must be non-empty."))
-		records[key] = data
-		return records
-	end
-
-	if data isa AbstractVector
-		for (i, rawEntry) ∈ enumerate(data)
-			if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
-				throw(ArgumentError("Invalid JSON string: element $(i) is not an entry object with keys \"key\", \"type\", \"fields\"."))
-			end
-
-			key = strip(String(rawEntry["key"]))
-			isempty(key) && throw(ArgumentError("Invalid JSON string: element $(i) has an empty entry key."))
-			if haskey(records, key)
-				throw(ArgumentError("Invalid JSON string: duplicate entry key \"$(key)\"."))
-			end
-			records[key] = rawEntry
-		end
-		return records
-	end
-
-	throw(ArgumentError("Invalid JSON string: expected entry object or list of entry objects."))
+	
+	return _readJsonString(data)
 end
 
+function _readJsonString(data::AbstractDict)
+	records = OrderedDict{String, Any}()
+	if ! dictionaryResemblesEntry(data)
+		throw(ArgumentError("Invalid JSON string: expected entry object or list of entry objects."))
+	end
+
+	key = strip(String(data["key"]))
+	if isempty(key)
+		throw(ArgumentError("Invalid JSON string: entry key must be non-empty."))
+	end
+	records[key] = data
+
+	return records
+end
+
+function _readJsonString(data::AbstractVector)
+	records = OrderedDict{String, Any}()
+
+	for (i, rawEntry) ∈ enumerate(data)
+		if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
+			throw(ArgumentError("Invalid JSON string: element $(i) is not an entry object with keys \"key\", \"type\", \"fields\"."))
+		end
+
+		key = strip(String(rawEntry["key"]))
+		isempty(key) && throw(ArgumentError("Invalid JSON string: element $(i) has an empty entry key."))
+		if haskey(records, key)
+			throw(ArgumentError("Invalid JSON string: duplicate entry key \"$(key)\"."))
+		end
+		records[key] = rawEntry
+	end
+
+	return records
+end
+
+function _readJsonString(data)
+	throw(ArgumentError("Invalid JSON string: expected entry object or list of entry objects."))
+end
 
 # ----------------------------------------------------------------------------------------------- #
 #

@@ -17,7 +17,7 @@ export
 Identify the bibliography format of a file based on its extension.
 
 # Input
-- `filename::AbstractString`: path to the file whose format is to be identified.
+- `filename` [`AbstractString`]: path to the file whose format is to be identified.
 
 # Output
 - A string corresponding to the file's extension, in lowercase and with leading/trailing whitespace removed.
@@ -101,7 +101,7 @@ end
 Percent-encode a string for use in a URI path component.
 
 # Input
-- `value::AbstractString`: string to encode.
+- `value` [`AbstractString`]: string to encode.
 
 # Output
 - The encoded URI component.
@@ -130,7 +130,7 @@ end
 Return whether a byte is an unreserved ASCII URI character.
 
 # Input
-- `b::UInt8`: byte to test.
+- `b` [`UInt8`]: byte to test.
 
 # Output
 - `true` if `b` is unreserved, otherwise `false`.
@@ -215,8 +215,8 @@ For details on the algorithm, see:
 	https://ui.adsabs.harvard.edu/abs/1966SPhD...10..707L
 
 # Input
-- `left::AbstractVector`: first sequence.
-- `right::AbstractVector`: second sequence.
+- `left` [`AbstractVector`]: first sequence.
+- `right` [`AbstractVector`]: second sequence.
 """
 function levenshteinDistance(s1::AbstractVector, s2::AbstractVector)
 	n = length(s1)

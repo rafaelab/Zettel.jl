@@ -242,7 +242,7 @@ Convert TeX character commands in `s` to their UTF-8 equivalents using the `tex2
 Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c}` is tried before a hypothetical `\\v`).
 
 # Input
-- `s::AbstractString`: string possibly containing TeX character commands.
+- `s` [`AbstractString`]: string possibly containing TeX character commands.
 
 # Output
 - A new `String` with TeX sequences replaced by UTF-8 characters.
@@ -309,7 +309,7 @@ Note: left/right curly quotes (`\u201C`/`\u201D`) are encoded as ` `` ` and `''`
 ASCII double quote (`"`) has no unique TeX equivalent and is left unchanged.
 
 # Input
-- `s::AbstractString`: string possibly containing UTF-8 characters.
+- `s` [`AbstractString`]: string possibly containing UTF-8 characters.
 
 # Output
 - A new `String` with UTF-8 characters replaced by TeX sequences.
