@@ -20,13 +20,18 @@ Return the [`ZettelEntry`](@ref) with the given citation key, or `nothing` if no
 @doc """
 	findEntryByKey(filename, key)
 
-Look up a single entry by exact citation key in the library file `filename`, returning the
-matching [`ZettelEntry`](@ref) or `nothing`.
+Look up a single entry by exact citation key in the library file `filename`, returning the matching [`ZettelEntry`](@ref) or `nothing`.
 
-For JSON libraries this scans the entries and materialises only the matching record. 
-This avoids the cost of building every entry in the file (the dominant cost of a full `loadLibrary` on a large library). 
-For YAML and BibTeX libraries, where the underlying parsers offer no cheap single-record access, it falls back to loading the whole library and calling [`findByKey`](@ref).
-The JSON fast path is also used as the lookup for any other format via the generic fallback, so the observable result is identical to `findByKey(loadLibrary(filename), key)` for well-formed libraries.
+For JSON and BibTeX libraries this scans the file and materialises only the matching record.
+This avoids the cost of building every entry in the file (the dominant cost of a full `loadLibrary` on a large library; for BibTeX that cost is the per-entry pybtex interop).
+For BibTeX the scan locates the single `@type{key, … }` block by balanced-delimiter matching and parses only that block; on any miss or unexpected shape it degrades to the validated full-load path.
+For YAML libraries, where the underlying parser offers no cheap single-record access, it falls back to loading the whole library and calling [`findByKey`](@ref).
+The result is identical to `findByKey(loadLibrary(filename), key)` for well-formed libraries.
+
+# Input
+- `filename` [`AbstractString`]: path to a library file in JSON, BibTeX or YAML format.
+- `key` [`AbstractString`]: the citation key to look up.
+- `type` [`BibliographyFormat`]: the format of the bibliography file.
 """
 function findEntryByKey(filename::AbstractString, key::AbstractString)
 	if ! isfile(filename)
@@ -35,11 +40,14 @@ function findEntryByKey(filename::AbstractString, key::AbstractString)
 	return findEntryByKey(identifyBibliographyFormat(filename), filename, key)
 end
 
-findEntryByKey(::BibliographyFormat, filename::AbstractString, key::AbstractString) = findByKey(loadLibrary(filename), key)
+function findEntryByKey(::BibliographyFormat, filename::AbstractString, key::AbstractString) 
+	return findByKey(loadLibrary(filename), key)
+end
 
-# JSON fast path: scan records and build only the matching entry. 
-# Any unexpected shape or parse problem degrades gracefully to the validated full-load path, so correctness is never worse than the generic path.
 function findEntryByKey(::JsonFormat, filename::AbstractString, key::AbstractString)
+	# JSON fast path: scan records and build only the matching entry. 
+	# Any unexpected shape or parse problem degrades gracefully to the validated full-load path, so correctness is never worse than the generic path.
+
 	result = try
 		_fastJsonLookup(read(filename, String), key)
 	catch
@@ -52,6 +60,24 @@ function findEntryByKey(::JsonFormat, filename::AbstractString, key::AbstractStr
 
 	return result
 end
+
+function findEntryByKey(::BibtexFormat, filename::AbstractString, key::AbstractString)
+	# BibTeX fast path: locate the single `@type{key, … }` block by balanced-delimiter matching nd run the parser on just that block, avoiding pybtex interop over every entry in the file.
+	# On any miss or unexpected shape it degrades to the validated full-load path, so correctness is never worse than the generic path.
+
+	result = try
+		_fastBibtexLookup(read(filename, String), key)
+	catch
+		:fallback
+	end
+
+	if result === :fallback || result === :notfound
+		return findByKey(loadLibrary(filename), key)
+	end
+
+	return result
+end
+
 
 function _fastJsonLookup(text::AbstractString, key::AbstractString)
 	parsed = JSON3.read(text)
@@ -70,12 +96,44 @@ function _fastJsonLookup(text::AbstractString, key::AbstractString)
 	throw(ArgumentError("Unexpected JSON shape."))
 end
 
-# Compare against the raw `key` field exactly as `findByKey` does (library keys are the
-# unstripped `String` of the record key). Returns the built entry on match, `nothing` otherwise.
 function _matchJsonRecord(raw, key::AbstractString)
 	haskey(raw, :key) || throw(ArgumentError("Entry object without a key."))
 	String(raw[:key]) == key || return nothing
 	return ZettelEntry(normaliseJson(raw))
+end
+
+function _fastBibtexLookup(text::AbstractString, key::AbstractString)
+	block = _bibtexEntryBlock(text, key)
+	isnothing(block) && return :notfound
+	return findByKey(readBibtexLibrary(readBibtexString(block)), key)
+end
+
+function _bibtexEntryBlock(text::AbstractString, key::AbstractString)
+	pattern = Regex("@[ \t]*[A-Za-z]+[ \t]*[{(][ \t\r\n]*\\Q" * key * "\\E[ \t\r\n]*,")
+	m = match(pattern, text)
+	isnothing(m) && return nothing
+
+	blockStart = m.offset
+	openIdx = findnext(c -> c == '{' || c == '(', text, blockStart)
+	openCh = text[openIdx]
+	closeCh = openCh == '{' ? '}' : ')'
+
+	depth = 0
+	idx = openIdx
+	while idx ≤ lastindex(text)
+		c = text[idx]
+		if c == openCh
+			depth += 1
+		elseif c == closeCh
+			depth -= 1
+			if depth == 0
+				return text[blockStart : idx]
+			end
+		end
+		idx = nextind(text, idx)
+	end
+
+	throw(ArgumentError("Unbalanced BibTeX entry for key '$(key)'."))
 end
 
 
@@ -87,6 +145,12 @@ end
 Search entries in `lib` for `text`.
 If `field` is provided, only that field is searched; otherwise the key and all fields are searched.
 Returns a vector of matching entries.
+
+# Input
+- `lib` [`ZettelLibrary`]: the library to search.
+- `field` [`AbstractString` or `Nothing`]: the field to search, or `nothing` to search all fields.
+- `text` [`AbstractString`]: the text to search for.
+- `caseSensitive` [`Bool`]: whether the search is case-sensitive (default: `false`).
 """
 function searchEntries(lib::ZettelLibrary; field::Maybe{AbstractString} = nothing, text::AbstractString = "", caseSensitive::Bool = false)
 	query = String(text)
@@ -115,6 +179,13 @@ end
 Filter entries where `field` matches `value`.
 When `exact` is `false`, substring matching is used.
 Returns a vector of matching entries.
+
+# Input
+- `lib` [`ZettelLibrary`]: the library to search.
+- `field` [`AbstractString`]: the field to search.
+- `value` [`AbstractString`]: the value to match.
+- `exact` [`Bool`]: whether to match exactly (default: `false`).
+- `caseSensitive` [`Bool`]: whether the search is case-sensitive (default: `false`).
 """
 function filterByField(lib::ZettelLibrary, field::AbstractString, value::AbstractString; exact::Bool = false, caseSensitive::Bool = false)
 	target = caseSensitive ? String(value) : lowercase(String(value))
@@ -140,6 +211,15 @@ end
 
 Helper function to check if an entry matches a query.
 If `field` is `nothing`, the key and all fields are checked; otherwise only the specified field is checked.
+
+# Input
+- `entry` [`ZettelEntry`]: the entry to check.
+- `field` [`AbstractString` or `Nothing`]: the field to check, or `nothing` to check all fields.
+- `queryCmp` [`AbstractString`]: the query string, already lowercased if case-insensitive.
+- `caseSensitive` [`Bool`]: whether the search is case-sensitive.
+
+# Output
+- `Bool`: `true` if the entry matches the query, `false` otherwise.
 """
 function entryMatches(entry::ZettelEntry, ::Nothing, queryCmp::AbstractString, caseSensitive::Bool)
 	keyCmp = caseSensitive ? entry.key : lowercase(entry.key)

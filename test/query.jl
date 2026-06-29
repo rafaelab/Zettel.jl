@@ -73,6 +73,20 @@ end
 		# absent key returns nothing (not an error)
 		@test isnothing(findEntryByKey(jsonPath, "absent2000a"))
 
+		# BibTeX fast path: the returned entry matches a full load + findByKey
+		bibPath = joinpath(dir, "lib.bib")
+		writeBibtexLibrary(lib, bibPath)
+		bibFast = findEntryByKey(bibPath, "Misner1973")
+		@test ! isnothing(bibFast)
+		@test bibFast.key == "Misner1973"
+		@test getTitle(bibFast) == "Gravitation"
+		bibFull = findByKey(loadLibrary(bibPath), "Misner1973")
+		@test entryToString(bibFast, BibtexFormat()) == entryToString(bibFull, BibtexFormat())
+
+		# a key that is a prefix of a real key must not match, and absent keys return nothing
+		@test isnothing(findEntryByKey(bibPath, "Misner197"))
+		@test isnothing(findEntryByKey(bibPath, "absent2000a"))
+
 		# generic (YAML) path returns the same result as findByKey
 		yamlEntry = findEntryByKey(yamlPath, "Einstein1905")
 		@test ! isnothing(yamlEntry)

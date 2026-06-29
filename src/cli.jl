@@ -507,7 +507,7 @@ function runLibUpdateCLI(args::Vector{String}; input::IO = stdin, output::IO = s
 	end
 		entry = first(values(incoming))
 
-		lib = loadLibrary(libraryPath)
+	lib = loadLibrary(libraryPath)
 	existing = Set(String.(collect(keys(lib.entries))))
 
 	fileKey = keyFromFileField(entry.fields)

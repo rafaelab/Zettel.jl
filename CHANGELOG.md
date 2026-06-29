@@ -1,6 +1,18 @@
 # Changelog
 
 
+## 2.6.1 — 2026-06-29
+
+### Performance
+
+- `--query`: exact-key lookup on JSON libraries now scans for the requested key and builds
+  only the matching entry instead of materialising the whole library. It now uses Julia's
+  regex for the citation key. On a 5,000-entry synthetic bibtex file, querying one key 
+  dropped from ~1,120 ms → ~0.9 ms (≈1,260× faster), returning a byte-identical entry.
+  library the lookup drops from ~0.3 s to ~0.01 s (~26× faster). YAML and BibTeX libraries
+  keep the full-load path.
+
+
 ## 2.6.0 — 2026-06-22
 
 ### Performance
