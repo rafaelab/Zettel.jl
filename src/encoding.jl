@@ -155,8 +155,10 @@ const utf8ToTex = begin
 	for (tex, utf) ∈ tex2utf8
 		d[utf] = tex
 	end
-	return d
+	d
 end
+
+const _tex2utf8SortedKeys = sort(collect(keys(tex2utf8)); by = length, rev = true)
 
 
 # Generic TeX accent fallback for cases not explicitly listed in `tex2utf8`.
@@ -257,7 +259,7 @@ function decodeTex(s::AbstractString)
 	
 	# normalise accent macros written with a braced single letter (e.g. {\"o} -> \"o) so they are handled by the lookup table
 	result = replace(result, r"\\([\"'`^~=])\{([A-Za-z])\}" => s"\\\1\2")
-	for tex ∈ sort(collect(keys(tex2utf8)); by = length, rev = true)
+	for tex ∈ _tex2utf8SortedKeys
 		result = replace(result, tex => tex2utf8[tex])
 	end
 
@@ -315,7 +317,7 @@ ASCII double quote (`"`) has no unique TeX equivalent and is left unchanged.
 - A new `String` with UTF-8 characters replaced by TeX sequences.
 """
 function encodeTex(s::AbstractString)
-	mapping = isdefined(@__MODULE__, :utf8ToTex) ? getfield(@__MODULE__, :utf8ToTex) : Dict{String, String}(utf => tex for (tex, utf) ∈ tex2utf8)
+	mapping = utf8ToTex
 
 	# Encode one source character at a time to avoid remapping inside generated TeX snippets.
 	# Example: ñ -> \~n should not then rewrite ~ as \textasciitilde{}.

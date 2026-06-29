@@ -223,11 +223,16 @@ function writeBblFromAux(auxPath::AbstractString; libraryFiles = nothing, output
 
 	keys = aux.citeAll ? collect(keys(lib)) : aux.citations
 	keys = _uniquePreserve(keys)
+	totalCount = length(keys)
+	@info "Preparing .bbl output" auxPath styleName citations = totalCount libraries = length(libFiles)
 
 	used = String[]
 	absent = String[]
 	entries = Vector{Maybe{ZettelEntry}}()
-	for key ∈ keys
+	sizehint!(used, totalCount)
+	sizehint!(absent, totalCount)
+	sizehint!(entries, totalCount)
+	for (index, key) ∈ enumerate(keys)
 		if haskey(lib, key)
 			push!(entries, lib[key])
 			push!(used, key)
@@ -235,10 +240,12 @@ function writeBblFromAux(auxPath::AbstractString; libraryFiles = nothing, output
 			push!(entries, nothing)
 			push!(absent, key)
 		end
+		reportProgress("Collected .bbl entries", index, totalCount)
 	end
 
 	outPath = isnothing(outputPath) ? _defaultBblPath(auxPath) : outputPath
 	write(outPath, _renderBbl(keys, entries; style = styleName))
+	@info "Wrote .bbl file" outputPath = outPath rendered = length(used) missing = length(absent)
 
 	return (outputPath = outPath, absent = absent, usedKeys = used)
 end
@@ -416,10 +423,11 @@ function _renderBbl(keys::Vector{String}, entries::Vector{Maybe{ZettelEntry}}; s
 	spec = _getStyleSpec(style)
 	(keys, entries) = _orderEntries(keys, entries, spec)
 	n = length(keys)
+	reportTotal("Rendering .bbl entries", n)
 	lines = String[]
 
 	push!(lines, "\\begin{thebibliography}{$(n)}")
-	for (key, entry) ∈ zip(keys, entries)
+	for (index, (key, entry)) ∈ enumerate(zip(keys, entries))
 		push!(lines, "")
 		push!(lines, _bibitemLine(key, entry, spec))
 		if isnothing(entry)
@@ -427,6 +435,7 @@ function _renderBbl(keys::Vector{String}, entries::Vector{Maybe{ZettelEntry}}; s
 		else
 			push!(lines, _formatEntry(entry; variant = spec.variant))
 		end
+		reportProgress("Rendered .bbl entries", index, n)
 	end
 	push!(lines, "")
 	push!(lines, "\\end{thebibliography}")
@@ -946,11 +955,15 @@ order.
 function writeBibFromBbl(bblPath::AbstractString, inputLibrary::AbstractString, outputPath::AbstractString)
 	keys = parseBblKeys(bblPath)
 	lib = loadLibrary(inputLibrary)
+	totalCount = length(keys)
+	@info "Extracting cited entries from .bbl" bblPath inputLibrary citedKeys = totalCount libraryEntries = length(lib)
 
 	subset = ZettelLibrary()
 	present = String[]
 	absent = String[]
-	for key ∈ keys
+	sizehint!(present, totalCount)
+	sizehint!(absent, totalCount)
+	for (index, key) ∈ enumerate(keys)
 		entry = findByKey(lib, key)
 		if isnothing(entry)
 			push!(absent, key)
@@ -958,9 +971,11 @@ function writeBibFromBbl(bblPath::AbstractString, inputLibrary::AbstractString, 
 			push!(subset, entry)
 			push!(present, key)
 		end
+		reportProgress("Processed cited keys", index, totalCount)
 	end
 
 	saveLibrary(subset, outputPath)
+	@info "Saved extracted bibliography subset" outputPath found = length(present) missing = length(absent)
 
 	return (present = present, absent = absent)
 end

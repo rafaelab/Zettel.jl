@@ -44,9 +44,25 @@ end
 
 # ----------------------------------------------------------------------------------------------- #
 #
+@testset "CLI convert status messages" begin
+	mktempdir() do dir
+		inputBib = joinpath(dir, "input.bib")
+		outputYaml = joinpath(dir, "library.yaml")
+		write(inputBib, TEST_REF)
+
+		output = IOBuffer()
+		zettelCLI(; args = ["convert", inputBib, outputYaml, "--to", "yaml"], output = output)
+		text = String(take!(output))
+		@test occursin("Converting $(inputBib) -> $(outputYaml)", text)
+		@test occursin("Wrote $(outputYaml)", text)
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
 @testset "Format dispatch" begin
 	@test Zettel.parseBibliographyFormat("json") isa Zettel.JsonFormat
 	@test Zettel.parseBibliographyFormat("yml") isa Zettel.YamlFormat
 	@test Zettel.bibliographyFormat("example.bib") isa Zettel.BibtexFormat
 end
-

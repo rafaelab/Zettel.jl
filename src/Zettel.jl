@@ -3,6 +3,7 @@ module Zettel
 using Downloads
 using JSON3
 using YAML
+using Logging
 using Pybtex
 using OrderedCollections
 using Printf

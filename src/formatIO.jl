@@ -53,6 +53,11 @@ writeBibliography(::YamlFormat, lib::ZettelLibrary, filename::AbstractString) = 
 writeBibliography(::BibtexFormat, lib::ZettelLibrary, filename::AbstractString) = writeBibtexLibrary(lib, filename)
 
 
+formatDisplayName(::JsonFormat) = "JSON"
+formatDisplayName(::YamlFormat) = "YAML"
+formatDisplayName(::BibtexFormat) = "BibTeX"
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
@@ -61,8 +66,11 @@ writeBibliography(::BibtexFormat, lib::ZettelLibrary, filename::AbstractString) 
 Convert bibliography data between supported formats.
 """
 function convertBibliography(inputPath::AbstractString, outputPath::AbstractString, fromFormat::BibliographyFormat, toFormat::BibliographyFormat)
+	@info "Converting bibliography from $(formatDisplayName(fromFormat)) to $(formatDisplayName(toFormat))" inputPath outputPath
 	lib = readBibliography(fromFormat, inputPath)
+	@info "Loaded $(length(lib)) entries from $(inputPath)"
 	writeBibliography(toFormat, lib, outputPath)
+	@info "Finished writing $(length(lib)) entries to $(outputPath)"
 	return outputPath
 end
 

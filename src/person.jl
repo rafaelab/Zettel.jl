@@ -207,12 +207,10 @@ Convert a Pybtex persons iterable to one BibTeX name line.
 function bibtexNamesFromPybtexPersons(personsIterable)
 	parts = String[]
 	for person ∈ personsIterable
-		raw = Pybtex.pybtexToPersonName(person)
-		first = strip(decodeTex(stripOuterBraces(raw.firstName)))
-		middle = strip(decodeTex(stripOuterBraces(raw.middleName)))
-		last = strip(decodeTex(stripOuterBraces(raw.lastName)))
-		parsed = PersonName(first, middle, last, "")
-		formatted = formatBibtexPerson(parsed)
+		# `str(person)` yields the full "Last, suffix, First" form with grouping braces preserved (e.g. `{{\v{S}}ar{\v{c}}evi{\'c}}, N.`).
+		# So accent macros that depend on braces survive. This is a single Python round-trip per person.
+		nameText = pyconvert(String, pystr(person))
+		formatted = formatBibtexPerson(parseBibtexPerson(nameText))
 		if ! isempty(formatted)
 			push!(parts, formatted)
 		end

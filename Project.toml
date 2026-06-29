@@ -1,6 +1,6 @@
 name = "Zettel"
 uuid = "2ca6f6d1-94fa-4d7c-a447-9ff9492802f1"
-version = "2.6.1"
+version = "2.6.2"
 authors = ["Rafael Alves Batista <rafaelab@users.noreply.github.com>"]
 repo-url = "https://github.com/rafaelab/Zettel.jl.git"
 
@@ -8,6 +8,7 @@ repo-url = "https://github.com/rafaelab/Zettel.jl.git"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Pybtex = "c8fbd874-22fe-482d-9730-5f9c4aadbab0"
@@ -20,6 +21,7 @@ Pybtex = {url = "https://github.com/rafaelab/pybtex.jl"}
 [compat]
 HTTP = "1"
 JSON3 = "1"
+Logging = "1.10 - 1.12"
 OrderedCollections = "1"
 Printf = "1.10 - 1.12"
 Pybtex = "1.0"

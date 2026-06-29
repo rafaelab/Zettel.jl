@@ -1,6 +1,32 @@
 # Changelog
 
 
+## 2.6.2 — 2026-06-30
+
+
+### Performance
+
+- `--query`: exact-key lookup on JSON libraries now scans for the requested key and builds
+  only the matching entry instead of materialising the whole library. It now uses Julia's
+  regex for the citation key. On a 5,000-entry synthetic bibtex file, querying one key 
+  dropped from ~1,120 ms → ~0.9 ms (≈1,260× faster), returning a byte-identical entry.
+  library the lookup drops from ~0.3 s to ~0.01 s (~26× faster). YAML and BibTeX libraries
+  keep the full-load path.
+- `decodeTex`: precompute sorted TeX key list once (`_tex2utf8SortedKeys`) instead of re-sorting on every call.
+- `encodeTex`: reference the module constant `utf8ToTex` directly, dropping the per-call `isdefined`/`getfield` fallback.
+- `orderFields!`: precompute lowercased default field order (`_preferredFieldOrderLower`); skip reallocation when the default order is used.
+- BibTeX name parsing: one Python round-trip per person (`str(person)`) instead of five attribute accesses.
+
+### Changed
+- `utf8ToTex` was never bound (a `return` inside its top-level `begin` block); the dropped `encodeTex` guard had been masking this. Replaced `return d` with `d`.
+- BibTeX accent macros requiring braces (e.g. `\v{S}` → Š) were mangled because the name helper stripped grouping braces; now uses `str(person)`, which preserves them, via `parseBibtexPerson`.
+- Display status of tasks via `ProgressMeter`.
+
+### Additions
+- Added `examples/runAll` to run all examples at once.
+- Add `ProgressMeter` as a dependecy.
+
+
 ## 2.6.1 — 2026-06-29
 
 ### Performance

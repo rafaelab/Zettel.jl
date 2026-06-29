@@ -7,12 +7,14 @@
 		writeJsonLibrary(lib, libPath)
 
 		auxPath = joinpath(dir, "test.aux")
-		write(auxPath, """
-\\relax
-\\citation{Einstein1905,Misner1973}
-\\bibdata{library}
-\\bibstyle{plain}
-""")
+		write(auxPath, 
+			"""
+			\\relax
+			\\citation{Einstein1905,Misner1973}
+			\\bibdata{library}
+			\\bibstyle{plain}
+			"""
+		)
 
 		bblPath = joinpath(dir, "test.bbl")
 		result = writeBblFromAux(auxPath; outputPath = bblPath)
@@ -36,11 +38,12 @@ end
 
 		auxPath = joinpath(dir, "test.aux")
 		write(auxPath, """
-\\relax
-\\citation{Einstein1905,Misner1973}
-\\bibdata{library}
-\\bibstyle{alpha}
-""")
+			\\relax
+			\\citation{Einstein1905,Misner1973}
+			\\bibdata{library}
+			\\bibstyle{alpha}
+			"""
+		)
 
 		bblPath = joinpath(dir, "test.bbl")
 		writeBblFromAux(auxPath; outputPath = bblPath)
@@ -60,11 +63,12 @@ end
 
 		auxPath = joinpath(dir, "test.aux")
 		write(auxPath, """
-\\relax
-\\citation{Misner1973,Einstein1905}
-\\bibdata{library}
-\\bibstyle{unsrt}
-""")
+			\\relax
+			\\citation{Misner1973,Einstein1905}
+			\\bibdata{library}
+			\\bibstyle{unsrt}
+			"""
+		)
 
 		bblPath = joinpath(dir, "test.bbl")
 		writeBblFromAux(auxPath; outputPath = bblPath)
@@ -88,11 +92,12 @@ end
 
 		auxPath = joinpath(dir, "test.aux")
 		write(auxPath, """
-\\relax
-\\citation{Einstein1905}
-\\bibdata{library}
-\\bibstyle{full}
-""")
+			\\relax
+			\\citation{Einstein1905}
+			\\bibdata{library}
+			\\bibstyle{full}
+			"""
+		)
 
 		bblPath = joinpath(dir, "test.bbl")
 		writeBblFromAux(auxPath; outputPath = bblPath)
@@ -112,11 +117,12 @@ end
 
 		auxPath = joinpath(dir, "test.aux")
 		write(auxPath, """
-\\relax
-\\citation{Einstein1905}
-\\bibdata{library}
-\\bibstyle{plain}
-""")
+			\\relax
+			\\citation{Einstein1905}
+			\\bibdata{library}
+			\\bibstyle{plain}
+			"""
+		)
 
 		bblPath = joinpath(dir, "test.bbl")
 		result = writeBblFromAux(auxPath; outputPath = bblPath)
@@ -132,15 +138,16 @@ end
 	mktempdir() do dir
 		bblPath = joinpath(dir, "paper.bbl")
 		write(bblPath, """
-\\begin{thebibliography}{2}
-\\bibitem[{Einstein(1905)}]{Einstein1905}
-Einstein, A. (1905).
-\\bibitem{Misner1973}
-Misner, C. (1973).
-\\bibitem[{Einstein(1905)}]{Einstein1905}
-Duplicate should be ignored.
-\\end{thebibliography}
-""")
+			\\begin{thebibliography}{2}
+			\\bibitem[{Einstein(1905)}]{Einstein1905}
+			Einstein, A. (1905).
+			\\bibitem{Misner1973}
+			Misner, C. (1973).
+			\\bibitem[{Einstein(1905)}]{Einstein1905}
+			Duplicate should be ignored.
+			\\end{thebibliography}
+			"""
+		)
 
 		keys = parseBblKeys(bblPath)
 		@test keys == ["Einstein1905", "Misner1973"]
@@ -158,13 +165,14 @@ end
 
 		bblPath = joinpath(dir, "paper.bbl")
 		write(bblPath, """
-\\begin{thebibliography}{2}
-\\bibitem[{Einstein(1905)}]{Einstein1905}
-Einstein, A. (1905).
-\\bibitem{missing1999z}
-Nobody (1999).
-\\end{thebibliography}
-""")
+			\\begin{thebibliography}{2}
+			\\bibitem[{Einstein(1905)}]{Einstein1905}
+			Einstein, A. (1905).
+			\\bibitem{missing1999z}
+			Nobody (1999).
+			\\end{thebibliography}
+			"""
+		)
 
 		outPath = joinpath(dir, "used.bib")
 		result = writeBibFromBbl(bblPath, libPath, outPath)
@@ -186,6 +194,51 @@ Nobody (1999).
 
 		@test_throws ArgumentError zettelCLI(; args = ["bbl", bblPath, libPath])
 		@test_throws ArgumentError zettelCLI(; args = ["bbl", joinpath(dir, "nope.bbl"), libPath, outPath])
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "BBL and AUX status messages" begin
+	mktempdir() do dir
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
+		libPath = joinpath(dir, "library.json")
+		writeJsonLibrary(lib, libPath)
+
+		bblPath = joinpath(dir, "paper.bbl")
+		write(bblPath, """
+			\\begin{thebibliography}{1}
+			\\bibitem{Einstein1905}
+			Einstein, A. (1905).
+			\\end{thebibliography}
+			"""
+		)
+
+		outPath = joinpath(dir, "used.bib")
+		writeBibFromBbl(bblPath, libPath, outPath)
+		@test isfile(outPath)
+	end
+
+	mktempdir() do dir
+		lib = ZettelLibrary([sampleArticle(), sampleBook()])
+		libPath = joinpath(dir, "library.json")
+		writeJsonLibrary(lib, libPath)
+
+		auxPath = joinpath(dir, "paper.aux")
+		bblPath = joinpath(dir, "paper_out.bbl")
+		write(auxPath, """
+			\\relax
+			\\citation{Einstein1905}
+			\\bibdata{library}
+			\\bibstyle{plain}
+			"""
+		)
+
+		output = IOBuffer()
+		zettelCLI(; args = [auxPath, "--library", libPath, "--output", bblPath], output = output)
+		text = String(take!(output))
+		@test occursin("Wrote $(bblPath) with 1 entries.", text)
 	end
 end
 

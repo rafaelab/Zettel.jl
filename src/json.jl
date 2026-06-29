@@ -206,12 +206,18 @@ function readJsonLibrary(records::AbstractDict)
 		return ZettelLibrary([ZettelEntry(records)])
 	end
 
+	totalCount = length(records)
+	reportTotal("Building bibliography from JSON records", totalCount)
 	entries = ZettelEntry[]
+	sizehint!(entries, totalCount)
+	index = 0
 	for rawEntry ∈ values(records)
+		index += 1
 		if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
 			throw(ArgumentError(_errorMsgNotEntryLike))
 		end
 		push!(entries, ZettelEntry(rawEntry))
+		reportProgress("Converted JSON records", index, totalCount)
 	end
 	return ZettelLibrary(entries)
 end
@@ -225,7 +231,16 @@ end
 Write a bibliography library to JSON as a list of entry objects.
 """
 function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
-	records = [entryToStructuredDict(entry) for entry ∈ values(lib)]
+	totalCount = length(lib)
+	reportTotal("Preparing JSON entries", totalCount)
+	records = Vector{OrderedDict{String, Any}}()
+	sizehint!(records, totalCount)
+	index = 0
+	for entry ∈ values(lib)
+		index += 1
+		push!(records, entryToStructuredDict(entry))
+		reportProgress("Prepared JSON entries", index, totalCount)
+	end
 	writeJsonFile(records, filename)
 	return nothing
 end

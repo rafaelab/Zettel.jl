@@ -66,6 +66,8 @@ const preferredFieldOrder = (
 	"abstract",
 )
 
+const _preferredFieldOrderLower = lowercase.(string.(collect(preferredFieldOrder)))
+
 const _personFieldNames = ("author", "editor", "translator", "collaboration")
 const _similarityWeights = (
 	author = 0.22,
@@ -329,7 +331,7 @@ function orderFields!(entry::ZettelEntry; preferredOrder = preferredFieldOrder)
 	existingKeys = collect(keys(existing))
 	existingLower = lowercase.(existingKeys)
 
-	preferredLower = lowercase.(string.(collect(preferredOrder)))
+	preferredLower = preferredOrder === preferredFieldOrder ? _preferredFieldOrderLower : lowercase.(string.(collect(preferredOrder)))
 	inserted = Set{String}()
 
 	for pref ∈ preferredLower

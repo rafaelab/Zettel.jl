@@ -177,12 +177,18 @@ function readYamlLibrary(records::AbstractDict)
 		return ZettelLibrary([ZettelEntry(records)])
 	end
 
+	totalCount = length(records)
+	reportTotal("Building bibliography from YAML records", totalCount)
 	entries = ZettelEntry[]
+	sizehint!(entries, totalCount)
+	index = 0
 	for rawEntry ∈ values(records)
+		index += 1
 		if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
 			throw(ArgumentError(_errorMsgNotEntryLike))
 		end
 		push!(entries, ZettelEntry(rawEntry))
+		reportProgress("Converted YAML records", index, totalCount)
 	end
 
 	return ZettelLibrary(entries)
@@ -198,7 +204,16 @@ end
 Write a bibliography library to YAML as a list of entry objects.
 """
 function writeYamlLibrary(lib::ZettelLibrary, filename::AbstractString)
-	records = [entryToStructuredDict(entry) for entry ∈ values(lib)]
+	totalCount = length(lib)
+	reportTotal("Preparing YAML entries", totalCount)
+	records = Vector{OrderedDict{String, Any}}()
+	sizehint!(records, totalCount)
+	index = 0
+	for entry ∈ values(lib)
+		index += 1
+		push!(records, entryToStructuredDict(entry))
+		reportProgress("Prepared YAML entries", index, totalCount)
+	end
 	writeYamlFile(records, filename)
 	return nothing
 end

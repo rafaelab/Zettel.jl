@@ -34,7 +34,7 @@ python3 -m pip install --user pybtex
 
 ## Documentation
 
-The full documentation is available at <https://rafaelab.github.io/Zettel.jl/dev/>.
+The full documentation is available at <https://rafaelab.github.io/Zettel.jl/>.
 
 - The CLI guide explains each command and its options.
 - The examples page shows which command to use for which task.

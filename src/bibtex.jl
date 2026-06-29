@@ -28,8 +28,10 @@ function readBibtexString(inputString::AbstractString)
 
 	records = OrderedDict{String, Any}()
 	keysList = pyconvert(Vector{String}, pylist(parsed.entries.keys()))
+	totalCount = length(keysList)
+	reportTotal("Parsing BibTeX entries", totalCount)
 
-	for key ∈ keysList
+	for (index, key) ∈ enumerate(keysList)
 		pyEntry = parsed.entries[key]
 		fields = OrderedDict{String, String}()
 
@@ -41,7 +43,7 @@ function readBibtexString(inputString::AbstractString)
 		end
 
 		for role ∈ pyconvert(Vector{String}, pylist(pyEntry.persons.keys()))
-			names = _bibtexNamesFromPersons(pyEntry.persons[role])
+			names = bibtexNamesFromPybtexPersons(pyEntry.persons[role])
 			if ! isempty(names)
 				fields[role] = names
 			end
@@ -52,57 +54,10 @@ function readBibtexString(inputString::AbstractString)
 		entryDict["type"] = lowercase(strip(pyconvert(String, pyEntry.type)))
 		entryDict["fields"] = fields
 		records[key] = entryDict
+		reportProgress("Parsed BibTeX entries", index, totalCount)
 	end
 
 	return records
-end
-
-
-@doc """
-	_normalisePybtexNamePart(parts)
-
-Convert one pybtex name-part sequence to plain text.
-"""
-function _normalisePybtexNamePart(parts)
-	textParts = String[]
-	for value ∈ pyconvert(Vector{String}, pylist(parts))
-		text = strip(decodeTex(stripOuterBraces(String(value))))
-		if ! isempty(text)
-			push!(textParts, text)
-		end
-	end
-	return join(textParts, " ")
-end
-
-
-@doc """
-	_bibtexNamesFromPersons(personsIterable)
-
-Convert a pybtex persons iterable to one BibTeX-style name line.
-"""
-function _bibtexNamesFromPersons(personsIterable)
-	parts = String[]
-
-	for person ∈ personsIterable
-		first = _normalisePybtexNamePart(person.first_names)
-		middle = _normalisePybtexNamePart(person.middle_names)
-		prelast = _normalisePybtexNamePart(person.prelast_names)
-		last = _normalisePybtexNamePart(person.last_names)
-		lineage = _normalisePybtexNamePart(person.lineage_names)
-
-		familyParts = String[]
-		! isempty(prelast) && push!(familyParts, prelast)
-		! isempty(last) && push!(familyParts, last)
-		! isempty(lineage) && push!(familyParts, lineage)
-		family = join(familyParts, " ")
-
-		formatted = formatBibtexPerson(PersonName(first, middle, family, ""))
-		if ! isempty(formatted)
-			push!(parts, formatted)
-		end
-	end
-
-	return join(parts, " and ")
 end
 
 
@@ -169,12 +124,18 @@ function readBibtexLibrary(records::AbstractDict)
 		return ZettelLibrary([ZettelEntry(records)])
 	end
 
+	totalCount = length(records)
+	reportTotal("Building bibliography from BibTeX records", totalCount)
 	entries = ZettelEntry[]
+	sizehint!(entries, totalCount)
+	index = 0
 	for rawEntry ∈ values(records)
+		index += 1
 		if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
 			throw(ArgumentError(_errorMsgNotEntryLike))
 		end
 		push!(entries, ZettelEntry(rawEntry))
+		reportProgress("Converted BibTeX records", index, totalCount)
 	end
 	return ZettelLibrary(entries)
 end
@@ -194,6 +155,7 @@ Write a [`ZettelLibrary`](@ref) as a BibTeX `.bib` file.
 function writeBibtexLibrary(lib::ZettelLibrary, outputPath::AbstractString)
 	open(outputPath, "w") do io
 		total = length(lib)
+		reportTotal("Writing BibTeX entries", total)
 		index = 0
 		for entry ∈ values(lib)
 			index += 1
@@ -202,6 +164,7 @@ function writeBibtexLibrary(lib::ZettelLibrary, outputPath::AbstractString)
 			if index < total
 				write(io, "\n")
 			end
+			reportProgress("Wrote BibTeX entries", index, total)
 		end
 	end
 

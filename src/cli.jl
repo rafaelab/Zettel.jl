@@ -86,7 +86,7 @@ function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 	end
 
 	if args[1] == "convert"
-		runConvertCLI(args[2 : end])
+		runConvertCLI(args[2 : end]; output = output)
 		return 0
 	end
 
@@ -113,7 +113,11 @@ function zettelCLI(; args = ARGS, input::IO = stdin, output::IO = stdout)
 
 	# shorthand: zettel <input> <output>  (formats inferred from extensions)
 	if length(args) == 2 && ! startswith(args[1], "-") && ! startswith(args[2], "-")
-		convertBibliography(args[1], args[2], bibliographyFormat(args[1]), bibliographyFormat(args[2]))
+		inputPath = args[1]
+		outputPath = args[2]
+		println(output, "Converting $(inputPath) -> $(outputPath)")
+		convertBibliography(inputPath, outputPath, bibliographyFormat(inputPath), bibliographyFormat(outputPath))
+		println(output, "Wrote $(outputPath)")
 		return 0
 	end
 
@@ -330,13 +334,13 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	runConvertCLI(args::Vector{String})
+	runConvertCLI(args::Vector{String}; output::IO = stdout)
 
 Handle the `convert` subcommand arguments and perform bibliography conversion.
 Expect: `<input> <output>` plus `--to <fmt>` and optional `--from <fmt>`.
 Throws ArgumentError for malformed or missing options.
 """
-function runConvertCLI(args::Vector{String})
+function runConvertCLI(args::Vector{String}; output::IO = stdout)
 	if length(args) < 2
 		throw(ArgumentError("convert: expected <input> <output> --to <fmt> [--from <fmt>]"))
 	end
@@ -375,7 +379,9 @@ function runConvertCLI(args::Vector{String})
 	if isnothing(fromFormat)
 		fromFormat = bibliographyFormat(inputPath)
 	end
+	println(output, "Converting $(inputPath) -> $(outputPath)")
 	convertBibliography(inputPath, outputPath, fromFormat, toFormat)
+	println(output, "Wrote $(outputPath)")
 
 	return nothing
 end
@@ -644,6 +650,7 @@ function runAuxCLI(args::Vector{String}; output::IO = stdout)
 
 	libFiles = isempty(libraries) ? nothing : libraries
 	result = writeBblFromAux(auxPath; libraryFiles = libFiles, outputPath = outputPath, style = style)
+	println(output, "Wrote $(result.outputPath) with $(length(result.usedKeys)) entries.")
 
 	if ! isempty(result.absent)
 		println(output, "Warning: missing keys: ", join(result.absent, ", "))

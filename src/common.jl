@@ -5,6 +5,42 @@ const Maybe = Union{Nothing, T} where T
 
 # ----------------------------------------------------------------------------------------------- #
 #
+const progressThresholdEntries = 25
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function progressInterval(totalCount::Integer)
+	totalCount < progressThresholdEntries && return 0
+	return max(25, cld(totalCount, 5))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function reportProgress(statusMessage::AbstractString, currentCount::Integer, totalCount::Integer)
+	step = progressInterval(totalCount)
+	step == 0 && return nothing
+
+	if currentCount == totalCount || currentCount % step == 0
+		@info "$(statusMessage): $(currentCount) / $(totalCount)"
+	end
+
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+function reportTotal(statusMessage::AbstractString, totalCount::Integer)
+	totalCount < progressThresholdEntries && return nothing
+	@info "$(statusMessage): $(totalCount) entries"
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
 # Some journal abbreviations from:
 #   - ADS: https://adsabs.harvard.edu/abs_doc/journals1.html
 const journalAbbreviationsDict = Dict(
