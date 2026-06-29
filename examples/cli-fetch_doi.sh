@@ -19,6 +19,8 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 BIN_ZETTEL="$SCRIPT_DIR/../bin/zettel"
 TMP_DIR="$SCRIPT_DIR/tmp"
 MAILTO="${CROSSREF_MAILTO:-dummy@example.org}"
-`
+DOI="10.1002/andp.19053221004"
+
 mkdir -p "$TMP_DIR"
-"$BIN_ZETTEL" doi $1 --source crossref --mailto "$MAILTO" --to bib 
+"$BIN_ZETTEL" doi "$DOI" --source crossref --mailto "$MAILTO" --to bib 
+
