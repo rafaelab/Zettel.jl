@@ -8,9 +8,9 @@
 		outputBib  = joinpath(dir, "output.bib")
 		write(inputBib, TEST_REF)
 
-		bibtexToJson(inputBib, outputJson)
-		jsonToYaml(outputJson, outputYaml)
-		yamlToBibtex(outputYaml, outputBib)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
+		convertBibliography(outputJson, outputYaml, JsonFormat(), YamlFormat())
+		convertBibliography(outputYaml, outputBib, YamlFormat(), BibtexFormat())
 
 		@test isfile(outputYaml)
 		@test isfile(outputBib)
@@ -68,7 +68,7 @@ end
 			"""
 		)
 
-		bibtexToYaml(inputBib, outputYaml)
+		convertBibliography(inputBib, outputYaml, BibtexFormat(), YamlFormat())
 		yamlText = read(outputYaml, String)
 		@test occursin("Café and Schrödinger", yamlText)
 		@test occursin("André", yamlText)
@@ -96,7 +96,7 @@ end
 			"""
 		)
 
-		bibtexToYaml(inputBib, outputYaml)
+		convertBibliography(inputBib, outputYaml, BibtexFormat(), YamlFormat())
 		yamlText = read(outputYaml, String)
 
 		@test occursin("á", yamlText)   # acute
@@ -138,7 +138,7 @@ end
 			"""
 		)
 
-		bibtexToYaml(inputBib, outputYaml)
+		convertBibliography(inputBib, outputYaml, BibtexFormat(), YamlFormat())
 		yamlText = read(outputYaml, String)
 
 		# decoded Unicode must appear in YAML
@@ -148,7 +148,7 @@ end
 		@test occursin("Monthly Notices", yamlText)
 
 		# round-trip back to BibTeX and verify it parses
-		yamlToBibtex(outputYaml, outputBib)
+		convertBibliography(outputYaml, outputBib, YamlFormat(), BibtexFormat())
 		rebuiltBib = read(outputBib, String)
 
 		# re-encoded TeX must be present in the BibTeX output

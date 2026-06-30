@@ -7,136 +7,31 @@ export
 #
 # TeX character encoding/decoding TeX sequences to UTF-8.
 const tex2utf8 = Dict(
+	# No-argument letter macros and ligatures. The trailing `{}` is only a
+	# terminator; `_noArgLetterMacros` (below) lets them decode as `\l`, `\l{}`,
+	# `\l ` or `{\l}` interchangeably.
+	#
+	# Accented letters are deliberately NOT listed here. Every accent (acute,
+	# grave, circumflex, diaeresis, tilde, macron, caron, breve, double acute,
+	# ogonek, dot above, cedilla, ...) is decoded generically from
+	# `texAccentCombining` by `_decodeAccentMacro` and re-encoded by
+	# `_encodeAccentFallback`. Listing them explicitly only duplicated that
+	# engine, so the table is kept to the cases the engine cannot derive.
 	"\\ss{}" => "ß",
 	"\\i{}" => "ı",
 	"\\j{}" => "ȷ",
-
-	# tildes
-	"\\~a" => "ã",
-	"\\~A" => "Ã",
-	"\\~n" => "ñ",
-	"\\~N" => "Ñ",
-	"\\~o" => "õ",
-	"\\~O" => "Õ",
-
-	# ASCII tilde macro (common in some BibTeX exports)
-	"\\textasciitilde" => "~",
-	"\\textasciitilde{}" => "~",
-
-	# cedilla
-	"\\c{c}" => "ç",
-	"\\c{C}" => "Ç",
-
-	# ligatures
 	"\\ae{}" => "æ",
 	"\\AE{}" => "Æ",
 	"\\o{}" => "ø",
 	"\\O{}" => "Ø",
 	"\\aa{}" => "å",
 	"\\AA{}" => "Å",
-
-	# polish / baltic
 	"\\l{}" => "ł",
 	"\\L{}" => "Ł",
 
-	# acute
-	"\\'a" => "á",
-	"\\'A" => "Á",
-	"\\'e" => "é",
-	"\\'E" => "É",
-	"\\'i" => "í",
-	"\\'I" => "Í",
-	"\\'o" => "ó",
-	"\\'O" => "Ó",
-	"\\'u" => "ú",
-	"\\'U" => "Ú",
-	"\\'y" => "ý",
-	"\\'Y" => "Ý",
-
-	# diaeresis / umlaut
-	"\\\"a" => "ä",
-	"\\\"A" => "Ä",
-	"\\\"e" => "ë",
-	"\\\"E" => "Ë",
-	"\\\"i" => "ï",
-	"\\\"I" => "Ï",
-	"\\\"o" => "ö",
-	"\\\"O" => "Ö",
-	"\\\"u" => "ü",
-	"\\\"U" => "Ü",
-	"\\\"y" => "ÿ",
-
-	# circumflex
-	"\\^a" => "â",
-	"\\^A" => "Â",
-	"\\^e" => "ê",
-	"\\^E" => "Ê",
-	"\\^i" => "î",
-	"\\^I" => "Î",
-	"\\^o" => "ô",
-	"\\^O" => "Ô",
-	"\\^u" => "û",
-	"\\^U" => "Û",
-
-	# grave
-	"\\`a" => "à",
-	"\\`A" => "À",
-	"\\`e" => "è",
-	"\\`E" => "È",
-	"\\`i" => "ì",
-	"\\`I" => "Ì",
-	"\\`o" => "ò",
-	"\\`O" => "Ò",
-	"\\`u" => "ù",
-	"\\`U" => "Ù",
-
-	# caron (háček)
-	"\\v{c}" => "č",
-	"\\v{C}" => "Č",
-	"\\v{s}" => "š",
-	"\\v{S}" => "Š",
-	"\\v{z}" => "ž",
-	"\\v{Z}" => "Ž",
-	"\\v{r}" => "ř",
-	"\\v{R}" => "Ř",
-	"\\v{l}" => "ľ",
-	"\\v{L}" => "Ľ",
-
-	# macron
-	"\\=a" => "ā",
-	"\\=A" => "Ā",
-	"\\=e" => "ē",
-	"\\=E" => "Ē",
-	"\\=i" => "ī",
-	"\\=I" => "Ī",
-	"\\=o" => "ō",
-	"\\=O" => "Ō",
-	"\\=u" => "ū",
-	"\\=U" => "Ū",
-
-	# breve
-	"\\u{a}" => "ă",
-	"\\u{A}" => "Ă",
-	"\\u{g}" => "ğ",
-	"\\u{G}" => "Ğ",
-
-	# double acute
-	"\\H{o}" => "ő",
-	"\\H{O}" => "Ő",
-	"\\H{u}" => "ű",
-	"\\H{U}" => "Ű",
-
-	# ogonek
-	"\\k{a}" => "ą",
-	"\\k{A}" => "Ą",
-	"\\k{e}" => "ę",
-	"\\k{E}" => "Ę",
-
-	# dot above
-	"\\.{z}" => "ż",
-	"\\.{Z}" => "Ż",
-	"\\.{e}" => "ė",
-	"\\.{E}" => "Ė",
+	# ASCII tilde macro (common in some BibTeX exports)
+	"\\textasciitilde" => "~",
+	"\\textasciitilde{}" => "~",
 
 	# common punctuation / symbols
 	"---" => "—",
@@ -293,11 +188,7 @@ function decodeTex(s::AbstractString)
 		result = replace(result, tex => tex2utf8[tex])
 	end
 
-	# dotless i/j when written as \i or \j (without trailing {})
-	result = replace(result, r"\\i(?![A-Za-z])" => "ı")
-	result = replace(result, r"\\j(?![A-Za-z])" => "ȷ")
-
-	# generic fallback for braced accent macros not explicitly present in `tex2utf8`
+	# generic decoder for braced accent macros (e.g. \v{c} -> č, \'{a} -> á)
 	# e.g. \v{t} -> ť  (whitespace inside the braces is tolerated)
 	result = replace(result, r"\\([A-Za-z\"'`^~=\.])\s*\{\s*([A-Za-z])\s*\}" => (matched -> begin
 		m = match(r"^\\([A-Za-z\"'`^~=\.])\s*\{\s*([A-Za-z])\s*\}$", String(matched))

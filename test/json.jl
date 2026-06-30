@@ -7,8 +7,8 @@
 		outputBib  = joinpath(dir, "output.bib")
 		write(inputBib, TEST_REF)
 
-		bibtexToJson(inputBib, outputJson)
-		jsonToBibtex(outputJson, outputBib)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
+		convertBibliography(outputJson, outputBib, JsonFormat(), BibtexFormat())
 
 		original = Pybtex.readBibtexDataBase(inputBib)
 		rebuilt  = Pybtex.readBibtexDataBase(outputBib)
@@ -38,7 +38,7 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		data = JSON3.read(read(outputJson, String))
 		@test length(data) == 1
 		entry = data[1]
@@ -60,7 +60,7 @@ end
 		outputJson = joinpath(dir, "library.json")
 		write(inputBib, TEST_REF)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		lib = readJsonLibrary(outputJson)
 
 		@test haskey(lib, "doe2024")
@@ -87,7 +87,7 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		data = JSON3.read(read(outputJson, String))
 		entry = data[1][:fields]
 
@@ -117,7 +117,7 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		data = JSON3.read(read(outputJson, String))
 		title = data[1][:fields][:title]
 
@@ -155,8 +155,8 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
-		jsonToBibtex(outputJson, outputBib)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
+		convertBibliography(outputJson, outputBib, JsonFormat(), BibtexFormat())
 		rebuilt = read(outputBib, String)
 
 		# accented chars must be re-encoded as TeX in BibTeX output
@@ -189,7 +189,7 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		data = JSON3.read(read(outputJson, String))
 		authors = data[1][:fields][:author]
 
@@ -199,7 +199,7 @@ end
 		@test any(a -> occursin("ővári", a) || occursin("ovari", a) || occursin("ő", a), authors)
 
 		# the re-encoded BibTeX must parse back without error
-		jsonToBibtex(outputJson, outputBib)
+		convertBibliography(outputJson, outputBib, JsonFormat(), BibtexFormat())
 		@test isfile(outputBib)
 	end
 end
@@ -221,7 +221,7 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		data = JSON3.read(read(outputJson, String))
 		authors = data[1][:fields][:author]
 
@@ -276,13 +276,13 @@ end
 			"""
 		)
 
-		bibtexToJson(inputBib, outputJson)
+		convertBibliography(inputBib, outputJson, BibtexFormat(), JsonFormat())
 		fields = JSON3.read(read(outputJson, String))[1][:fields]
 		@test fields[:journal] == "A&A"
 		@test fields[:title] == "Galaxies in A&A"
 		@test fields[:url] == "http://x.org/a?b=1&c=2"
 
-		jsonToBibtex(outputJson, outputBib)
+		convertBibliography(outputJson, outputBib, JsonFormat(), BibtexFormat())
 		rebuilt = read(outputBib, String)
 		@test occursin("A\\&A", rebuilt)
 		@test occursin("b=1\\&c=2", rebuilt)

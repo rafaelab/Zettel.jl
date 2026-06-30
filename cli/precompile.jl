@@ -21,9 +21,9 @@ mktempdir() do dir
 		"""
 	)
 
-	bibtexToJson(bibPath, jsonPath)
-	jsonToYaml(jsonPath, yamlPath)
-	yamlToBibtex(yamlPath, bibOutPath)
+	convertBibliography(bibPath, jsonPath, BibtexFormat(), JsonFormat())
+	convertBibliography(jsonPath, yamlPath, JsonFormat(), YamlFormat())
+	convertBibliography(yamlPath, bibOutPath, YamlFormat(), BibtexFormat())
 	readJsonLibrary(jsonPath)
 	readYamlLibrary(yamlPath)
 	readBibtexLibrary(bibOutPath)
