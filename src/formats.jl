@@ -5,7 +5,8 @@ export
 	BibtexFormat,
 	bibliographyFormat,
 	identifyBibliographyFormat,
-	parseBibliographyFormat
+	parseBibliographyFormat,
+	formatDisplayName
 
 
 # ----------------------------------------------------------------------------------------------- #
@@ -96,6 +97,19 @@ end
 Alias of [`identifyBibliographyFormat`](@ref).
 """
 bibliographyFormat(path::AbstractString) = identifyBibliographyFormat(path)
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	formatDisplayName(format)
+
+Return a human-readable name for the given bibliography format.
+"""
+@inline formatDisplayName(::Type{JsonFormat}) = "JSON"
+@inline formatDisplayName(::Type{YamlFormat}) = "YAML"
+@inline formatDisplayName(::Type{BibtexFormat}) = "BibTeX"
+@inline formatDisplayName(format::BibliographyFormat) = formatDisplayName(typeof(format))
 
 
 # ----------------------------------------------------------------------------------------------- #
