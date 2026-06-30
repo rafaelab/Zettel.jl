@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+scriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+projectRoot=$(cd "$scriptDir/.." && pwd)
+tmpDir="$scriptDir/tmp"
+juliaBin="${JULIA_BIN:-julia}"
+
+runShellExample() {
+	local scriptName="$1"
+	printf '\n==> Running %s\n' "$scriptName"
+	bash "$scriptDir/$scriptName"
+	return
+}
+
+runJuliaExample() {
+	local scriptName="$1"
+	printf '\n==> Running %s\n' "$scriptName"
+	"$juliaBin" --project="$projectRoot" "$scriptDir/$scriptName"
+	return
+}
+
+runLibUpdateExample() {
+	local workingLibrary="$tmpDir/references_runAll.bib"
+	printf '\n==> Running zettelLibUpdate.sh\n'
+	mkdir -p "$tmpDir"
+	cp "$scriptDir/data/references.bib" "$workingLibrary"
+	cat <<'BIB' | bash "$scriptDir/zettelLibUpdate.sh" "$workingLibrary"
+@article{RunAll2026,
+	author = {Example, Ada},
+	title = {Entry Added by runAll},
+	journal = {Journal of Automated Examples},
+	year = {2026}
+}
+;;
+BIB
+	return
+}
+
+runLibUpdateYamlExample() {
+	printf '\n==> Running zettelLibUpdateYaml.sh\n'
+	cat <<'BIB' | bash "$scriptDir/zettelLibUpdateYaml.sh" "$scriptDir/data/references.bib"
+@article{RunAllYaml2026,
+	author = {Example, Bruno},
+	title = {YAML Entry Added by runAll},
+	journal = {Journal of Automated Examples},
+	year = {2026}
+}
+;;
+BIB
+	return
+}
+
+runJsonExample() {
+	local jsonFile="$scriptDir/data/references.json"
+	local roundtripFile="$scriptDir/data/references_roundtrip.bib"
+	local jsonBackup="$tmpDir/references.json.runAll.bak"
+	local roundtripBackup="$tmpDir/references_roundtrip.bib.runAll.bak"
+	printf '\n==> Running example-json.jl\n'
+	mkdir -p "$tmpDir"
+	cp "$jsonFile" "$jsonBackup"
+	cp "$roundtripFile" "$roundtripBackup"
+	trap 'mv "$jsonBackup" "$jsonFile"; mv "$roundtripBackup" "$roundtripFile"' RETURN
+	"$juliaBin" --project="$projectRoot" "$scriptDir/example-json.jl"
+	mv "$jsonBackup" "$jsonFile"
+	mv "$roundtripBackup" "$roundtripFile"
+	trap - RETURN
+	return
+}
+
+main() {
+	runShellExample "cli-help.sh"
+	runShellExample "cli-bib2json.sh"
+	runShellExample "cli-bib2yaml.sh"
+	runShellExample "cli-convert.sh"
+	runShellExample "cli-convert_simple.sh"
+	runShellExample "cli-query_bibkey.sh"
+	runShellExample "cli-append_library.sh"
+	runShellExample "cli-paste_conversion.sh"
+	runShellExample "cli-bbl2bib.sh"
+	runShellExample "cli-tex_aux.sh"
+	runShellExample "cli-tex_aux_opts.sh"
+	runShellExample "cli-fetch_doi.sh"
+	runShellExample "cli-fetch_doi_sources.sh"
+	runLibUpdateExample
+	runLibUpdateYamlExample
+	runJuliaExample "example-bbl.jl"
+	runJsonExample
+	runJuliaExample "example-yaml.jl"
+	printf '\nAll examples completed successfully.\n'
+	return
+}
+
+main "$@"
