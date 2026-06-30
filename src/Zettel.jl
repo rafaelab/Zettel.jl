@@ -1,15 +1,15 @@
 module Zettel
 
 using Downloads
+using HTTP
 using JSON3
-using YAML
 using Logging
-using Pybtex
 using OrderedCollections
 using Printf
 using ProgressMeter
+using Pybtex
 using PythonCall
-using HTTP
+using YAML
 
 
 include("common.jl")
