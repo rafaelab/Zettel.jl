@@ -1,6 +1,6 @@
 # Examples
 
-This page answers a practical question: which `zettel` command should you run for which job?
+This page explains `zettel` commands for each type of job.
 The examples are based on the runnable scripts in `examples/`, so each workflow here has a corresponding concrete reference in the repository.
 
 All example scripts read fixtures from `examples/data/` and write generated files to `examples/tmp/`.
@@ -16,7 +16,7 @@ julia --project=. -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- --
 If you have already built the CLI executable, you can use the wrapper instead:
 
 ```bash
-bin/zettel --help
+zettel --help
 ```
 
 General prerequisites:
@@ -49,9 +49,9 @@ Use this quick guide first, then see the worked examples below.
 If your input and output filenames already make the formats obvious, use the shortest form:
 
 ```bash
-bin/zettel references.bib references.json
-bin/zettel references.bib references.yml
-bin/zettel references.json references.bib
+zettel references.bib references.json
+zettel references.bib references.yml
+zettel references.json references.bib
 ```
 
 Choose this when you simply want to move between BibTeX, JSON, and YAML and the file extensions are already correct.
@@ -66,8 +66,8 @@ This is the pattern used by:
 If you want the command line to explain itself more clearly, use `convert`:
 
 ```bash
-bin/zettel convert references.yml references.bib --to bib
-bin/zettel convert references.bib references.yml --to yaml
+zettel convert references.yml references.bib --to bib
+zettel convert references.bib references.yml --to yaml
 ```
 
 This is the better choice when:
@@ -79,7 +79,7 @@ This is the better choice when:
 For example:
 
 ```bash
-bin/zettel convert input.data output.yml --from json --to yaml
+zettel convert input.data output.yml --from json --to yaml
 ```
 
 This is the pattern used by:
@@ -92,8 +92,8 @@ This is the pattern used by:
 If the input is not a file but a single BibTeX entry on standard input, use `paste`:
 
 ```bash
-pbpaste | bin/zettel paste --to yaml
-pbpaste | bin/zettel paste --to json
+pbpaste | zettel paste --to yaml
+pbpaste | zettel paste --to json
 ```
 
 Choose this when you want a quick format conversion for one entry and do not want to update a library file.
@@ -109,30 +109,29 @@ This is the pattern used by:
 If you already have a library file and want to add one entry from standard input, `paste` can do both jobs at once:
 
 ```bash
-pbpaste | bin/zettel paste --to json --library references.json
-pbpaste | bin/zettel paste --library references.yml
+pbpaste | zettel paste --to json --library references.json
+pbpaste | zettel paste --library references.yml
 ```
 
-Choose this when you want a lightweight append operation.
+Choose this when you want a lightweight append operation with deterministic key generation.
 
 This is the pattern used by:
 
 - `examples/cli-append_library.sh`
 
-### Update a curated library with backups and key handling
+### Update a curated library with backups and maintenance checks
 
 If your goal is not merely to append, but to maintain a library carefully, use `libupdate`:
 
 ```bash
-pbpaste | bin/zettel libupdate --library references.bib
-pbpaste | bin/zettel libupdate --library references.yml
-pbpaste | bin/zettel libupdate --library references.json --fileDir ./files
+pbpaste | zettel libupdate --library references.bib
+pbpaste | zettel libupdate --library references.yml
+pbpaste | zettel libupdate --library references.json --fileDir ./files
 ```
 
-Choose `libupdate` instead of `paste --library` when you want the CLI to help with maintenance tasks such as:
+Choose `libupdate` instead of `paste --library` when you want the CLI to help with maintenance tasks beyond key generation, such as:
 
 - creating a timestamped backup;
-- generating or validating the citation key;
 - inserting the entry in sorted order;
 - checking for likely duplicates;
 - looking for nearby attachment files.
@@ -149,8 +148,8 @@ This is the pattern used by:
 Use `doi` when the entry should be created from a DOI rather than from BibTeX input:
 
 ```bash
-bin/zettel doi 10.1038/nphys1170 --source crossref --mailto you@example.org --to yaml
-bin/zettel doi 10.5281/zenodo.2553894 --source datacite --to json --output entry.json
+zettel doi 10.1038/nphys1170 --source crossref --mailto you@example.org --to yaml
+zettel doi 10.5281/zenodo.2553894 --source datacite --to json --output entry.json
 ```
 
 Choose this when:
@@ -173,8 +172,8 @@ This is the pattern used by:
 Use `bbl` when you already have a `.bbl` file and want a smaller library containing only the cited entries:
 
 ```bash
-bin/zettel bbl paper.bbl references.bib used.bib
-bin/zettel bbl paper.bbl references.yml used.json
+zettel bbl paper.bbl references.bib used.bib
+zettel bbl paper.bbl references.yml used.json
 ```
 
 Choose this when the `.bbl` file already exists and your task is to derive a subset library from it.
@@ -188,8 +187,8 @@ This is the pattern used by:
 Pass the `.aux` file itself when you want `zettel` to produce the bibliography output used by LaTeX:
 
 ```bash
-bin/zettel paper.aux --library references.json --output paper.bbl --style plain
-bin/zettel paper.aux --library references.yml --style alpha
+zettel paper.aux --library references.json --output paper.bbl --style plain
+zettel paper.aux --library references.yml --style alpha
 ```
 
 Choose this when you want `zettel` to stand in for a simple `bibtex` step.
@@ -209,8 +208,8 @@ This is the pattern used by:
 Use `--query` when you want a concise human-readable summary for one entry:
 
 ```bash
-bin/zettel --query einstein1905a --library references.bib
-bin/zettel --query friedmann1922a --library references.yml
+zettel --query einstein1905a --library references.bib
+zettel --query friedmann1922a --library references.yml
 ```
 
 Choose this when you want to inspect an existing library quickly without converting or rewriting it.
