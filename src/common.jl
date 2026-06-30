@@ -5,42 +5,6 @@ const Maybe = Union{Nothing, T} where T
 
 # ----------------------------------------------------------------------------------------------- #
 #
-const progressThresholdEntries = 25
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-function progressInterval(totalCount::Integer)
-	totalCount < progressThresholdEntries && return 0
-	return max(25, cld(totalCount, 5))
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-function reportProgress(statusMessage::AbstractString, currentCount::Integer, totalCount::Integer)
-	step = progressInterval(totalCount)
-	step == 0 && return nothing
-
-	if currentCount == totalCount || currentCount % step == 0
-		@info "$(statusMessage): $(currentCount) / $(totalCount)"
-	end
-
-	return nothing
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-function reportTotal(statusMessage::AbstractString, totalCount::Integer)
-	totalCount < progressThresholdEntries && return nothing
-	@info "$(statusMessage): $(totalCount) entries"
-	return nothing
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
 # Some journal abbreviations from:
 #   - ADS: https://adsabs.harvard.edu/abs_doc/journals1.html
 const journalAbbreviationsDict = Dict(
@@ -122,6 +86,73 @@ const monthsDict = Dict(
 	"november" => "11",
 	"december" => "12",
 )
+
+
+# ----------------------------------------------------------------------------------------------- #
+#                                      ProgressBar configurations                                 #
+# ----------------------------------------------------------------------------------------------- #
+
+# Progress reporting using ProgressMeter.jl.
+# Long operations show a single progress bar that updates in place instead of emitting the same log message many times. 
+# The active `Progress` object is held module-globally so the existing `reportTotal` / `reportProgress` call sites keep their simple, stateless signatures.
+
+const progressThresholdEntries = 25
+const _progress = Ref{Union{Nothing, Progress}}(nothing)
+
+
+function _startProgress(description::AbstractString, totalCount::Integer)
+	bar = Progress(Int(totalCount); desc = string(strip(description), ": "), showspeed = true)
+	_progress[] = bar
+	return bar
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	reportTotal(statusMessage, totalCount)
+
+Begin a [`ProgressMeter`](https://github.com/timholy/ProgressMeter.jl) progress bar for an operation processing `totalCount` items. 
+No-op for small operations (`totalCount < progressThresholdEntries`).
+"""
+function reportTotal(statusMessage::AbstractString, totalCount::Integer)
+	if totalCount < progressThresholdEntries
+		_progress[] = nothing
+		return nothing
+	end
+
+	_startProgress(statusMessage, totalCount)
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	reportProgress(statusMessage, currentCount, totalCount)
+
+Advance the active progress bar to `currentCount` of `totalCount`. 
+If no bar is active (no preceding `reportTotal`), one is started lazily using `statusMessage`. 
+ProgressMeter throttles the redraws; the bar is finished once `currentCount` reaches `totalCount`.
+"""
+function reportProgress(statusMessage::AbstractString, currentCount::Integer, totalCount::Integer)
+	if totalCount < progressThresholdEntries
+		return nothing
+	end
+
+	bar = _progress[]
+	if isnothing(bar)
+		bar = _startProgress(statusMessage, totalCount)
+	end
+
+	update!(bar, Int(currentCount))
+	if currentCount ≥ totalCount
+		finish!(bar)
+		_progress[] = nothing
+	end
+
+	return nothing
+end
 
 
 # ----------------------------------------------------------------------------------------------- #

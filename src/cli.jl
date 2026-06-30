@@ -17,6 +17,7 @@ function usageCLI(; io::IO = stdout)
 	println(io, "  zettel --query <bibkey> --library <file>")
 	println(io, "  zettel bbl     <bblfile> <input.bib> <output.bib>")
 	println(io, "  zettel paste   [--to <fmt>] --library <file>")
+	println(io, "  zettel paste   --library <file.json>   # paste a BibTeX entry into a JSON library")
 	println(io, "  zettel paste   --to <fmt>")
 	println(io, "  zettel libupdate --library <file> [--key <key>] [--fileDir <dir>]")
 	println(io, "  zettel <auxfile> [options]")
@@ -26,7 +27,9 @@ function usageCLI(; io::IO = stdout)
 	println(io, "  doi            Fetch a DOI from a metadata source and emit one ZettelEntry (bib, json, yaml).")
 	println(io, "  --query        Query one bibkey in a library and print a compact human-readable summary.")
 	println(io, "  bbl            Extract the entries cited in a .bbl from a library into a new .bib (used keys only).")
-	println(io, "  paste          Read a BibTeX entry from stdin; print it and/or add it to a library.")
+	println(io, "  paste          Read a BibTeX entry from stdin; print it and/or insert it into a library.")
+	println(io, "                 The library format follows its extension, so a BibTeX entry pasted into a")
+	println(io, "                 .json/.yaml library is converted to JSON/YAML on the way in.")
 	println(io, "  libupdate      Read one BibTeX entry from stdin, generate/update key, backup library, and insert it.")
 	println(io, "")
 	println(io, "# Options (convert)")
@@ -51,7 +54,9 @@ function usageCLI(; io::IO = stdout)
 	println(io, "")
 	println(io, "# Options (paste)")
 	println(io, "  -t, --to   <fmt>       Print the entry in this format to stdout (bib, json, yaml)")
-	println(io, "  -l, --library <file>   Add the entry to this library and rewrite it")
+	println(io, "  -l, --library <file>   Insert the entry into this library and rewrite it. The library")
+	println(io, "                         format is taken from the file extension (.bib/.json/.yaml), so a")
+	println(io, "                         pasted BibTeX entry is converted to that format before insertion.")
 	println(io, "")
 	println(io, "# Options (libupdate)")
 	println(io, "  -l, --library <file>   Target library to update (.bib, .json, .yaml/.yml)")
@@ -145,7 +150,7 @@ end
 
 Handle the `doi` subcommand and fetch one entry from a DOI metadata source.
 Expected form:
-- `doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
+	`doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
 For source `crossref`, polite access requires a contact email via `--mailto` or `CROSSREF_MAILTO`.
 """
 function runDoiCLI(args::Vector{String}; output::IO = stdout)
@@ -392,8 +397,9 @@ end
 @doc """
 	runPasteCLI(args; input, output)
 
-Run the `paste` subcommand: read a BibTeX entry from `input` (stdin). 
+Run the `paste` subcommand: read a BibTeX entry from `input` (stdin).
 Optionally print it in the requested format to `output`, and optionally add it to a library.
+When `--library` points at a `.json`/`.yaml` file, the pasted BibTeX entry is converted to that library's format before it is inserted (BibTeX TeX escapes become UTF-8).
 At least one of `--to` or `--library` must be given.
 """
 function runPasteCLI(args::Vector{String}; input::IO = stdin, output::IO = stdout)
