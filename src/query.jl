@@ -24,7 +24,8 @@ Look up a single entry by exact citation key in the library file `filename`, ret
 
 For JSON and BibTeX libraries this scans the file and materialises only the matching record.
 This avoids the cost of building every entry in the file (the dominant cost of a full `loadLibrary` on a large library; for BibTeX that cost is the per-entry pybtex interop).
-For BibTeX the scan locates the single `@type{key, … }` block by balanced-delimiter matching and parses only that block; on any miss or unexpected shape it degrades to the validated full-load path.
+For BibTeX the scan locates the single `@type{key, … }` block by balanced-delimiter matching and parses only that block; if the key is absent it returns `nothing` without materialising the full library.
+Unexpected JSON or matching-entry BibTeX parse failures degrade to the validated full-load path, so correctness is never worse than the generic path when the file shape is surprising.
 For YAML libraries, where the underlying parser offers no cheap single-record access, it falls back to loading the whole library and calling [`findByKey`](@ref).
 The result is identical to `findByKey(loadLibrary(filename), key)` for well-formed libraries.
 
@@ -62,8 +63,8 @@ function findEntryByKey(::JsonFormat, filename::AbstractString, key::AbstractStr
 end
 
 function findEntryByKey(::BibtexFormat, filename::AbstractString, key::AbstractString)
-	# BibTeX fast path: locate the single `@type{key, … }` block by balanced-delimiter matching nd run the parser on just that block, avoiding pybtex interop over every entry in the file.
-	# On any miss or unexpected shape it degrades to the validated full-load path, so correctness is never worse than the generic path.
+	# BibTeX fast path: locate the single `@type{key, … }` block by balanced-delimiter matching and run the parser on just that block, avoiding pybtex interop over every entry in the file.
+	# An absent key returns `nothing` directly because exact-key query mode should not materialise a whole library just to report a miss.
 
 	result = try
 		_fastBibtexLookup(read(filename, String), key)
@@ -71,7 +72,9 @@ function findEntryByKey(::BibtexFormat, filename::AbstractString, key::AbstractS
 		:fallback
 	end
 
-	if result === :fallback || result === :notfound
+	if result === :notfound
+		return nothing
+	elseif result === :fallback
 		return findByKey(loadLibrary(filename), key)
 	end
 

@@ -87,6 +87,21 @@ end
 		@test isnothing(findEntryByKey(bibPath, "Misner197"))
 		@test isnothing(findEntryByKey(bibPath, "absent2000a"))
 
+		bibWithIrrelevantInvalidEntry = joinpath(dir, "lib-invalid-tail.bib")
+		write(bibWithIrrelevantInvalidEntry, """
+			@article{Einstein1905,
+				author = {Einstein, A.},
+				title = {Zur Elektrodynamik bewegter Körper},
+				journal = {Annalen der Physik},
+				year = {1905}
+			}
+
+			@article{broken2026,
+				title = {Unclosed irrelevant entry}
+			"""
+		)
+		@test isnothing(findEntryByKey(bibWithIrrelevantInvalidEntry, "absent2000a"))
+
 		# generic (YAML) path returns the same result as findByKey
 		yamlEntry = findEntryByKey(yamlPath, "Einstein1905")
 		@test ! isnothing(yamlEntry)

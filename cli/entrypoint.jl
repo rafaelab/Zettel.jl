@@ -66,19 +66,8 @@ function isBibRelated(args::Vector{String})
 		return true
 	end
 
-	# query can require BibTeX parsing when library is .bib
+	# query has an exact-key BibTeX fast path and should stay on the compiled path.
 	if cmd == "--query"
-		i = 2
-		while i ≤ length(args)
-			arg = args[i]
-			if arg == "-l" || arg == "--library"
-				i += 1
-				if i ≤ length(args) && looksLikeBibPath(args[i])
-					return true
-				end
-			end
-			i += 1
-		end
 		return false
 	end
 
