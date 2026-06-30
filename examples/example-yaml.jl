@@ -43,10 +43,10 @@ println("Reloaded from YAML: ", lib2)
 writeJsonLibrary(lib, jsonFile)
 println("JSON written to: $jsonFile")
 
-jsonToYaml(jsonFile, yamlFile)
+convertBibliography(jsonFile, yamlFile, JsonFormat(), YamlFormat())
 println("Converted JSON to YAML: $yamlFile")
 
-yamlToBibtex(yamlFile, bibFile)
+convertBibliography(yamlFile, bibFile, YamlFormat(), BibtexFormat())
 println("BibTeX written to: $bibFile")
 
 lib3 = readBibtexLibrary(bibFile)
