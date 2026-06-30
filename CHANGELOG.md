@@ -1,5 +1,8 @@
 # Changelog
 
+
+
+---
 ## 2.6.3 — 2026-06-30
 
 ### Changed
@@ -15,6 +18,26 @@
   `reportTotal`/`reportProgress` helpers wrap a `ProgressMeter.Progress` object.
 - `paste` help now documents that `--library <file.json>` inserts a pasted BibTeX entry into a
   `.json`/`.yaml` library, converting it to the library's format on the way in.
+  - Removed `conversions.jl` and the six thin wrapper functions it exported
+  (`bibtexToJson`, `jsonToBibtex`, `bibtexToYaml`, `yamlToBibtex`, `yamlToJson`,
+  `jsonToYaml`). All callers (tests, examples, docs, precompile script) now call
+  `convertBibliography(input, output, FromFormat(), ToFormat())` directly.
+- `encoding.jl`: removed ~110 explicit per-letter accent entries from `tex2utf8` (acute,
+  grave, circumflex, diaeresis, tilde, macron, caron, breve, double-acute, ogonek, dot-above,
+  cedilla). Those entries exactly duplicated what the generic combining-mark engine
+  (`_decodeAccentMacro` / `_encodeAccentFallback`) already computes, so all accented letters
+  now route through that engine in both directions. The table retains only the non-derivable
+  entries: no-argument letter macros/ligatures (`\ss`, `\l`, `\ae`, …), `\textasciitilde`,
+  and punctuation. Removed the separate dotless-i/j pass in `decodeTex` (already covered by
+  the no-arg macro loop). File shrinks from 375 → 266 lines; all 351 encoding tests pass.
+- Split `src/cli.jl` (1,220 lines) into focused subfiles under a new `src/cli/` directory.
+  `cli.jl` is now just six `include` lines:
+  - `cli/usage.jl` — `usageCLI` help text
+  - `cli/dispatch.jl` — `zettelCLI` entry point and argument dispatch, `isPossibleDoiInvocation`
+  - `cli/commands.jl` — all `run*CLI` subcommand handlers (doi, query, bbl, convert, paste, libupdate, aux)
+  - `cli/render.jl` — entry rendering for stdout (`renderDoiEntry`, `renderQueriedEntry`, `renderPastedEntry`, and query helpers)
+  - `cli/libraryMutation.jl` — `addEntriesToLibrary` and the JSON text-splice helpers
+  - `cli/terminal.jl` — interactive TTY prompts (`chooseKeyFromTty`, `acceptFileKeyFromTty`)
 
 ### Additions
 - `externalauthor` and `collaborationauthor` are now treated like `author`/`collaboration`: they hold a
