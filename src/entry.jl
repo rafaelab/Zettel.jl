@@ -11,6 +11,8 @@ export
 	getField,
 	getAuthors,
 	getTitle,
+	getBookTitle,
+	getBooktitle,
 	getYear,
 	getJournal,
 	getDOI,
@@ -25,19 +27,16 @@ export
 	getISBN,
 	getIsbn,
 	entryToString,
-	entryFromString,
-	similarityScores,
-	totalSimilarityScore,
-	verySimilarEntry,
-	findVerySimilarEntry,
-	similarityReport
+	entryFromString
 
 
 # ----------------------------------------------------------------------------------------------- #
 #
 const preferredFieldOrder = (
 	"collaboration",
+	"collaborationauthor",
 	"author",
+	"externalauthor",
 	"onbehalf",
 	"editor",
 	"title",
@@ -68,16 +67,14 @@ const preferredFieldOrder = (
 
 const _preferredFieldOrderLower = lowercase.(string.(collect(preferredFieldOrder)))
 
-const _personFieldNames = ("author", "editor", "translator", "collaboration")
-const _similarityWeights = (
-	author = 0.22,
-	key = 0.18,
-	title = 0.25,
-	venue = 0.20,
-	volumePages = 0.15,
+const _personFieldNames = (
+	"author", 
+	"editor",
+	"translator",
+	"collaboration",
+	"externalauthor", 
+	"collaborationauthor"
 )
-const _defaultSimilarityFields = ("title", "journal", "booktitle")
-
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
@@ -387,8 +384,6 @@ Return the title of a [`ZettelEntry`](@ref), or `""` if the `title` field is abs
 @inline getTitle(entry::ZettelEntry) = getField(entry, "title")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getAuthors(entry)
 
@@ -397,8 +392,6 @@ Return the author string of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getAuthors(entry::ZettelEntry) = getField(entry, "author")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getYear(entry)
 
@@ -407,8 +400,6 @@ Return the year string of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getYear(entry::ZettelEntry) = getField(entry, "year")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getJournal(entry)
 
@@ -417,30 +408,33 @@ Return the journal name of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getJournal(entry::ZettelEntry) = getField(entry, "journal")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
+@doc """
+	getBookTitle(entry)
+
+Return the book title of a [`ZettelEntry`](@ref), or `""` if absent.
+"""
+@inline getBookTitle(entry::ZettelEntry) = getField(entry, "booktitle")
+const getBooktitle = getBookTitle
+
+
 @doc """
 	getDOI(entry)
 
 Return the DOI of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 @inline getDOI(entry::ZettelEntry) = getField(entry, "doi")
-@inline getDoi(entry::ZettelEntry) = getDOI(entry)
+const getDoi = getDOI
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getURL(entry)
 
 Return the URL of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 @inline getURL(entry::ZettelEntry) = getField(entry, "url")
-@inline getUrl(entry::ZettelEntry) = getURL(entry)
+const getUrl = getURL
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getVolume(entry)
 
@@ -449,8 +443,6 @@ Return the volume of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getVolume(entry::ZettelEntry) = getField(entry, "volume")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getNumber(entry)
 
@@ -459,8 +451,6 @@ Return the issue/number of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getNumber(entry::ZettelEntry) = getField(entry, "number")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getPages(entry)
 
@@ -469,8 +459,6 @@ Return the pages of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getPages(entry::ZettelEntry) = getField(entry, "pages")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getAbstract(entry)
 
@@ -479,8 +467,6 @@ Return the abstract of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getAbstract(entry::ZettelEntry) = getField(entry, "abstract")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getPublisher(entry)
 
@@ -489,15 +475,14 @@ Return the publisher of a [`ZettelEntry`](@ref), or `""` if absent.
 @inline getPublisher(entry::ZettelEntry) = getField(entry, "publisher")
 
 
-# ----------------------------------------------------------------------------------------------- #
-#
 @doc """
 	getISBN(entry)
 
 Return the ISBN of a [`ZettelEntry`](@ref), or `""` if absent.
 """
 @inline getISBN(entry::ZettelEntry) = getField(entry, "isbn")
-@inline getIsbn(entry::ZettelEntry) = getISBN(entry)
+const getIsbn = getISBN
+
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -586,530 +571,6 @@ Parse one bibliography entry from a `text` string in `format`.
 entryFromString(text::AbstractString, ::JsonFormat) = readJsonEntry(readJsonString(text))
 entryFromString(text::AbstractString, ::YamlFormat) = readYamlEntry(readYamlString(text))
 entryFromString(text::AbstractString, ::BibtexFormat) = readBibtexEntry(readBibtexString(text))
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	verySimilarEntry(candidate, existing; authorThreshold = 0.95, keyThreshold = 0.95, titleThreshold = 0.95, venueThreshold = 0.95, volumePagesThreshold = 0.9, totalThreshold = 0.95, contingent = false)
-
-Return `true` when two entries look like duplicates according to a weighted total similarity score.
-"""
-function verySimilarEntry( entry1::ZettelEntry, entry2::ZettelEntry; args...)
-	return ! isnothing(similarityReport(entry1, entry2; args...))
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	similarityScores(candidate, existing; fields = ("title", "journal", "booktitle"), fieldScorers = Dict{String, Function}())
-
-Compute detailed similarity components and a weighted total score in `[0, 1]`.
-The returned named tuple includes:
-- arbitrary per-field scores from `fields`;
-- `author`, `key`, `title`, and venue (`journal` or `booktitle`) scores;
-- `volume`, `pages`, and combined `volumePages` scores;
-- exact `year` agreement score;
-- weighted `totalScore`.
-"""
-function similarityScores(candidate::ZettelEntry, existing::ZettelEntry; fields = _defaultSimilarityFields, fieldScorers = Dict{String, Function}(),scoreWeights = _similarityWeights)
-	fieldScores = OrderedDict{String, Float64}()
-
-	for field ∈ fields
-		candidateValue = get(candidate.fields, field, "")
-		existingValue = get(existing.fields, field, "")
-		if isempty(strip(candidateValue)) || isempty(strip(existingValue))
-			continue
-		end
-
-		fieldScores[field] = scoreByField(field, candidateValue, existingValue, fieldScorers)
-	end
-
-	candidateAuthor = authorSurnameToken(candidate.fields)
-	existingAuthor = authorSurnameToken(existing.fields)
-	authorScore = (isempty(candidateAuthor) || isempty(existingAuthor)) ? 0. : stringSimilarityScore(candidateAuthor, existingAuthor)
-
-	candidateKeyToken = keyTokenFromEntryKey(candidate.key)
-	existingKeyToken = keyTokenFromEntryKey(existing.key)
-	keyScore = (isempty(candidateKeyToken) || isempty(existingKeyToken)) ? 0. : stringSimilarityScore(candidateKeyToken, existingKeyToken)
-
-	titleScore = get(fieldScores, "title", 0.0)
-	journalScore = get(fieldScores, "journal", 0.0)
-	booktitleScore = get(fieldScores, "booktitle", 0.0)
-	venueScore = max(journalScore, booktitleScore)
-
-	candidateYear = strip(get(candidate.fields, "year", ""))
-	existingYear = strip(get(existing.fields, "year", ""))
-	yearScore = (! isempty(candidateYear) && ! isempty(existingYear) && candidateYear == existingYear) ? 1.0 : 0.0
-
-	candidateVolume = strip(get(candidate.fields, "volume", ""))
-	existingVolume = strip(get(existing.fields, "volume", ""))
-	candidatePages = get(candidate.fields, "pages", "")
-	existingPages = get(existing.fields, "pages", "")
-	volumeScore = volumeSimilarityScore(candidateVolume, existingVolume)
-	pagesScore = pagesSimilarityScore(candidatePages, existingPages)
-	volumePagesScore = volumePagesSimilarityScore(candidateVolume, existingVolume, candidatePages, existingPages)
-	fieldScores["volume"] = volumeScore
-	fieldScores["pages"] = pagesScore
-
-	weights = _normalisedSimilarityWeights(scoreWeights)
-	totalScore = (
-		weights.author * authorScore +
-		weights.key * keyScore +
-		weights.title * titleScore +
-		weights.venue * venueScore +
-		weights.volumePages * volumePagesScore
-	)
-
-	return (
-		fieldScores = fieldScores,
-		authorScore = authorScore,
-		keyScore = keyScore,
-		titleScore = titleScore,
-		journalScore = journalScore,
-		booktitleScore = booktitleScore,
-		venueScore = venueScore,
-		yearScore = yearScore,
-		volumeScore = volumeScore,
-		pagesScore = pagesScore,
-		volumePagesScore = volumePagesScore,
-		totalScore = totalScore,
-		candidateAuthor = candidateAuthor,
-		existingAuthor = existingAuthor,
-		year = isempty(candidateYear) ? existingYear : candidateYear,
-		volume = isempty(candidateVolume) ? existingVolume : candidateVolume,
-	)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	totalSimilarityScore(candidate, existing; kwargs...)
-
-Return only the weighted total similarity score used by duplicate detection.
-"""
-function totalSimilarityScore(candidate::ZettelEntry, existing::ZettelEntry; kwargs...)
-	return similarityScores(candidate, existing; kwargs...).totalScore
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	similarityReport(candidate, existing; authorThreshold = 0.95, keyThreshold = 0.95, titleThreshold = 0.95, venueThreshold = 0.95, volumePagesThreshold = 0.9, totalThreshold = 0.95, contingent = false)
-
-Return a named tuple describing why two entries are considered too similar.
-If they do not meet the total-score criterion, return `nothing`.
-
-When `contingent = true`, the decision is made in a strict ordered chain: `author → title → year → booktitle → journal → volume → pages → others`.
-At each step, if the compared score is below its threshold, `nothing` is returned immediately.
-"""
-function similarityReport(candidate::ZettelEntry, existing::ZettelEntry; authorThreshold::Real = 0.95, keyThreshold::Real = 0.95, titleThreshold::Real = 0.95, venueThreshold::Real = 0.95, volumePagesThreshold::Real = 0.95, totalThreshold::Real = 0.95, contingent::Bool = false, otherThreshold::Real = titleThreshold, fields = _defaultSimilarityFields, fieldScorers = Dict{String, Function}(), scoreWeights = _similarityWeights)
-	scores = similarityScores(candidate, existing; fields = fields, fieldScorers = fieldScorers, scoreWeights = scoreWeights)
-
-	matchedFieldNames = String[]
-	if scores.titleScore ≥ titleThreshold
-		push!(matchedFieldNames, "title")
-	end
-	if scores.journalScore ≥ venueThreshold
-		push!(matchedFieldNames, "journal")
-	end
-	if scores.booktitleScore ≥ venueThreshold
-		push!(matchedFieldNames, "booktitle")
-	end
-
-	hasComparableBooktitle = haskey(scores.fieldScores, "booktitle")
-	hasComparableJournal = haskey(scores.fieldScores, "journal")
-	hasComparableVolume = ! isempty(strip(get(candidate.fields, "volume", ""))) && ! isempty(strip(get(existing.fields, "volume", "")))
-	hasComparablePages = ! isempty(strip(get(candidate.fields, "pages", ""))) && ! isempty(strip(get(existing.fields, "pages", "")))
-
-	if contingent
-		if scores.authorScore < authorThreshold
-			return nothing
-		end
-		if scores.titleScore < titleThreshold
-			return nothing
-		end
-		if scores.yearScore < 1.0
-			return nothing
-		end
-		if hasComparableBooktitle && scores.booktitleScore < venueThreshold
-			return nothing
-		end
-		if hasComparableJournal && scores.journalScore < venueThreshold
-			return nothing
-		end
-		if hasComparableVolume && scores.volumeScore < volumePagesThreshold
-			return nothing
-		end
-		if hasComparablePages && scores.pagesScore < volumePagesThreshold
-			return nothing
-		end
-
-		for (field, score) ∈ pairs(scores.fieldScores)
-			name = lowercase(field)
-			if name ∈ ("title", "booktitle", "journal", "volume", "pages")
-				continue
-			end
-			if score < otherThreshold
-				return nothing
-			end
-		end
-	else
-		if scores.yearScore < 1.0
-			return nothing
-		end
-		if scores.authorScore < authorThreshold
-			return nothing
-		end
-		if scores.keyScore < keyThreshold
-			return nothing
-		end
-		if scores.titleScore < titleThreshold
-			return nothing
-		end
-		if scores.venueScore < venueThreshold
-			return nothing
-		end
-		if scores.volumePagesScore < volumePagesThreshold
-			return nothing
-		end
-	end
-
-	if scores.totalScore < totalThreshold
-		return nothing
-	end
-
-	return (
-		similar = true,
-		existingKey = existing.key,
-		matchedFieldNames = matchedFieldNames,
-		comparedFields = length(scores.fieldScores),
-		textRatio = length(scores.fieldScores) == 0 ? 0. : length(matchedFieldNames) / length(scores.fieldScores),
-		textScore = (scores.titleScore + scores.venueScore) / 2,
-		fieldScores = scores.fieldScores,
-		authorScore = scores.authorScore,
-		keyScore = scores.keyScore,
-		titleScore = scores.titleScore,
-		venueScore = scores.venueScore,
-		yearScore = scores.yearScore,
-		pagesScore = scores.pagesScore,
-		volumeScore = scores.volumeScore,
-		volumePagesScore = scores.volumePagesScore,
-		totalScore = scores.totalScore,
-		totalThreshold = totalThreshold,
-		candidateAuthor = scores.candidateAuthor,
-		existingAuthor = scores.existingAuthor,
-		year = scores.year,
-		volume = scores.volume,
-	)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	findVerySimilarEntry(lib, candidate; authorThreshold = 0.95, keyThreshold = 0.95, titleThreshold = 0.95, venueThreshold = 0.95, volumePagesThreshold = 0.9, totalThreshold = 0.95, contingent = false)
-
-Return the first existing entry in `lib` that looks like a duplicate of `candidate`.
-Returns `nothing` if no entry matches.
-
-A positive decision from [`similarityReport`](@ref) always requires an exact, non-empty year match (`yearScore == 1.0`) in both the contingent and the
-non-contingent branch. 
-The library is therefore pre-filtered on the candidate year before the expensive per-field similarity work (notably the title Levenshtein distance) is performed. 
-This is behaviour-preserving: entries that fail the year check could never have been reported as similar, so skipping them cannot change which entry (if any) is returned.
-"""
-function findVerySimilarEntry(lib, candidate::ZettelEntry; args...)
-	candidateYear = strip(get(candidate.fields, "year", ""))
-	if isempty(candidateYear)
-		return nothing
-	end
-
-	for existing ∈ values(lib)
-		if strip(get(existing.fields, "year", "")) ≠ candidateYear
-			continue
-		end
-		report = similarityReport(candidate, existing; args...)
-		if ! isnothing(report)
-			return report
-		end
-	end
-	
-	return nothing
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	scoreByField(field, left, right, fieldScorers)
-
-Score one field using:
-- an explicit scorer from `fieldScorers`, when provided;
-- built-in scorers for specific fields (`volume`, `pages`);
-- `stringSimilarityScore` as fallback.
-"""
-function scoreByField(field::AbstractString, left::AbstractString, right::AbstractString, fieldScorers::AbstractDict{String, Function})
-	name = lowercase(strip(field))
-	if haskey(fieldScorers, name)
-		return fieldScorers[name](left, right)
-	end
-	if name == "volume"
-		return volumeSimilarityScore(left, right)
-	end
-	if name == "pages"
-		return pagesSimilarityScore(left, right)
-	end
-	return stringSimilarityScore(left, right)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_normalisedSimilarityWeights(scoreWeights)
-
-Internal helper to validate and normalise component weights for similarity scoring.
-"""
-function _normalisedSimilarityWeights(scoreWeights)
-	requiredKeys = (:author, :key, :title, :venue, :volumePages)
-	weights = Dict{Symbol, Float64}()
-	for key ∈ requiredKeys
-		if ! haskey(scoreWeights, key)
-			throw(ArgumentError("Missing similarity weight: $(key)."))
-		end
-		value = Float64(scoreWeights[key])
-		if value < 0
-			throw(DomainError("Similarity weights must be non-negative."))
-		end
-		weights[key] = value
-	end
-
-	normalisation = sum(values(weights))
-	if normalisation ≤ 0
-		throw(ArgumentError("At least one similarity weight must be positive."))
-	end
-
-	return (
-		author = weights[:author] / normalisation,
-		key = weights[:key] / normalisation,
-		title = weights[:title] / normalisation,
-		venue = weights[:venue] / normalisation,
-		volumePages = weights[:volumePages] / normalisation,
-	)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	keyTokenFromEntryKey(key)
-
-Extract a normalised token from a citation key, removing a trailing year+suffix when present.
-"""
-function keyTokenFromEntryKey(key::AbstractString)
-	raw = strip(String(key))
-	token = replace(raw, r"\d{4}[a-zA-Z]$" => "")
-	token = isempty(token) ? raw : token
-	token = _normalisedSimilarityText(token)
-	token = replace(token, r"\s+" => "")
-	return token
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	volumeSimilarityScore(left, right)
-
-Compare volume identifiers, preferring numeric closeness when both are numeric.
-"""
-function volumeSimilarityScore(v1::AbstractString, v2::AbstractString)
-	a = strip(v1)
-	b = strip(v2)
-	if isempty(a) || isempty(b)
-		return 0.
-	end
-	if lowercase(a) == lowercase(b)
-		return 1.
-	end
-
-	ai = tryparse(Int, replace(a, r"[^0-9]" => ""))
-	bi = tryparse(Int, replace(b, r"[^0-9]" => ""))
-	if ! isnothing(ai) && ! isnothing(bi) && max(ai, bi) > 0
-		diff = abs(ai - bi)
-		return max(0., 1. - (diff / max(ai, bi)))
-	end
-
-	return stringSimilarityScore(a, b)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	pagesSimilarityScore(left, right)
-
-Compare page spans using exact match, range endpoints when parseable, and text fallback.
-"""
-function pagesSimilarityScore(p1::AbstractString, p2::AbstractString)
-	a = normalisePagesText(p1)
-	b = normalisePagesText(p2)
-	if isempty(a) || isempty(b)
-		return 0.
-	end
-	if a == b
-		return 1.
-	end
-
-	rangeA = parsePageRange(a)
-	rangeB = parsePageRange(b)
-	if ! isnothing(rangeA) && ! isnothing(rangeB)
-		aStart, aEnd = rangeA
-		bStart, bEnd = rangeB
-		startScore = 1. - min(1., abs(aStart - bStart) / max(1, max(aStart, bStart)))
-		endScore = 1. - min(1., abs(aEnd - bEnd) / max(1, max(aEnd, bEnd)))
-		spanA = max(1, aEnd - aStart + 1)
-		spanB = max(1, bEnd - bStart + 1)
-		spanScore = 1. - min(1., abs(spanA - spanB) / max(spanA, spanB))
-		return (startScore + endScore + spanScore) / 3
-	end
-
-	return stringSimilarityScore(a, b)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	volumePagesSimilarityScore(volumeLeft, volumeRight, pagesLeft, pagesRight)
-
-Combine volume and pages similarity, requiring at least one comparable component.
-"""
-function volumePagesSimilarityScore(volume1::AbstractString, volume2::AbstractString, pages1::AbstractString, pages2::AbstractString)
-	vCompared = ! isempty(strip(volume1)) && ! isempty(strip(volume2))
-	pCompared = ! isempty(strip(pages1)) && ! isempty(strip(pages2))
-	if ! vCompared && ! pCompared
-		return 0.0
-	end
-	if vCompared && pCompared
-		return (volumeSimilarityScore(volume1, volume2) + pagesSimilarityScore(pages1, pages2)) / 2
-	end
-	return vCompared ? volumeSimilarityScore(volume1, volume2) : pagesSimilarityScore(pages1, pages2)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	normalisePagesText(pages)
-
-Normalise page text for similarity comparison.
-"""
-function normalisePagesText(pages::AbstractString)
-	text = strip(lowercase(String(pages)))
-	text = replace(text, "–" => "-", "—" => "-", "--" => "-")
-	text = replace(text, r"[^0-9a-z\-]+" => "")
-	return text
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	parsePageRange(text)
-
-Parse a page range into `(start, end)` when possible.
-"""
-function parsePageRange(text::AbstractString)
-	m = match(r"([0-9]+)\-([0-9]+)", text)
-	if ! isnothing(m)
-		a = tryparse(Int, m.captures[1])
-		b = tryparse(Int, m.captures[2])
-		if ! isnothing(a) && ! isnothing(b)
-			return (min(a, b), max(a, b))
-		end
-	end
-
-	n = match(r"([0-9]+)", text)
-	if ! isnothing(n)
-		v = tryparse(Int, n.captures[1])
-		if ! isnothing(v)
-			return (v, v)
-		end
-	end
-
-	return nothing
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	stringSimilarityScore(left, right)
-
-Compute a normalised similarity score in `[0, 1]` from two strings using Levenshtein distance after light normalisation.
-"""
-function stringSimilarityScore(v1::AbstractString, v2::AbstractString)
-	a = _normalisedSimilarityText(v1)
-	b = _normalisedSimilarityText(v2)
-	if isempty(a) && isempty(b)
-		return 1.
-	end
-	if isempty(a) || isempty(b)
-		return 0.
-	end
-
-	dist = levenshteinDistance(collect(a), collect(b))
-	scale = max(length(a), length(b))
-
-	return scale == 0 ? 1. : 1 - (dist / scale)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	_normalisedSimilarityText(text)
-
-Normalise free text for similarity comparison.
-"""
-function _normalisedSimilarityText(text::AbstractString)
-	s = strip(decodeTex(stripOuterBraces(text)))
-	s = replace(Base.Unicode.normalize(s, :NFD), r"\p{M}" => "")
-	s = lowercase(s)
-	s = replace(s, r"[^a-z0-9]+" => " ")
-	s = replace(s, r"\s+" => " ")
-	return strip(s)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
-	authorSurnameToken(fields)
-
-Extract the first author surname in normalised token form for similarity comparison.
-"""
-function authorSurnameToken(fields::AbstractDict{String, String})
-	author = get(fields, "author", "")
-	if isempty(strip(author))
-		return ""
-	end
-
-	parts = splitBibtexNames(author)
-	firstPerson = isempty(parts) ? author : parts[1]
-	parsed = parseBibtexPerson(firstPerson)
-	last = strip(parsed.lastName)
-	if isempty(last)
-		last = strip(decodeTex(stripOuterBraces(firstPerson)))
-	end
-
-	return cleanKeyToken(last)
-end
-
 
 
 # ----------------------------------------------------------------------------------------------- #

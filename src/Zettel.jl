@@ -7,6 +7,7 @@ using Logging
 using Pybtex
 using OrderedCollections
 using Printf
+using ProgressMeter
 using PythonCall
 using HTTP
 
@@ -28,6 +29,7 @@ include("query.jl")
 include("texAux.jl")
 include("styles.jl")
 include("keys.jl")
+include("duplicates.jl")
 include("cli.jl")
 
 
