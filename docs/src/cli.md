@@ -5,24 +5,22 @@ The CLI entry point is [`zettelCLI`](@ref). You can run it either through the re
 ## Recommended invocation during development
 
 When you are editing the source tree, prefer the Julia entry point so you always run the current code:
-
 ```bash
 julia --project=. -e 'using Zettel; exit(Zettel.zettelCLI(; args = ARGS))' -- --help
 ```
 
 If you have already built the executable, `bin/zettel` provides the same interface:
-
 ```bash
 bin/zettel --help
 ```
 
 ## Commands
 
-The CLI supports six modes:
-
+The CLI supports seven modes:
 - `zettel convert <input> <output> [--from <fmt>] --to <fmt>`
 - `zettel doi <doi> [--source <name>] [--to <fmt>] [--output <file>] [--mailto <email>] [--plus-token <token>]`
 - `zettel --query <bibkey> --library <file>`
+- `zettel bbl <bblfile> <input-library> <output-library>`
 - `zettel paste [--to <fmt>] --library <file>`
 - `zettel paste --to <fmt>`
 - `zettel libupdate --library <file> [--key <key>] [--fileDir <dir>]`
@@ -33,7 +31,6 @@ Supported formats are `bib`, `json`, and `yaml`.
 ## Convert
 
 Convert between bibliography formats.
-
 ```bash
 bin/zettel convert references.bib references.json --to json
 bin/zettel convert references.json references.yml --to yaml
@@ -41,7 +38,6 @@ bin/zettel convert references.yml references.bib --from yaml --to bib
 ```
 
 There is also a shorthand two-argument mode that infers formats from file extensions:
-
 ```bash
 bin/zettel references.bib references.json
 bin/zettel references.json references.yml
@@ -57,20 +53,28 @@ Relevant example scripts:
 ## DOI Lookup
 
 Fetch one entry from a DOI metadata source.
-
 ```bash
 bin/zettel doi 10.1038/nphys1170 --source crossref --mailto you@example.org --to yaml
 bin/zettel doi 10.5281/zenodo.2553894 --source datacite --to json --output entry.json
 ```
 
 Notes:
-
 - `crossref` is the default source.
 - `datacite` is also supported.
 - `--mailto` is strongly recommended for Crossref polite access.
 - `--plus-token` can be used with Crossref Metadata Plus.
 
-The CLI also accepts the DOI as the first positional argument without the explicit `doi` subcommand:
+Instead of passing `--mailto` on every call you can set the environment variable `CROSSREF_MAILTO`.
+Likewise, `CROSSREF_PLUS_API_TOKEN` is read when `--plus-token` is omitted:
+
+```bash
+export CROSSREF_MAILTO=you@example.org
+export CROSSREF_PLUS_API_TOKEN=my-token   # optional
+bin/zettel doi 10.1038/nphys1170 --to yaml
+```
+
+The CLI also accepts the DOI as the first positional argument without the explicit `doi` subcommand.
+The shorthand is triggered automatically when the first argument starts with `10.` and contains a `/`:
 
 ```bash
 bin/zettel 10.1038/nphys1170 --source crossref --mailto you@example.org --to bib
@@ -84,13 +88,11 @@ Relevant example scripts:
 ## Bibkey Query
 
 Query one key from a bibliography library and print a compact human-readable summary:
-
 ```bash
 bin/zettel --query einstein1905a --library references.bib
 ```
 
 Output format:
-
 ```text
 "The title"
 F. Author, S. Author, ...
@@ -101,45 +103,61 @@ bibkey: author20XXa
 ```
 
 Collaboration behaviour:
-
 - if `collaboration` is set, the collaboration name is printed instead of the author list;
 - if `onbehalf` is truthy, the author line becomes `F. Author et al. for XXX Collaboration`.
 
 Relevant example scripts:
-
 - [`examples/cli-query_bibkey.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-query_bibkey.sh)
+
+
+## BBL / Extract Cited Entries
+
+Extract only the entries that appear in a `.bbl` file from a master library and write a smaller library containing only those entries.
+```bash
+bin/zettel bbl paper.bbl references.bib used.bib
+bin/zettel bbl paper.bbl references.yml used.json
+```
+
+Arguments (all positional, all required):
+1. `<bblfile>` — the `.bbl` file whose citation keys drive the selection.
+2. `<input-library>` — the master library to pull entries from (`.bib`, `.json`, `.yaml`, `.yml`).
+3. `<output-library>` — the destination file; format is inferred from the extension.
+
+Notes:
+- Entries are written in the order they appear in the `.bbl` file.
+- Any key referenced in the `.bbl` but absent from the master library produces a warning on stdout; the remaining keys are still written.
+- The input and output libraries may use different formats, so `bbl` doubles as a targeted conversion.
+
+Relevant example scripts:
+
+- [`examples/cli-bbl2bib.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-bbl2bib.sh)
 
 ## Paste
 
 Read one BibTeX entry from standard input. You can print it in another format, add it to a library, or do both.
 
 Print converted output only:
-
 ```bash
 pbpaste | bin/zettel paste --to yaml
 ```
 
 Add the entry to a library while also printing JSON:
-
 ```bash
 pbpaste | bin/zettel paste --to json --library references.json
 ```
 
 Notes:
-
 - The input for `paste` is always BibTeX.
 - `--library` accepts `.bib`, `.json`, `.yaml`, and `.yml` files.
 - When the library does not exist yet, it is created.
 
 Relevant example scripts:
-
 - [`examples/cli-paste_conversion.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-paste_conversion.sh)
 - [`examples/cli-append_library.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/cli-append_library.sh)
 
 ## Library Update
 
 `libupdate` is the more opinionated library-maintenance command. It reads exactly one BibTeX entry from standard input, derives or validates its key, creates a timestamped backup of the target library, then inserts the entry in sorted order.
-
 ```bash
 pbpaste | bin/zettel libupdate --library references.bib
 pbpaste | bin/zettel libupdate --library references.yml
@@ -147,32 +165,31 @@ pbpaste | bin/zettel libupdate --library references.json --fileDir /path/to/file
 ```
 
 Current behaviour:
-
 - Input is always BibTeX, even when the target library is JSON or YAML.
 - The target library may be `.bib`, `.json`, `.yaml`, or `.yml`.
-- A backup file is created next to the target library with a timestamp suffix.
-- Keys are generated from the first author surname by default.
+- A backup file is created next to the target library with a timestamp suffix (e.g. `references.bib.20241201-153000.bak`).
+- Keys are generated from the first author surname by default, following the pattern `surnameYYYYx` (e.g. `einstein1905a`).
 - If `collaboration` is present and `onbehalf` does not force author precedence, the collaboration token may be used for key generation.
 - If a `file` field already implies a key, that key is preferred.
 - Existing nearby files such as `<fileDir>/<key>.pdf` or `<fileDir>/<first-letter>/<key>.pdf` are detected and reported.
 - If a very similar entry is already present in the library, the insert is skipped and a warning is emitted instead of creating a duplicate.
 
-Relevant example scripts:
+When running interactively from a terminal (TTY), `libupdate` prompts you to confirm or override the suggested key before proceeding.
+When running in a non-interactive pipeline the suggested key is applied silently.
 
+Relevant example scripts:
 - [`examples/zettelLibUpdate.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/zettelLibUpdate.sh)
 - [`examples/zettelLibUpdateYaml.sh`](https://github.com/rafaelab/Zettel.jl/tree/main/examples/zettelLibUpdateYaml.sh)
 
 ## AUX to BBL
 
 Pass a LaTeX `.aux` file to generate a `.bbl` bibliography file.
-
 ```bash
 bin/zettel paper.aux --library references.json --output paper.bbl --style plain
 bin/zettel paper.aux --library references.yml --style alpha
 ```
 
 Options:
-
 - `-l`, `--library <file>`: one or more library files
 - `-o`, `--output <file>`: output `.bbl` path
 - `-s`, `--style <name>`: bibliography style
@@ -199,6 +216,12 @@ Relevant example scripts:
 - `-o`, `--output <file>`: write to a file instead of stdout
 - `-m`, `--mailto <email>`: Crossref contact email
 - `--plus-token <token>`: Crossref Metadata Plus token
+
+### `bbl`
+
+- `<bblfile>`: LaTeX `.bbl` file providing the cited keys (positional, required)
+- `<input-library>`: master library to pull entries from (`.bib`, `.json`, `.yaml`, `.yml`; positional, required)
+- `<output-library>`: destination file; format inferred from extension (positional, required)
 
 ### `paste`
 
@@ -227,7 +250,6 @@ Relevant example scripts:
 ### The wrapper does not reflect recent source changes
 
 Rebuild the executable if you rely on `bin/zettel` as a compiled binary:
-
 ```bash
 julia --project=cli cli/buildExecutable.jl
 ```
@@ -241,7 +263,6 @@ That is expected. BibTeX parsing and writing go through `Pybtex.jl` and Python, 
 ### `.bbl` generation reports missing keys
 
 Check that:
-
 - the cited keys in the `.aux` file actually exist in the provided libraries;
 - the library paths passed with `--library` are correct;
 - the library files use a supported extension.
