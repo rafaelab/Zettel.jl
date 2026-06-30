@@ -81,3 +81,84 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "BibTeX to YAML decodes all diacritic families" begin
+	mktempdir() do dir
+		inputBib   = joinpath(dir, "input.bib")
+		outputYaml = joinpath(dir, "library.yaml")
+
+		write(inputBib, """
+			@article{diacritics2026yaml,
+				author = {Test, Author},
+				title = {Accents: \\'a \\`e \\^i {\\\"u} \\~n \\=o \\v{s} \\H{o} \\k{a} \\.{z} \\c{c} \\u{g} \\v{t}},
+				year = {2026}
+			}
+			"""
+		)
+
+		bibtexToYaml(inputBib, outputYaml)
+		yamlText = read(outputYaml, String)
+
+		@test occursin("á", yamlText)   # acute
+		@test occursin("è", yamlText)   # grave
+		@test occursin("î", yamlText)   # circumflex
+		@test occursin("ü", yamlText)   # diaeresis
+		@test occursin("ñ", yamlText)   # tilde
+		@test occursin("ō", yamlText)   # macron
+		@test occursin("š", yamlText)   # caron (explicit)
+		@test occursin("ő", yamlText)   # double acute
+		@test occursin("ą", yamlText)   # ogonek
+		@test occursin("ż", yamlText)   # dot above
+		@test occursin("ç", yamlText)   # cedilla
+		@test occursin("ğ", yamlText)   # breve
+		@test occursin("ť", yamlText)   # caron fallback
+		# no TeX escapes must leak into YAML
+		@test ! occursin("\\'", yamlText)
+		@test ! occursin("\\\"", yamlText)
+		@test ! occursin("\\v{", yamlText)
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "BibTeX accents round-trip through YAML" begin
+	mktempdir() do dir
+		inputBib   = joinpath(dir, "input.bib")
+		outputYaml = joinpath(dir, "library.yaml")
+		outputBib  = joinpath(dir, "output.bib")
+
+		write(inputBib, """
+			@article{rt2024,
+				author = {{\\v{S}ar\\v{c}evi\\'c}, N. and {P\\'erez}, A.},
+				title = {\\\"Uber Elektrodynamik und Schr\\\"odinger},
+				journal = {\\mnras},
+				year = {2024}
+			}
+			"""
+		)
+
+		bibtexToYaml(inputBib, outputYaml)
+		yamlText = read(outputYaml, String)
+
+		# decoded Unicode must appear in YAML
+		@test occursin("Šarčević", yamlText)
+		@test occursin("Pérez", yamlText)
+		@test occursin("Über Elektrodynamik und Schrödinger", yamlText)
+		@test occursin("Monthly Notices", yamlText)
+
+		# round-trip back to BibTeX and verify it parses
+		yamlToBibtex(outputYaml, outputBib)
+		rebuiltBib = read(outputBib, String)
+
+		# re-encoded TeX must be present in the BibTeX output
+		@test occursin("\\\"u", rebuiltBib) || occursin("\\\"U", rebuiltBib)
+		@test occursin("\\'e", rebuiltBib)
+		# no raw accented Unicode should survive into BibTeX values
+		@test ! occursin("ü", rebuiltBib)
+		@test ! occursin("Š", rebuiltBib)
+	end
+end
+
+
+# ----------------------------------------------------------------------------------------------- #

@@ -33,8 +33,7 @@ readEntries(format::BibliographyFormat, filename::AbstractString) = readBibliogr
 @doc """
 	readBibliography(format, filename)
 
-Read a bibliography file into a [`ZettelLibrary`](@ref), selecting the parser
-with `format`.
+Read a bibliography file into a [`ZettelLibrary`](@ref), selecting the parser with `format`.
 """
 readBibliography(::JsonFormat, filename::AbstractString) = readJsonLibrary(filename)
 readBibliography(::YamlFormat, filename::AbstractString) = readYamlLibrary(filename)
@@ -51,7 +50,6 @@ Write a [`ZettelLibrary`](@ref) to `filename`, selecting the writer with `format
 writeBibliography(::JsonFormat, lib::ZettelLibrary, filename::AbstractString) = writeJsonLibrary(lib, filename)
 writeBibliography(::YamlFormat, lib::ZettelLibrary, filename::AbstractString) = writeYamlLibrary(lib, filename)
 writeBibliography(::BibtexFormat, lib::ZettelLibrary, filename::AbstractString) = writeBibtexLibrary(lib, filename)
-
 
 
 # ----------------------------------------------------------------------------------------------- #

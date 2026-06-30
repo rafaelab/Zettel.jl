@@ -161,6 +161,21 @@ end
 const _tex2utf8SortedKeys = sort(collect(keys(tex2utf8)); by = length, rev = true)
 
 
+# No-argument letter macros (e.g. `\ss`, `\l`, `\ae`) harvested from the lookup table.
+# These commands take no argument, so the trailing `{}` in the table keys is only a terminator: in real BibTeX they appear as `\l`, `\l{}`, `\l ` or `{\l}` interchangeably.
+# Decoding them independently of that terminator keeps the mapping from breaking down when braces or whitespace are present.
+const _noArgLetterMacros = let
+	d = Dict{String, String}()
+	for (tex, utf) ∈ tex2utf8
+		m = match(r"^\\([A-Za-z]+)\{\}$", tex)
+		isnothing(m) || (d[String(m.captures[1])] = utf)
+	end
+	d
+end
+
+const _noArgLetterMacroNames = sort(collect(keys(_noArgLetterMacros)); by = length, rev = true)
+
+
 # Generic TeX accent fallback for cases not explicitly listed in `tex2utf8`.
 const texAccentCombining = Dict(
 	"'" => '\u0301',   # acute
@@ -188,7 +203,8 @@ const combiningToTexAccent = Dict(v => k for (k, v) ∈ texAccentCombining)
 @doc """
 	_decodeAccentMacro(accent, letter)
 
-Helper function for `decodeTex` that attempts to decode a TeX accent macro (e.g. `\v{t}`) by decomposing the resulting character and checking if it consists of the expected letter and a combining accent with a known TeX equivalent.
+Helper function for `decodeTex` that attempts to decode a TeX accent macro (e.g. `\v{t}`). 
+It works by decomposing the resulting character and checking if it consists of the expected letter and a combining accent with a known TeX equivalent.
 """
 function _decodeAccentMacro(accent::AbstractString, letter::AbstractString)
 	if ! haskey(texAccentCombining, accent)
@@ -243,6 +259,8 @@ end
 Convert TeX character commands in `s` to their UTF-8 equivalents using the `tex2utf8` table.
 Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c}` is tried before a hypothetical `\\v`).
 
+The decoder is tolerant of grouping braces and whitespace: `{{\\'a}}`, `{ \\'a }` and `\\'a` all decode to `á`, and no-argument macros decode regardless of a trailing `{}` (e.g. `\\l`, `\\l{}` and `{\\l}` all give `ł`). The BibTeX escape `\\&` is decoded to a plain `&`.
+
 # Input
 - `s` [`AbstractString`]: string possibly containing TeX character commands.
 
@@ -251,14 +269,26 @@ Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c
 """
 function decodeTex(s::AbstractString)
 	result = String(s)
-	
-	# normalise grouped accent macros (e.g. {\"o} -> \"o) first
-	result = replace(result, r"\{\\([\"'`^~=])([A-Za-z])\}" => s"\\\1\2")
-	result = replace(result, r"\{\\([\"'`^~=])\{([A-Za-z])\}\}" => s"\\\1\2")
-	result = replace(result, r"\{\\([ij])\}" => s"\\\1")
-	
-	# normalise accent macros written with a braced single letter (e.g. {\"o} -> \"o) so they are handled by the lookup table
-	result = replace(result, r"\\([\"'`^~=])\{([A-Za-z])\}" => s"\\\1\2")
+
+	# literal escaped specials used by BibTeX: `\&` -> `&` so JSON/YAML keep plain UTF-8.
+	result = replace(result, "\\&" => "&")
+
+	# normalise grouped accent macros first, tolerating nested braces and surrounding
+	# whitespace: {\"o}, { \"o }, {\"{o}} and {{\"o}} all collapse to \"o.
+	result = replace(result, r"\{\s*\\([\"'`^~=])\s*\{\s*([A-Za-z])\s*\}\s*\}" => s"\\\1\2")
+	result = replace(result, r"\{\s*\\([\"'`^~=])\s*([A-Za-z])\s*\}" => s"\\\1\2")
+	result = replace(result, r"\{\s*\\([ij])\s*\}" => s"\\\1")
+
+	# normalise accent macros written with a braced single letter (e.g. \"{o} -> \"o)
+	result = replace(result, r"\\([\"'`^~=])\s*\{\s*([A-Za-z])\s*\}" => s"\\\1\2")
+
+	# no-argument letter macros (\ss, \l, \ae, ...), robust to braces, a trailing `{}` or
+	# whitespace: \l, \l{}, \l  and {\l} all decode to the same glyph.
+	for name ∈ _noArgLetterMacroNames
+		rx = Regex("\\\\" * name * "(?![A-Za-z])(?:\\{\\})?")
+		result = replace(result, rx => _noArgLetterMacros[name])
+	end
+
 	for tex ∈ _tex2utf8SortedKeys
 		result = replace(result, tex => tex2utf8[tex])
 	end
@@ -268,9 +298,9 @@ function decodeTex(s::AbstractString)
 	result = replace(result, r"\\j(?![A-Za-z])" => "ȷ")
 
 	# generic fallback for braced accent macros not explicitly present in `tex2utf8`
-	# e.g. \v{t} -> ť
-	result = replace(result, r"\\([A-Za-z\"'`^~=\.])\{([A-Za-z])\}" => (matched -> begin
-		m = match(r"^\\([A-Za-z\"'`^~=\.])\{([A-Za-z])\}$", String(matched))
+	# e.g. \v{t} -> ť  (whitespace inside the braces is tolerated)
+	result = replace(result, r"\\([A-Za-z\"'`^~=\.])\s*\{\s*([A-Za-z])\s*\}" => (matched -> begin
+		m = match(r"^\\([A-Za-z\"'`^~=\.])\s*\{\s*([A-Za-z])\s*\}$", String(matched))
 		if isnothing(m)
 			return String(matched)
 		end
@@ -279,7 +309,7 @@ function decodeTex(s::AbstractString)
 	end))
 
 	# generic fallback for classic unbraced accent macros
-	result = replace(result, 
+	result = replace(result,
 		r"\\([\"'`^~=\.])([A-Za-z])" => (
 			matched -> begin
 				m = match(r"^\\([\"'`^~=\.])([A-Za-z])$", String(matched))
@@ -293,9 +323,9 @@ function decodeTex(s::AbstractString)
 	)
 
 	# some BibTeX parsers preserve grouping braces around already-decoded glyphs (e.g. M{ü}ller)
-	# drop those wrappers while keeping ASCII-protection braces
-	result = replace(result, r"\{([^\x00-\x7F])\}" => s"\1")
-	
+	# drop those wrappers (tolerating whitespace) while keeping ASCII-protection braces
+	result = replace(result, r"\{\s*([^\x00-\x7F])\s*\}" => s"\1")
+
 	return result
 end
 
@@ -309,6 +339,7 @@ Convert UTF-8 characters in `s` to their TeX equivalents using the `utf8ToTex` t
 
 Note: left/right curly quotes (`\u201C`/`\u201D`) are encoded as ` `` ` and `''` respectively.
 ASCII double quote (`"`) has no unique TeX equivalent and is left unchanged.
+A plain `&` is escaped to `\\&` so BibTeX output stays valid (e.g. "A&A" -> "A\\&A").
 
 # Input
 - `s` [`AbstractString`]: string possibly containing UTF-8 characters.
@@ -326,6 +357,10 @@ function encodeTex(s::AbstractString)
 		chs = string(ch)
 		if haskey(mapping, chs)
 			print(io, mapping[chs])
+		elseif ch == '&'
+			# `&` is always special in (La)TeX and must be escaped in BibTeX values
+			# (e.g. the journal "A&A" -> "A\&A"); JSON/YAML keep the plain `&`.
+			print(io, "\\&")
 		elseif isascii(ch)
 			print(io, ch)
 		else
