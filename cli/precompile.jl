@@ -1,6 +1,8 @@
 using OrderedCollections
 using Zettel
 
+
+
 mktempdir() do dir
 	bibPath = joinpath(dir, "sample.bib")
 	jsonPath = joinpath(dir, "sample.json")
@@ -52,15 +54,15 @@ mktempdir() do dir
 	zettelCLI(; args = [bibPath, jsonPath])
 	zettelCLI(; args = ["convert", jsonPath, yamlPath, "--to", "yaml"])
 
-	# Exercise the expensive interactive CLI surfaces so the compiled image covers
-	# them: exact-key query (JSON fast path + YAML full load), the pure-Julia `bbl`
-	# path on a non-.bib library, and the library-mutating paste/libupdate paths.
+	# Exercise the expensive interactive CLI surfaces so the compiled image covers them. 
+	# Exact-key query (JSON fast path + YAML full load), the pure-Julia `bbl` path on a non-.bib library, and the library-mutating paste/libupdate paths.
 	zettelCLI(; args = ["--query", "Einstein1905", "--library", jsonPath], output = IOBuffer())
 	zettelCLI(; args = ["--query", "Einstein1905", "--library", yamlPath], output = IOBuffer())
 	zettelCLI(; args = ["bbl", bblPath, yamlPath, joinpath(dir, "subset.yaml")], output = IOBuffer())
 
 	mutablePath = joinpath(dir, "mutable.json")
 	writeJsonLibrary(lib, mutablePath)
+
 	pastedEntry = """
 		@article{Newton1687a,
 			author = {Newton, Isaac},
@@ -69,7 +71,8 @@ mktempdir() do dir
 			year = {1687}
 		}
 		"""
-	zettelCLI(; args = ["paste", "--to", "json"], input = IOBuffer(pastedEntry), output = IOBuffer())
-	zettelCLI(; args = ["paste", "--library", mutablePath], input = IOBuffer(pastedEntry), output = IOBuffer())
-	zettelCLI(; args = ["libupdate", "--library", mutablePath], input = IOBuffer(pastedEntry), output = IOBuffer())
+	cliArgs = (input = IOBuffer(pastedEntry), output = IOBuffer())
+	zettelCLI(; args = ["paste", "--to", "json"], cliArgs...)
+	zettelCLI(; args = ["paste", "--library", mutablePath], cliArgs...)
+	zettelCLI(; args = ["libupdate", "--library", mutablePath], cliArgs...)
 end

@@ -54,10 +54,9 @@ function isBibRelated(args::Vector{String})
 		return true
 	end
 
-	# bbl needs the Python/BibTeX parser only when a .bib file is involved
-	# (reading a .bib input library). When neither the input library nor the
-	# output is .bib (e.g. json -> yaml), every step is pure Julia and can run
-	# on the fast compiled path. Args: bbl <bblfile> <inputlib> <outputlib>.
+	# bbl needs the Python/BibTeX parser only when a .bib file is involved (reading a .bib input library)
+	# if neither the input library nor the output is .bib (e.g. json -> yaml), every step is pure Julia and can run fast (compiled)
+	# args: bbl <bblfile> <inputlib> <outputlib>.
 	if cmd == "bbl"
 		return any(looksLikeBibPath, args[2 : end])
 	end
