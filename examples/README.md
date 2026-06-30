@@ -9,9 +9,7 @@ Run scripts from the repository root (or from this directory) with `bash example
 - Network access is required for DOI examples that fetch metadata (Crossref).
 
 ## Available scripts
-The README lists the example shell scripts present in this directory. Use them as
-small demonstrations or templates for integrating `zettel` into your workflows.
-
+The README lists the example shell scripts present in this directory. Use them as small demonstrations or templates for integrating `zettel` into your workflows.
 - `cli-bib2json.sh`: Convert `examples/data/references.bib` to JSON and write to `examples/tmp/references.json`.
 - `cli-bib2yaml.sh`: Convert `examples/data/references.bib` to YAML and write to `examples/tmp/references.yml`.
 - `cli-convert.sh`: Convert `examples/data/references.yml` to BibTeX with explicit `-f`/`-t` flags.
@@ -26,8 +24,8 @@ small demonstrations or templates for integrating `zettel` into your workflows.
 - `cli-tex_aux_opts.sh`: Variant of the TeX AUX workflow exercising additional options.
 - `zettelLibUpdate.sh`: Example library-update workflow (BibTeX-backed library updates).
 - `zettelLibUpdateYaml.sh`: Variant demonstrating YAML-backed library updates.
+- `example-addBibtexToJsonLibrary.jl`: Fast JSON-library update helper for one pasted BibTeX entry with entry fixes.
 
 ## Notes
-- Example scripts write artifacts under `examples/tmp/` and read fixtures from `examples/data/`.
-- The example scripts are intended as demonstrations; adapt them as templates for
-  your own automation or CI tasks.
+- Example scripts write artifacts under `examples/tmp/` and read from `examples/data/`.
+- The example scripts are intended as demonstrations; adapt them as templates for your own automation or CI tasks.
