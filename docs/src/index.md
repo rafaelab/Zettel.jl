@@ -56,9 +56,9 @@ sameLib = loadLibrary("references.json")
 ```julia
 using Zettel
 
-bibtexToJson("references.bib", "references.json")
-jsonToYaml("references.json", "references.yml")
-yamlToBibtex("references.yml", "references_roundtrip.bib")
+convertBibliography("references.bib", "references.json", BibtexFormat(), JsonFormat())
+convertBibliography("references.json", "references.yml", JsonFormat(), YamlFormat())
+convertBibliography("references.yml", "references_roundtrip.bib", YamlFormat(), BibtexFormat())
 ```
 
 ### Fetch one DOI entry
