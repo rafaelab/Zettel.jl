@@ -63,8 +63,15 @@ function findEntryByKey(::JsonFormat, filename::AbstractString, key::AbstractStr
 end
 
 function findEntryByKey(::BibtexFormat, filename::AbstractString, key::AbstractString)
-	# BibTeX fast path: locate the single `@type{key, … }` block by balanced-delimiter matching and run the parser on just that block, avoiding pybtex interop over every entry in the file.
-	# An absent key returns `nothing` directly because exact-key query mode should not materialise a whole library just to report a miss.
+	# BibTeX fast path: extract the single matching `@type{key, … }` block with `tools/extractEntry`
+	# (perl) and run the parser on just that block, avoiding pybtex interop over every entry in the file.
+	# The external extractor only recognises brace-delimited entries, so an empty/unavailable result is
+	# inconclusive and we confirm with the in-process balanced-delimiter scan, which also handles the
+	# paren-delimited form. An absent key returns `nothing` directly because exact-key query mode should
+	# not materialise a whole library just to report a miss.
+
+	tool = extractEntryWithTool(BibtexFormat(), filename, key)
+	tool isa ZettelEntry && return tool
 
 	result = try
 		_fastBibtexLookup(read(filename, String), key)
@@ -79,6 +86,16 @@ function findEntryByKey(::BibtexFormat, filename::AbstractString, key::AbstractS
 	end
 
 	return result
+end
+
+function findEntryByKey(::YamlFormat, filename::AbstractString, key::AbstractString)
+	# YAML fast path: extract the single matching record with `tools/extractEntry` (yq) and parse only
+	# that record, avoiding a parse of the whole library. When the extractor is unavailable (yq absent)
+	# or matches nothing, fall back to the full load, which is authoritative for YAML.
+	tool = extractEntryWithTool(YamlFormat(), filename, key)
+	tool isa ZettelEntry && return tool
+
+	return findByKey(loadLibrary(filename), key)
 end
 
 

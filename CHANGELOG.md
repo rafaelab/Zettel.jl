@@ -3,7 +3,34 @@
 
 
 ---
-## 2.6.3 — 2026-06-30
+## 2.6.4 — 2026-07-01
+
+### Added
+- Single-reference extraction helpers in `tools/` are now wired into the CLI so exact-key operations
+  no longer parse the whole library. `tools/extractEntry KEY FILE` pulls one entry out of a `.bib`
+  (perl), `.json` (`jq`), or `.yaml`/`.yml` (`yq`) file by exact citation key; the Julia side wraps
+  them in `extractEntryWithTool` / `extractRawEntry` (`src/extract.jl`).
+- `ZETTEL_TOOLS_DIR` environment variable to point at the `tools/` directory when the package is
+  relocated or run from a compiled binary. Defaults to `tools/` next to the package source.
+
+### Changed
+- `--query <bibkey>` for `.bib` and `.yaml`/`.yml` libraries now extracts and parses **only** the
+  requested entry via `tools/extractEntry`, instead of building every entry in the file. For BibTeX
+  this avoids pybtex interop over the whole library; the in-process balanced-delimiter scan remains
+  as an authoritative fallback (it also covers paren-delimited entries the extractor skips). JSON
+  queries keep their existing in-process fast path. Results are unchanged.
+- `zettel bbl <bbl> <master.bib> <out>` (`writeBibFromBbl`) now reads a BibTeX master once and parses
+  **only** the cited entries in a single pass, rather than parsing the entire master library. JSON and
+  YAML masters keep the cheap full-load. Output, citation order, and the missing-key report are
+  unchanged.
+- Every tool-backed path degrades gracefully: a missing interpreter (`perl`/`jq`/`yq`), a missing
+  script, or unexpected output falls back to the validated full-load path, so behaviour is never worse
+  than before.
+
+### Fixed
+- `tools/extractYamlEntry.sh` never matched a key: the `$1` in `select(.key == "$1")` was single-quoted
+  and passed literally to `yq`. It now passes the key through the environment and uses `strenv`.
+- The `tools/extractEntry` dispatcher and its helper scripts are now marked executable.
 
 ### Changed
 - Encoding direction is now explicit: BibTeX uses TeX escapes, while JSON and YAML use plain UTF-8.

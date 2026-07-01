@@ -29,6 +29,34 @@ The CLI supports seven modes:
 
 Supported formats are `bib`, `json`, and `yaml`.
 
+## Single-reference extraction
+
+Exact-key operations do not parse the whole library. They pull just the entry they need with the
+helper scripts in [`tools/`](https://github.com/rafaelab/Zettel.jl/tree/main/tools):
+
+```bash
+tools/extractEntry einstein1905a references.bib     # perl, for .bib / .bibtex
+tools/extractEntry einstein1905a references.json    # jq,   for .json
+tools/extractEntry einstein1905a references.yml     # yq,   for .yaml / .yml
+```
+
+`extractEntry` dispatches on the file extension and prints the single matching record in the file's
+own format (nothing if the key is absent). Two CLI paths use this to skip the cost of building every
+entry in the file:
+
+- **`--query`** on `.bib` and `.yaml`/`.yml` libraries extracts and parses only the requested entry.
+- **`bbl`** with a BibTeX master parses only the cited entries instead of the whole master library.
+
+Notes:
+
+- The Julia side (`extractEntryWithTool` in `src/extract.jl`) is best-effort: if the required
+  interpreter (`perl`, `jq`, or `yq`) or the script is missing, or the output is unexpected, it
+  silently falls back to the normal full-load path, so results are always correct.
+- `jq` ships with most systems; `yq` (the Go [`mikefarah/yq`](https://github.com/mikefarah/yq)) is
+  optional — YAML queries simply fall back to a full load when it is absent.
+- Set `ZETTEL_TOOLS_DIR` to point at the `tools/` directory if you run a relocated checkout or a
+  compiled binary whose `tools/` is not next to the package source.
+
 ## Convert
 
 Convert between bibliography formats.
@@ -93,6 +121,10 @@ Query one key from a bibliography library and print a compact human-readable sum
 zettel --query einstein1905a --library references.bib
 ```
 
+For `.bib` and `.yaml`/`.yml` libraries the requested entry is pulled out with the
+[single-reference extraction](#Single-reference-extraction) helpers, so the rest of the library is
+never parsed.
+
 Output format:
 ```text
 "The title"
@@ -128,6 +160,9 @@ Notes:
 - Entries are written in the order they appear in the `.bbl` file.
 - Any key referenced in the `.bbl` but absent from the master library produces a warning on stdout; the remaining keys are still written.
 - The input and output libraries may use different formats, so `bbl` doubles as a targeted conversion.
+- With a BibTeX master, only the cited entries are parsed (see
+  [single-reference extraction](#Single-reference-extraction)) — typically a large speedup when the
+  master library is much bigger than the citation list.
 
 Relevant example scripts:
 
@@ -262,7 +297,11 @@ During active development, use the Julia entry point shown at the top of this pa
 
 ### BibTeX commands are slower than JSON or YAML commands
 
-That is expected. BibTeX parsing and writing go through `Pybtex.jl` and Python, whereas pure JSON and YAML flows stay within Julia.
+That is expected. BibTeX parsing and writing go through `Pybtex.jl` and Python, whereas pure JSON and YAML flows stay within Julia. Exact-key operations (`--query`, and `bbl` with a BibTeX master) sidestep most of this cost by parsing only the requested entries — see [single-reference extraction](#Single-reference-extraction).
+
+### `yq` is not installed
+
+`yq` is only needed to accelerate YAML `--query`. Without it, YAML queries fall back to a full load and still work. Install the Go [`mikefarah/yq`](https://github.com/mikefarah/yq) to enable the fast path.
 
 ### `.bbl` generation reports missing keys
 

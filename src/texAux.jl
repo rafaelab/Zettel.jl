@@ -954,15 +954,81 @@ order.
 """
 function writeBibFromBbl(bblPath::AbstractString, inputLibrary::AbstractString, outputPath::AbstractString)
 	keys = parseBblKeys(bblPath)
-	lib = loadLibrary(inputLibrary)
 	totalCount = length(keys)
-	@info "Extracting cited entries from .bbl" bblPath inputLibrary citedKeys = totalCount libraryEntries = length(lib)
+	@info "Extracting cited entries from .bbl" bblPath inputLibrary citedKeys = totalCount
+
+	subset, present, absent = _collectCitedEntries(inputLibrary, keys)
+
+	saveLibrary(subset, outputPath)
+	@info "Saved extracted bibliography subset" outputPath found = length(present) missing = length(absent)
+
+	return (present = present, absent = absent)
+end
+
+
+@doc """
+	_collectCitedEntries(inputLibrary, keys)
+
+Collect the entries for `keys` from `inputLibrary`, returning `(subset, present, absent)` in citation
+order. For a BibTeX master this extracts only the cited entries (a single file read plus a parse of
+just those blocks), avoiding pybtex interop over the whole library; any anomaly, or a non-BibTeX
+master, degrades to the validated full-load path.
+"""
+function _collectCitedEntries(inputLibrary::AbstractString, keys::Vector{String})
+	fast = _collectCitedEntriesFast(identifyBibliographyFormat(inputLibrary), inputLibrary, keys)
+	isnothing(fast) || return fast
+	return _collectCitedEntriesWholeLoad(inputLibrary, keys)
+end
+
+
+# Non-BibTeX masters load cheaply in full; only BibTeX benefits from cited-only extraction.
+_collectCitedEntriesFast(::BibliographyFormat, ::AbstractString, ::Vector{String}) = nothing
+
+function _collectCitedEntriesFast(::BibtexFormat, inputLibrary::AbstractString, keys::Vector{String})
+	return try
+		text = read(inputLibrary, String)
+		total = length(keys)
+
+		blocks = OrderedDict{String, String}()
+		present = String[]
+		absent = String[]
+		sizehint!(present, total)
+		sizehint!(absent, total)
+		for (index, key) ∈ enumerate(keys)
+			block = _bibtexEntryBlock(text, key)
+			if isnothing(block)
+				push!(absent, key)
+			else
+				blocks[key] = block
+				push!(present, key)
+			end
+			reportProgress("Located cited keys", index, total)
+		end
+
+		# Parse only the cited blocks, in a single pybtex pass.
+		parsed = isempty(blocks) ? ZettelLibrary() : readBibtexLibrary(readBibtexString(join(values(blocks), "\n\n")))
+		subset = ZettelLibrary()
+		for key ∈ present
+			entry = findByKey(parsed, key)
+			isnothing(entry) && return nothing
+			push!(subset, entry)
+		end
+
+		(subset, present, absent)
+	catch
+		nothing
+	end
+end
+
+function _collectCitedEntriesWholeLoad(inputLibrary::AbstractString, keys::Vector{String})
+	lib = loadLibrary(inputLibrary)
+	total = length(keys)
 
 	subset = ZettelLibrary()
 	present = String[]
 	absent = String[]
-	sizehint!(present, totalCount)
-	sizehint!(absent, totalCount)
+	sizehint!(present, total)
+	sizehint!(absent, total)
 	for (index, key) ∈ enumerate(keys)
 		entry = findByKey(lib, key)
 		if isnothing(entry)
@@ -971,13 +1037,10 @@ function writeBibFromBbl(bblPath::AbstractString, inputLibrary::AbstractString, 
 			push!(subset, entry)
 			push!(present, key)
 		end
-		reportProgress("Processed cited keys", index, totalCount)
+		reportProgress("Processed cited keys", index, total)
 	end
 
-	saveLibrary(subset, outputPath)
-	@info "Saved extracted bibliography subset" outputPath found = length(present) missing = length(absent)
-
-	return (present = present, absent = absent)
+	return (subset, present, absent)
 end
 
 
