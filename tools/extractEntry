@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -eu
+
+# $1: key to extract
+# $2: input bib file
+
+scriptDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+key="$1"
+inputFile="$2"
+filename="$(printf '%s' "$inputFile" | tr '[:upper:]' '[:lower:]')"
+
+case "$filename" in
+	*.bib|*.bibtex)
+		perl "$scriptDir/extractBibtexEntry.pl" "$key" "$inputFile"
+		;;
+	*.json)
+		bash "$scriptDir/extractJsonEntry.sh" "$key" "$inputFile"
+		;;
+	*.yaml|*.yml)
+		bash "$scriptDir/extractYamlEntry.sh" "$key" "$inputFile"
+		;;
+	*)
+		echo "Unknown library format. Supported formats: .bib, .json, .yml."
+		;;
+esac
