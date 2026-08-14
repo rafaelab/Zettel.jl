@@ -25,6 +25,7 @@
   `$...$`.
 - Note that this is deliberately not round-trip preserving: `\ensuremath{\beta}` read from a `.bib`
   is written back out as `$\beta$`. Both render identically in LaTeX.
+- Support ".jsonl" files.
 
 ---
 ## 2.6.4 — 2026-07-01

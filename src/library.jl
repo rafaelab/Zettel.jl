@@ -170,7 +170,7 @@ end
 	loadLibrary(filename)
 
 Load a [`ZettelLibrary`](@ref) from `filename`, inferring the format from the file extension.
-Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
+Supported extensions: `.json`, `.jsonl`, `.yaml`, `.yml`, `.bib`.
 
 # Input
 - `filename` [`AbstractString`]: path to the bibliography file.
@@ -192,7 +192,7 @@ end
 	saveLibrary(lib, filename)
 
 Save a [`ZettelLibrary`](@ref) to `filename`, inferring the format from the file extension.
-Supported extensions: `.json`, `.yaml`, `.yml`, `.bib`.
+Supported extensions: `.json`, `.jsonl`, `.yaml`, `.yml`, `.bib`.
 
 # Input
 - `lib` [`ZettelLibrary`]: the library to save

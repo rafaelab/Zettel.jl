@@ -77,7 +77,7 @@ Infer a bibliography format from a file extension.
 """
 function identifyBibliographyFormat(path::AbstractString)
 	ext = getFileExtension(path)
-	if ext == ".json"
+	if ext ∈ (".json", ".jsonl")
 		return JsonFormat()
 	elseif ext ∈ (".yaml", ".yml")
 		return YamlFormat()
@@ -117,12 +117,12 @@ Return a human-readable name for the given bibliography format.
 @doc """
 	parseBibliographyFormat(name)
 
-Parse a format name (`json`, `yaml`/`yml`, `bib`/`bibtex`) into a
+Parse a format name (`json`/`jsonl`, `yaml`/`yml`, `bib`/`bibtex`) into a
 [`BibliographyFormat`](@ref) singleton.
 """
 function parseBibliographyFormat(name::AbstractString)
 	value = lowercase(strip(name))
-	if value == "json"
+	if value ∈ ("json", "jsonl")
 		return JsonFormat()
 	elseif value ∈ ("yaml", "yml")
 		return YamlFormat()
