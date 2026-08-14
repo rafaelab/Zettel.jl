@@ -2,6 +2,21 @@
 
 
 
+
+---
+## 2.6.5 — 2026-08-14
+
+### Changed
+- `decodeTex` now unwraps `\ensuremath` into ordinary TeX math while parsing, so a title or keyword
+  written as `\ensuremath{\beta}` is stored as `$\beta$`. The argument is read as a brace-balanced
+  group (`\ensuremath{\frac{a}{b}}` → `$\frac{a}{b}$`) or, when unbraced, as the single macro token
+  that follows (`\ensuremath\beta` → `$\beta$`). An empty argument is dropped instead of leaving an
+  empty `$$`, nested occurrences and text already inside `$...$` only lose the wrapper, and an
+  unterminated group is left exactly as written. Applies to every field, since all field values pass
+  through `decodeTex` when a library is read.
+- Note that this is deliberately not round-trip preserving: `\ensuremath{\beta}` read from a `.bib`
+  is written back out as `$\beta$`. Both render identically in LaTeX.
+
 ---
 ## 2.6.4 — 2026-07-01
 

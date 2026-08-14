@@ -93,6 +93,168 @@ const texAccentCombining = Dict(
 const combiningToTexAccent = Dict(v => k for (k, v) ∈ texAccentCombining)
 
 
+# `\ensuremath` is unwrapped into plain `$...$` math (see `_decodeEnsuremath`).
+const _ensuremathMacro = "\\ensuremath"
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_startsEnsuremath(text, i)
+
+Return `true` when `\\ensuremath` starts at index `i` of `text` and is not merely the prefix of a longer macro name (e.g. `\\ensuremathematics` does not match).
+"""
+function _startsEnsuremath(text::AbstractString, i::Integer)
+	if ! startswith(SubString(text, i), _ensuremathMacro)
+		return false
+	end
+
+	after = nextind(text, i, length(_ensuremathMacro))
+	if after > lastindex(text)
+		return true
+	end
+
+	c = text[after]
+	return ! (isascii(c) && isletter(c))
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_matchingBrace(text, openIdx)
+
+Index of the `}` that closes the `{` at `openIdx`, or `nothing` when the group is never closed.
+Nesting is respected, so `{\\frac{a}{b}}` returns the final brace, and escaped braces (`\\{`, `\\}`) are not counted as delimiters.
+"""
+function _matchingBrace(text::AbstractString, openIdx::Integer)
+	depth = 0
+	i = openIdx
+	while i ≤ lastindex(text)
+		c = text[i]
+		if c == '\\'
+			# skip the escaped character, so `\{` and `\}` do not change the depth
+			i = nextind(text, i)
+			i ≤ lastindex(text) && (i = nextind(text, i))
+			continue
+		elseif c == '{'
+			depth += 1
+		elseif c == '}'
+			depth -= 1
+			if depth == 0
+				return i
+			end
+		end
+		i = nextind(text, i)
+	end
+
+	return nothing
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_decodeEnsuremath(s, inMath = false)
+
+Rewrite `\\ensuremath` into ordinary TeX math, so `\\ensuremath{\\beta}` becomes `\$\\beta\$`.
+
+The argument is taken as a brace-balanced group (`\\ensuremath{\\frac{a}{b}}` gives `\$\\frac{a}{b}\$`) or, when no braces are given, as a single macro token (`\\ensuremath\\beta` gives `\$\\beta\$`).
+An empty argument is dropped rather than turned into an empty `\$\$`, and an unterminated group is left untouched.
+
+`inMath` tracks whether the scan currently sits inside a `\$...\$` region; there the wrapper is only removed, as nesting `\$` inside `\$` would produce invalid TeX.
+It is also how nested `\\ensuremath` is handled: the argument is decoded with `inMath = true`, so only the outermost occurrence introduces delimiters.
+
+# Input
+- `s` [`AbstractString`]: string possibly containing `\\ensuremath`.
+- `inMath` [`Bool`]: whether `s` is already the contents of a math region.
+
+# Output
+- A new `String` with every `\\ensuremath` wrapper removed.
+"""
+function _decodeEnsuremath(s::AbstractString, inMath::Bool = false)
+	text = String(s)
+	if ! occursin(_ensuremathMacro, text)
+		return text
+	end
+
+	io = IOBuffer()
+	i = firstindex(text)
+	while i ≤ lastindex(text)
+		c = text[i]
+
+		if c == '\\' && ! _startsEnsuremath(text, i)
+			# copy the escape and whatever it escapes, so `\$` is never read as a math delimiter
+			print(io, c)
+			i = nextind(text, i)
+			if i ≤ lastindex(text)
+				print(io, text[i])
+				i = nextind(text, i)
+			end
+			continue
+		end
+
+		if c == '$'
+			# `$$` opens or closes display math as a unit, so it must toggle once and not twice
+			j = nextind(text, i)
+			if j ≤ lastindex(text) && text[j] == '$'
+				print(io, "\$\$")
+				i = nextind(text, j)
+			else
+				print(io, '$')
+				i = j
+			end
+			inMath = ! inMath
+			continue
+		end
+
+		if ! _startsEnsuremath(text, i)
+			print(io, c)
+			i = nextind(text, i)
+			continue
+		end
+
+		# `\ensuremath` starts here: locate its argument, tolerating whitespace before it
+		afterMacro = nextind(text, i, length(_ensuremathMacro))
+		k = afterMacro
+		while k ≤ lastindex(text) && isspace(text[k])
+			k = nextind(text, k)
+		end
+
+		argument = nothing
+		nextIdx = afterMacro
+		if k ≤ lastindex(text) && text[k] == '{'
+			closeIdx = _matchingBrace(text, k)
+			if ! isnothing(closeIdx)
+				inner = SubString(text, nextind(text, k), prevind(text, closeIdx))
+				argument = strip(_decodeEnsuremath(inner, true))
+				nextIdx = nextind(text, closeIdx)
+			end
+		elseif k ≤ lastindex(text) && text[k] == '\\'
+			# unbraced form: the argument is the single macro token that follows
+			m = nextind(text, k)
+			while m ≤ lastindex(text) && isascii(text[m]) && isletter(text[m])
+				m = nextind(text, m)
+			end
+			if m > nextind(text, k)
+				argument = SubString(text, k, prevind(text, m))
+				nextIdx = m
+			end
+		end
+
+		if isnothing(argument)
+			# no argument we can claim (or an unclosed group): leave the macro as it was written
+			print(io, _ensuremathMacro)
+		elseif ! isempty(argument)
+			print(io, inMath ? argument : "\$" * argument * "\$")
+		end
+		i = nextIdx
+	end
+
+	return String(take!(io))
+end
+
+
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
@@ -156,6 +318,8 @@ Replacements are applied longest-key-first to avoid partial matches (e.g. `\\v{c
 
 The decoder is tolerant of grouping braces and whitespace: `{{\\'a}}`, `{ \\'a }` and `\\'a` all decode to `á`, and no-argument macros decode regardless of a trailing `{}` (e.g. `\\l`, `\\l{}` and `{\\l}` all give `ł`). The BibTeX escape `\\&` is decoded to a plain `&`.
 
+`\\ensuremath` wrappers are rewritten as ordinary math, so a title carrying `\\ensuremath{\\beta}` is stored as `\$\\beta\$` (see `_decodeEnsuremath`).
+
 # Input
 - `s` [`AbstractString`]: string possibly containing TeX character commands.
 
@@ -164,6 +328,10 @@ The decoder is tolerant of grouping braces and whitespace: `{{\\'a}}`, `{ \\'a }
 """
 function decodeTex(s::AbstractString)
 	result = String(s)
+
+	# `\ensuremath{...}` -> `$...$`, done first because the brace normalisation below would
+	# otherwise rewrite the braces that delimit its argument.
+	result = _decodeEnsuremath(result)
 
 	# literal escaped specials used by BibTeX: `\&` -> `&` so JSON/YAML keep plain UTF-8.
 	result = replace(result, "\\&" => "&")

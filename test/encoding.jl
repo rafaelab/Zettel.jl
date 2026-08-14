@@ -425,3 +425,54 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+
+# ----------------------------------------------------------------------------------------------- #
+#
+@testset "ensuremath is unwrapped into plain math" begin
+
+	# the common case: a single symbol macro in a title or keyword
+	@test decodeTex("\\ensuremath{\\beta}") == "\$\\beta\$"
+	@test decodeTex("The \\ensuremath{\\beta} Pictoris disk") == "The \$\\beta\$ Pictoris disk"
+	@test decodeTex("\\ensuremath{\\gamma}-ray burst") == "\$\\gamma\$-ray burst"
+	@test decodeTex("\\ensuremath{\\alpha} and \\ensuremath{\\omega}") == "\$\\alpha\$ and \$\\omega\$"
+
+	# the argument is brace-balanced, so inner groups survive
+	@test decodeTex("\\ensuremath{\\frac{a}{b}}") == "\$\\frac{a}{b}\$"
+	@test decodeTex("\\ensuremath{\\{a\\}}") == "\$\\{a\\}\$"
+
+	# whitespace before and inside the argument is tolerated
+	@test decodeTex("\\ensuremath { \\beta }") == "\$\\beta\$"
+
+	# unbraced form: the argument is the macro token that follows
+	@test decodeTex("\\ensuremath\\beta") == "\$\\beta\$"
+	@test decodeTex("\\ensuremath \\beta") == "\$\\beta\$"
+
+	# an empty argument is dropped rather than left as an empty math region
+	@test decodeTex("\\ensuremath{}") == ""
+	@test decodeTex("\\ensuremath{   }") == ""
+
+	# only the outermost occurrence introduces delimiters
+	@test decodeTex("a\\ensuremath{b\\ensuremath{c}}d") == "a\$bc\$d"
+
+	# inside an existing math region the wrapper is only removed
+	@test decodeTex("\$\\ensuremath{\\beta}\$") == "\$\\beta\$"
+	@test decodeTex("\$\$\\ensuremath{\\beta}\$\$") == "\$\$\\beta\$\$"
+
+	# malformed or unrelated input is left untouched
+	@test decodeTex("\\ensuremath{\\beta") == "\\ensuremath{\\beta"
+	@test decodeTex("\\ensuremath") == "\\ensuremath"
+	@test decodeTex("\\ensuremathematics{x}") == "\\ensuremathematics{x}"
+
+	# an escaped dollar is not a math delimiter
+	@test decodeTex("\\\$5 \\ensuremath{\\beta}") == "\\\$5 \$\\beta\$"
+
+	# accents elsewhere in the field still decode normally
+	@test decodeTex("M\\\"uller \\ensuremath{\\beta}") == "Müller \$\\beta\$"
+
+	# the result is plain ASCII, so writing it back out leaves it as it is
+	@test encodeTex(decodeTex("\\ensuremath{\\beta}")) == "\$\\beta\$"
+
+end
+
+
+# ----------------------------------------------------------------------------------------------- #
