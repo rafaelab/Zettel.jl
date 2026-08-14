@@ -476,3 +476,34 @@ end
 
 
 # ----------------------------------------------------------------------------------------------- #
+#
+@testset "ensuremath wrapped in its own brace group" begin
+
+	# ADS writes `{\ensuremath{...}}`; the group is redundant once the macro becomes math
+	@test decodeTex("{\\ensuremath{\\beta}}") == "\$\\beta\$"
+	@test decodeTex("{\\ensuremath{\\Lambda}}CDM") == "\$\\Lambda\$CDM"
+	@test decodeTex("The {\\ensuremath{\\beta}} Pictoris system") == "The \$\\beta\$ Pictoris system"
+	@test decodeTex("{\\ensuremath{\\frac{a}{b}}}") == "\$\\frac{a}{b}\$"
+	@test decodeTex("{\\ensuremath{_{eff}}}") == "\$_{eff}\$"
+
+	# whitespace inside the group, and repeated wrapping, are handled the same way
+	@test decodeTex("{ \\ensuremath{\\beta} }") == "\$\\beta\$"
+	@test decodeTex("{{\\ensuremath{\\beta}}}") == "\$\\beta\$"
+	@test decodeTex("{\\ensuremath{}}") == ""
+
+	# a group holding anything besides the macro keeps its braces, so BibTeX
+	# capitalisation protection is never silently dropped
+	@test decodeTex("{\\ensuremath{\\beta} Pic}") == "{\$\\beta\$ Pic}"
+	@test decodeTex("{Detection of \\ensuremath{\\beta}}") == "{Detection of \$\\beta\$}"
+	@test decodeTex("{\\ensuremath{\\beta}b}") == "{\$\\beta\$b}"
+
+	# groups unrelated to ensuremath are untouched
+	@test decodeTex("a{b}c") == "a{b}c"
+	@test decodeTex("{}") == "{}"
+	@test decodeTex("{Zur Elektrodynamik}") == "{Zur Elektrodynamik}"
+	@test decodeTex("{\\v{S}}ar{\\v{c}}evi{\\'c}") == "Šarčević"
+
+end
+
+
+# ----------------------------------------------------------------------------------------------- #

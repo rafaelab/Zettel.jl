@@ -14,6 +14,15 @@
   empty `$$`, nested occurrences and text already inside `$...$` only lose the wrapper, and an
   unterminated group is left exactly as written. Applies to every field, since all field values pass
   through `decodeTex` when a library is read.
+- A brace group whose only content is the macro is dropped along with it, so the ADS-style
+  `{\ensuremath{\beta}}` gives `$\beta$` rather than leaving `{$\beta$}` in the stored field. Repeated
+  wrapping (`{{\ensuremath{\beta}}}`) and whitespace inside the group are handled the same way. Groups
+  holding anything besides the macro keep their braces (`{\ensuremath{\beta} Pic}` →
+  `{$\beta$ Pic}`), so the capitalisation protection BibTeX relies on is never silently removed.
+- Both of the above apply to `zettel paste --library <file.json>`: pasted BibTeX passes through
+  `decodeTex` on the way in, so a JSON library never receives `\ensuremath`. This keeps the direction
+  already set in 2.6.4 — BibTeX carries TeX escapes, JSON and YAML carry plain UTF-8 with maths as
+  `$...$`.
 - Note that this is deliberately not round-trip preserving: `\ensuremath{\beta}` read from a `.bib`
   is written back out as `$\beta$`. Both render identically in LaTeX.
 
