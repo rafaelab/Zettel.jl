@@ -244,24 +244,6 @@ end
 # ----------------------------------------------------------------------------------------------- #
 #
 @doc """
-	_normalisedSimilarityText(text)
-
-Normalise free text for Levenshtein-based similarity: strip TeX, decompose accents,
-lowercase, keep only `[a-z0-9]` tokens.
-"""
-function _normalisedSimilarityText(text::AbstractString)
-	s = strip(decodeTex(stripOuterBraces(text)))
-	s = replace(Base.Unicode.normalize(s, :NFD), r"\p{M}" => "")
-	s = lowercase(s)
-	s = replace(s, r"[^a-z0-9]+" => " ")
-	s = replace(s, r"\s+" => " ")
-	return strip(s)
-end
-
-
-# ----------------------------------------------------------------------------------------------- #
-#
-@doc """
 	stringSimilarityScore(left, right)
 
 Normalised Levenshtein similarity in `[0, 1]` after light text normalisation.
@@ -409,6 +391,29 @@ function similarityScores(candidate::ZettelEntry, existing::ZettelEntry; kwargs.
 end
 
 
+# ----------------------------------------------------------------------------------------------- #
+#
+@doc """
+	_normalisedSimilarityText(text)
+
+Normalise free text for Levenshtein-based similarity: strip TeX, decompose accents,
+lowercase, keep only `[a-z0-9]` tokens.
+"""
+function _normalisedSimilarityText(text::AbstractString)
+	s = strip(decodeTex(stripOuterBraces(text)))
+	s = replace(Base.Unicode.normalize(s, :NFD), r"\p{M}" => "")
+	s = lowercase(s)
+	s = replace(s, r"[^a-z0-9]+" => " ")
+	s = replace(s, r"\s+" => " ")
+	return strip(s)
+end
+
+
+@doc """
+	_normalisedSimilarityWeights(scoreWeights)
+
+Normalise a named-tuple of similarity weights so that they sum to `1.0`.
+"""
 function _normalisedSimilarityWeights(scoreWeights)
 	requiredKeys = (:author, :key, :title, :venue, :volumePages)
 	weights = Dict{Symbol, Float64}()
