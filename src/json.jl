@@ -9,8 +9,8 @@ export
 # ----------------------------------------------------------------------------------------------- #
 #
 const tabSizeJson = 4
+const _extensionsJson = ("json", )
 
-const _extensionsJson = ("json",)
 
 # ----------------------------------------------------------------------------------------------- #
 #
@@ -21,6 +21,7 @@ Re-indent pretty JSON output with tabs (JSON3 always uses spaces).
 """
 function indentJson(text::AbstractString; tabSize::Int = tabSizeJson)
 	lines = split(text, '\n')
+
 	tabIndented = String[]
 	for line ∈ lines
 		m = match(r"^( +)", line)
@@ -32,6 +33,7 @@ function indentJson(text::AbstractString; tabSize::Int = tabSizeJson)
 			push!(tabIndented, "\t" ^ nTabs * line[nSpaces + 1 : end])
 		end
 	end
+
 	return join(tabIndented, '\n')
 end
 
@@ -43,7 +45,9 @@ end
 
 Convert JSON3 objects / arrays into plain Julia Dict / Vector containers.
 """
-normaliseJson(value::Any) = value
+function normaliseJson(value::Any)
+	return value
+end
 
 function normaliseJson(value::AbstractDict)
 	out = OrderedDict{String, Any}()
@@ -178,10 +182,12 @@ function readJsonEntry(records::AbstractDict)
 	if length(records) ≠ 1
 		throw(ArgumentError("JSON dictionary contains $(length(records)) entries; expected exactly one."))
 	end
+	
 	rawEntry = first(values(records))
 	if ! (rawEntry isa AbstractDict) || ! dictionaryResemblesEntry(rawEntry)
 		throw(ArgumentError(_errorMsgNotEntryLike))
 	end
+
 	return ZettelEntry(rawEntry)
 end
 
@@ -232,9 +238,11 @@ Write a bibliography library to JSON as a list of entry objects.
 """
 function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
 	totalCount = length(lib)
+
 	reportTotal("Preparing JSON entries", totalCount)
 	records = Vector{OrderedDict{String, Any}}()
 	sizehint!(records, totalCount)
+	
 	index = 0
 	for entry ∈ values(lib)
 		index += 1
@@ -242,6 +250,7 @@ function writeJsonLibrary(lib::ZettelLibrary, filename::AbstractString)
 		reportProgress("Prepared JSON entries", index, totalCount)
 	end
 	writeJsonFile(records, filename)
+
 	return nothing
 end
 
